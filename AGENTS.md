@@ -5,7 +5,7 @@ Online dental clinic MVP. Product decisions live in docs/planning/mvp-scope.md; 
 ## Before implementation
 
 - Read the assigned GitHub issue, its acceptance criteria, and every open blocker. For tracker and readiness rules, read docs/agents/issue-tracker.md.
-- For dependencies or architecture, read docs/planning/dependency-proposal.md. Preserve the approved stack and Zustand/TanStack Query state boundaries.
+- For dependencies or architecture, read docs/planning/dependency-proposal.md and docs/architecture/application-architecture.md. Preserve the approved stack and Zustand/TanStack Query state boundaries.
 - For board operations, read docs/super-board/PROJECT.md and docs/super-board/pre-flight.md. Local board policy and config override upstream skill defaults.
 - For interface work, read design.md and designtokens.md; treat prototypes as visual references, with the approved spec governing behavior.
 
@@ -18,6 +18,10 @@ Use codex/ branch names. Human approval is required for every merge. Production 
 Keep unresolved decision tickets #2-#6 in Backlog until the owner approves their criteria. The ready-for-agent label records ticket preparation; only board Ready plus satisfied dependencies permits execution.
 
 Use the installed Matt Pocock skills for discovery, specifications, tickets, implementation and review when their triggers apply. Super-board coordinates those activities; it does not replace the product specification.
+
+## Skill precedence
+
+When skill instructions conflict, prefer the applicable Matt Pocock skill over other skills, including super-board. Combine compatible guidance: Matt Pocock governs engineering methods and artifact content; super-board supplies board coordination and execution mechanics. Apply this precedence to the managed block below as well. User instructions and project approval boundaries remain binding. Briefly identify material conflicts and the chosen resolution; ask only when a required product decision remains unresolved.
 
 <!-- super-board:begin v3.1.1 (managed; edits inside are overwritten on upgrade) -->
 ## Super Board

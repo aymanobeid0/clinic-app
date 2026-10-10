@@ -8,7 +8,7 @@ React and TypeScript frontend; Node.js/Express/TypeScript backend; PostgreSQL wi
 
 ## Proposed application layout
 
-One repository with frontend, backend, and shared validation/API contracts. A React SPA communicates with an Express REST API under the same public origin. Nginx serves built frontend assets and proxies API requests; PostgreSQL and API run as separate Docker Compose services. Database is not exposed publicly. Private attachments use persistent storage and authorized API delivery, not public static URLs. This layout is proposed, not yet approved.
+One repository with frontend, backend, and shared validation/API contracts. A React SPA communicates with an Express REST API under the same public origin. Nginx serves built frontend assets and proxies API requests; PostgreSQL and API run as separate Docker Compose services. Database is not exposed publicly. Private attachments use persistent storage and authorized API delivery, not public static URLs. The modular-monolith layout was approved on 2026-10-10; see docs/architecture/application-architecture.md.
 
 ## Dependencies to approve
 
@@ -38,7 +38,7 @@ Use existing design tokens with custom CSS and reusable accessible components in
 
 After approval, verify mutually compatible stable releases and pin exact versions with a committed lockfile and explicit container image versions. Choose an actively supported Node LTS meeting Vite, Express, Prisma and native Argon2 requirements; validate the Linux image and PostgreSQL combination together. Do not treat the website's latest version label as a tested compatibility matrix. The proposed list is not a claim that exact versions have been verified together.
 
-Zustand was explicitly selected by the user for local UI state after the initial proposal approval. No Redis, queue service, JWT authentication, online payment SDK, or AI SDK is proposed for the initial core. Revisit only when a feature needs one. Authentication approval here does not override deferred MFA/idle locking or unresolved recovery contracts.
+Zustand was explicitly selected by the user for local UI state after the initial proposal approval. SSE plus REST was approved for immediate updates at launch; native EventSource adds no required client library. No Redis, queue service, JWT authentication, online payment SDK, or AI SDK is proposed for the initial core. Revisit only when a feature needs one. Authentication approval here does not override deferred MFA/idle locking or unresolved recovery contracts.
 
 ## Source documentation
 

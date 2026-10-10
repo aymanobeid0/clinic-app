@@ -56,4 +56,4 @@ Later: transcription, X-ray charting/analysis and treatment suggestions, patient
 - File size limits, retention/deletion versus backup policy, export formats, backup retention, and performance acceptance criteria.
 - Pilot schedule and evidence checklist. Exact pricing and future AI decisions do not block the core MVP specification.
 
-No implementation stack has been selected and no infrastructure has been inspected or changed.
+The implementation stack and application architecture are now selected; see dependency-proposal.md and ../architecture/application-architecture.md. Production infrastructure has not been inspected or changed. Immediate updates use SSE plus REST; hosting and recovery feasibility remain open.
