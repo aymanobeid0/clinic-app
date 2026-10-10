@@ -1,0 +1,494 @@
+[
+  {
+    "id": 1,
+    "title": "Define the selected stack's foundation and assess VPS constraints",
+    "blockers": [],
+    "delivery": "foundation using the user-selected React/TypeScript frontend, Node.js/Express/TypeScript backend, PostgreSQL/Prisma persistence, and Docker/Nginx deployment. Approved supporting tools: Vite, React Router, TanStack Query, Zustand for shared local UI state, React Hook Form/Zod, PostgreSQL-backed Express sessions, Argon2, Helmet/rate limiting, Multer, Pino, Vitest/Supertest/Playwright, and development lint/format tools. Use one repository, an SPA and same-origin REST API, Docker Compose and private attachment delivery; start with existing design tokens/custom CSS. Verify and pin compatible versions; record measured or explicitly unavailable VPS capacity evidence, recovery-cost options, and performance targets for owner approval. No production deployment or infrastructure mutation is implied. Record unknown provider/domain/workloads and budget tradeoff. The user expects to maintain primarily through AI coding tools.",
+    "criteria": [
+      "Record the approved React/TypeScript, Express/TypeScript, PostgreSQL/Prisma and Docker/Nginx foundation and supporting dependency decisions.",
+      "Verify mutually compatible stable versions and document exact version pins, service layout and test execution strategy before installation.",
+      "Document VPS evidence or unavailable evidence, recovery costs/unknowns, budget tradeoffs and measurable performance targets; obtain owner acceptance of unresolved choices without deploying."
+    ],
+    "body": "## Parent\n\nhttps://github.com/aymanobeid0/clinic-app/issues/1\n\n## What to build\n\nfoundation using the user-selected React/TypeScript frontend, Node.js/Express/TypeScript backend, PostgreSQL/Prisma persistence, and Docker/Nginx deployment. Approved supporting tools: Vite, React Router, TanStack Query, Zustand for shared local UI state, React Hook Form/Zod, PostgreSQL-backed Express sessions, Argon2, Helmet/rate limiting, Multer, Pino, Vitest/Supertest/Playwright, and development lint/format tools. Use one repository, an SPA and same-origin REST API, Docker Compose and private attachment delivery; start with existing design tokens/custom CSS. Verify and pin compatible versions; record measured or explicitly unavailable VPS capacity evidence, recovery-cost options, and performance targets for owner approval. No production deployment or infrastructure mutation is implied. Record unknown provider/domain/workloads and budget tradeoff. The user expects to maintain primarily through AI coding tools.\n\nPlanning ID: 1. Prerequisite decision/evidence ticket; obtain approval of unresolved choices before downstream implementation.\n\nState boundaries: Zustand owns shared local UI state; TanStack Query owns server data; React Hook Form owns form state. Component-private state may use React hooks. Do not persist clinical drafts or sensitive state to browser storage.\n\n## Acceptance criteria\n\n- [ ] Record the approved React/TypeScript, Express/TypeScript, PostgreSQL/Prisma and Docker/Nginx foundation and supporting dependency decisions.\n- [ ] Verify mutually compatible stable versions and document exact version pins, service layout and test execution strategy before installation.\n- [ ] Document VPS evidence or unavailable evidence, recovery costs/unknowns, budget tradeoffs and measurable performance targets; obtain owner acceptance of unresolved choices without deploying.\n- [ ] Record reviewed decisions and evidence; explicitly identify unresolved gates and obtain the required owner decisions.\n\n## Blocked by\n\nNone — can start immediately.\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/2",
+    "issue": 2,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 2,
+    "title": "Resolve identity, permissions, and historical-access contracts",
+    "blockers": [],
+    "delivery": "reviewed permission matrix for all account types and patient scopes, clinical information in billing/export, historical versions and cutoff semantics, username/phone uniqueness, initial password change, resets, sessions, and recovery codes. Preserve the confirmed non-doctor-manager restriction and deferred MFA/idle locking.",
+    "criteria": [
+      "Approve a complete action-by-account/patient-scope permission matrix, including clinical information in financial views and exports.",
+      "Define historical versions, removal cutoffs and full revocation; non-doctor managers cannot access clinical records.",
+      "Approve identity uniqueness, initial password-change timing, resets/session invalidation and manager recovery-code lifecycle."
+    ],
+    "body": "## Parent\n\nhttps://github.com/aymanobeid0/clinic-app/issues/1\n\n## What to build\n\nreviewed permission matrix for all account types and patient scopes, clinical information in billing/export, historical versions and cutoff semantics, username/phone uniqueness, initial password change, resets, sessions, and recovery codes. Preserve the confirmed non-doctor-manager restriction and deferred MFA/idle locking.\n\nPlanning ID: 2. Prerequisite decision/evidence ticket; obtain approval of unresolved choices before downstream implementation.\n\n## Acceptance criteria\n\n- [ ] Approve a complete action-by-account/patient-scope permission matrix, including clinical information in financial views and exports.\n- [ ] Define historical versions, removal cutoffs and full revocation; non-doctor managers cannot access clinical records.\n- [ ] Approve identity uniqueness, initial password-change timing, resets/session invalidation and manager recovery-code lifecycle.\n- [ ] Record reviewed decisions and evidence; explicitly identify unresolved gates and obtain the required owner decisions.\n\n## Blocked by\n\nNone — can start immediately.\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/3",
+    "issue": 3,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 3,
+    "title": "Resolve financial contracts and document rules",
+    "blockers": [],
+    "delivery": "worked examples and approved rules for rounding, numbering, mixed funds, deposit/receipt presentation, cancellations, refunds/reversals after settlement, and invoice grouping. Distinguish charge, receipt, invoice, and summary. Record applicable document requirements as verified facts or unresolved deployment gates, without silently changing the clinic workflow.",
+    "criteria": [
+      "Approve worked examples covering started charges, credit/new money, deposits and receipts without counting funds twice.",
+      "Define currency precision/rounding, numbering, settled-only invoice issue and whole-plan summary references.",
+      "Approve cancellation, refund/reversal/reallocation and post-settlement adjustment rules; identify document-requirement deployment gates."
+    ],
+    "body": "## Parent\n\nhttps://github.com/aymanobeid0/clinic-app/issues/1\n\n## What to build\n\nworked examples and approved rules for rounding, numbering, mixed funds, deposit/receipt presentation, cancellations, refunds/reversals after settlement, and invoice grouping. Distinguish charge, receipt, invoice, and summary. Record applicable document requirements as verified facts or unresolved deployment gates, without silently changing the clinic workflow.\n\nPlanning ID: 3. Prerequisite decision/evidence ticket; obtain approval of unresolved choices before downstream implementation.\n\n## Acceptance criteria\n\n- [ ] Approve worked examples covering started charges, credit/new money, deposits and receipts without counting funds twice.\n- [ ] Define currency precision/rounding, numbering, settled-only invoice issue and whole-plan summary references.\n- [ ] Approve cancellation, refund/reversal/reallocation and post-settlement adjustment rules; identify document-requirement deployment gates.\n- [ ] Record reviewed decisions and evidence; explicitly identify unresolved gates and obtain the required owner decisions.\n\n## Blocked by\n\nNone — can start immediately.\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/4",
+    "issue": 4,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 4,
+    "title": "Resolve clinical chart and prescription contracts",
+    "blockers": [],
+    "delivery": "reviewed chart vocabulary, FDI/surface validation, procedure-to-chart suggestions, finalized/corrected prescription behavior, and prescription/print requirements. No AI or medication recommendation.",
+    "criteria": [
+      "Approve permanent/primary/mixed FDI tooth and surface vocabulary and valid manual findings.",
+      "Specify supported procedure-to-chart suggestions that require dentist confirmation.",
+      "Approve prescription fields, reusable print content, finalization/corrections and required verification before real use."
+    ],
+    "body": "## Parent\n\nhttps://github.com/aymanobeid0/clinic-app/issues/1\n\n## What to build\n\nreviewed chart vocabulary, FDI/surface validation, procedure-to-chart suggestions, finalized/corrected prescription behavior, and prescription/print requirements. No AI or medication recommendation.\n\nPlanning ID: 4. Prerequisite decision/evidence ticket; obtain approval of unresolved choices before downstream implementation.\n\n## Acceptance criteria\n\n- [ ] Approve permanent/primary/mixed FDI tooth and surface vocabulary and valid manual findings.\n- [ ] Specify supported procedure-to-chart suggestions that require dentist confirmation.\n- [ ] Approve prescription fields, reusable print content, finalization/corrections and required verification before real use.\n- [ ] Record reviewed decisions and evidence; explicitly identify unresolved gates and obtain the required owner decisions.\n\n## Blocked by\n\nNone — can start immediately.\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/5",
+    "issue": 5,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 5,
+    "title": "Resolve file handling and pilot data requirements",
+    "blockers": [],
+    "delivery": "reviewed upload-size and quota rules, export formats, retention/deletion/backup policy, and researched hosting/data-handling prerequisites for Mauritania pilot on German hosting. Separate implementation requirements from real-data deployment gates; do not claim compliance without evidence.",
+    "criteria": [
+      "Approve upload limits, quota accounting, export formats and authorization boundaries.",
+      "Define attachment removal, finalized references, retention and outside-VPS backup/deletion behavior.",
+      "Document sourced hosting/data-handling requirements and unresolved pilot gates for Mauritania with German hosting."
+    ],
+    "body": "## Parent\n\nhttps://github.com/aymanobeid0/clinic-app/issues/1\n\n## What to build\n\nreviewed upload-size and quota rules, export formats, retention/deletion/backup policy, and researched hosting/data-handling prerequisites for Mauritania pilot on German hosting. Separate implementation requirements from real-data deployment gates; do not claim compliance without evidence.\n\nPlanning ID: 5. Prerequisite decision/evidence ticket; obtain approval of unresolved choices before downstream implementation.\n\n## Acceptance criteria\n\n- [ ] Approve upload limits, quota accounting, export formats and authorization boundaries.\n- [ ] Define attachment removal, finalized references, retention and outside-VPS backup/deletion behavior.\n- [ ] Document sourced hosting/data-handling requirements and unresolved pilot gates for Mauritania with German hosting.\n- [ ] Record reviewed decisions and evidence; explicitly identify unresolved gates and obtain the required owner decisions.\n\n## Blocked by\n\nNone — can start immediately.\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/6",
+    "issue": 6,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 6,
+    "title": "Bootstrap a clinic and sign in as its manager",
+    "blockers": [
+      1,
+      2
+    ],
+    "delivery": "a running French application with persistent clinic identity, initial manager setup, secure sign-in/sign-out, denied unauthenticated requests, test persistence, and one browser smoke journey. No publicly open manager registration by assumption.",
+    "criteria": [
+      "Manager can initialize one clinic and sign in/out through a French interface with persistent identity.",
+      "Secure credentials/session behavior follow the accepted contracts; unauthenticated application requests are rejected.",
+      "Application-boundary tests use isolated persistent test data and a browser smoke journey proves sign-in."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\na running French application with persistent clinic identity, initial manager setup, secure sign-in/sign-out, denied unauthenticated requests, test persistence, and one browser smoke journey. No publicly open manager registration by assumption.\r\n\r\nPlanning ID: 6. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Manager can initialize one clinic and sign in/out through a French interface with persistent identity.\r\n- [ ] Secure credentials/session behavior follow the accepted contracts; unauthenticated application requests are rejected.\r\n- [ ] Application-boundary tests use isolated persistent test data and a browser smoke journey proves sign-in.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #2 — https://github.com/aymanobeid0/clinic-app/issues/2 — Define the selected stack's foundation and assess VPS constraints\r\n- #3 — https://github.com/aymanobeid0/clinic-app/issues/3 — Resolve identity, permissions, and historical-access contracts\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/7",
+    "issue": 7,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 7,
+    "title": "Manage staff accounts, permissions, and recovery",
+    "blockers": [
+      6
+    ],
+    "delivery": "manager-created doctor/staff accounts, individual access from any PC, permission editing, requested username/password changes, self password change, manager recovery codes, revocation and verified session behavior. No patient/staff count cap.",
+    "criteria": [
+      "Manager creates doctor/staff identities and edits individual permissions without staff-count caps.",
+      "Requested username/password resets, user password changes and manager recovery codes follow approved contracts.",
+      "Accounts work on any PC; disabling an account and session invalidation are tested through direct requests."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nmanager-created doctor/staff accounts, individual access from any PC, permission editing, requested username/password changes, self password change, manager recovery codes, revocation and verified session behavior. No patient/staff count cap.\r\n\r\nPlanning ID: 7. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Manager creates doctor/staff identities and edits individual permissions without staff-count caps.\r\n- [ ] Requested username/password resets, user password changes and manager recovery codes follow approved contracts.\r\n- [ ] Accounts work on any PC; disabling an account and session invalidation are tested through direct requests.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #7 — https://github.com/aymanobeid0/clinic-app/issues/7 — Bootstrap a clinic and sign in as its manager\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/8",
+    "issue": 8,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 8,
+    "title": "Register, find, and archive patients",
+    "blockers": [
+      7
+    ],
+    "delivery": "patient profiles with required name/contact phone, guardian attribution, clinic IDs, duplicate warnings, authorized contact search and archive/reactivation rules. Shared phones remain valid; archival preserves related records.",
+    "criteria": [
+      "Create patients with automatic unique clinic IDs, name and required phone, including guardian attribution and legitimate shared numbers.",
+      "Authorized users can search profiles and receive duplicate warnings without incorrectly rejecting shared contact details.",
+      "Archive/reactivation behavior follows approved rules and retains finalized records; no patient-count cap."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\npatient profiles with required name/contact phone, guardian attribution, clinic IDs, duplicate warnings, authorized contact search and archive/reactivation rules. Shared phones remain valid; archival preserves related records.\r\n\r\nPlanning ID: 8. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Create patients with automatic unique clinic IDs, name and required phone, including guardian attribution and legitimate shared numbers.\r\n- [ ] Authorized users can search profiles and receive duplicate warnings without incorrectly rejecting shared contact details.\r\n- [ ] Archive/reactivation behavior follows approved rules and retains finalized records; no patient-count cap.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #8 — https://github.com/aymanobeid0/clinic-app/issues/8 — Manage staff accounts, permissions, and recovery\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/9",
+    "issue": 9,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 9,
+    "title": "Assign and share patients with scoped clinical access",
+    "blockers": [
+      8
+    ],
+    "delivery": "multi-doctor and permitted-staff assignment UI, server-enforced access, explicit sharing/removal, and rejection of unauthorized patient identifiers. Doctor-managers follow assignment rules; non-doctor managers cannot read clinical records.",
+    "criteria": [
+      "Authorized assigners explicitly share patients with multiple doctors or permitted staff.",
+      "Clinical reads/writes enforce assignment at the server boundary, including doctor-managers.",
+      "Non-doctor managers, unrelated doctors and unauthorized direct identifier requests cannot read clinical records."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nmulti-doctor and permitted-staff assignment UI, server-enforced access, explicit sharing/removal, and rejection of unauthorized patient identifiers. Doctor-managers follow assignment rules; non-doctor managers cannot read clinical records.\r\n\r\nPlanning ID: 9. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Authorized assigners explicitly share patients with multiple doctors or permitted staff.\r\n- [ ] Clinical reads/writes enforce assignment at the server boundary, including doctor-managers.\r\n- [ ] Non-doctor managers, unrelated doctors and unauthorized direct identifier requests cannot read clinical records.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #9 — https://github.com/aymanobeid0/clinic-app/issues/9 — Register, find, and archive patients\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/10",
+    "issue": 10,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 10,
+    "title": "Book and manage appointments and walk-in arrival",
+    "blockers": [
+      8
+    ],
+    "delivery": "dentist/optional-chair bookings, editable duration/defaults, procedure-suggestion interface for later catalog integration, conflict blocks/authorized override, statuses, rescheduling history, cancellation reasons, and walk-in registration. No clinical access granted merely by booking.",
+    "criteria": [
+      "Book dentist/optional chair with editable duration and clinic default; overlapping reservations require explicit permitted override.",
+      "Statuses, rescheduling history, optional cancellation reasons and walk-in arrival work without automatic cancellation fees.",
+      "Appointment booking alone grants no clinical access; default duration works before later catalog suggestions are integrated."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\ndentist/optional-chair bookings, editable duration/defaults, procedure-suggestion interface for later catalog integration, conflict blocks/authorized override, statuses, rescheduling history, cancellation reasons, and walk-in registration. No clinical access granted merely by booking.\r\n\r\nPlanning ID: 10. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Book dentist/optional chair with editable duration and clinic default; overlapping reservations require explicit permitted override.\r\n- [ ] Statuses, rescheduling history, optional cancellation reasons and walk-in arrival work without automatic cancellation fees.\r\n- [ ] Appointment booking alone grants no clinical access; default duration works before later catalog suggestions are integrated.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #9 — https://github.com/aymanobeid0/clinic-app/issues/9 — Register, find, and archive patients\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/11",
+    "issue": 11,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 11,
+    "title": "Maintain medical history and the manual dental chart",
+    "blockers": [
+      4,
+      9
+    ],
+    "delivery": "permission-scoped medical history/allergies and dated tooth/surface chart with permanent, primary, and mixed dentition, including essential record history.",
+    "criteria": [
+      "Assigned users can maintain medical history and allergies with essential per-record history.",
+      "Manual dated FDI chart supports adult, primary and mixed dentition with approved surfaces/findings.",
+      "Clinical authorization applies to direct reads and updates; findings do not create billable charges."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\npermission-scoped medical history/allergies and dated tooth/surface chart with permanent, primary, and mixed dentition, including essential record history.\r\n\r\nPlanning ID: 11. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Assigned users can maintain medical history and allergies with essential per-record history.\r\n- [ ] Manual dated FDI chart supports adult, primary and mixed dentition with approved surfaces/findings.\r\n- [ ] Clinical authorization applies to direct reads and updates; findings do not create billable charges.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #5 — https://github.com/aymanobeid0/clinic-app/issues/5 — Resolve clinical chart and prescription contracts\r\n- #10 — https://github.com/aymanobeid0/clinic-app/issues/10 — Assign and share patients with scoped clinical access\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/12",
+    "issue": 12,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 12,
+    "title": "Manage the procedure catalog and create a treatment proposal",
+    "blockers": [
+      3,
+      9
+    ],
+    "delivery": "authorized catalog/default prices, identified draft plans and priced procedure items with tooth/multi-tooth/whole-mouth scope, permitted price overrides and reasoned discounts. Catalog changes preserve existing item prices; integrate duration suggestions with appointments when catalog data is present.",
+    "criteria": [
+      "Authorized catalog managers maintain procedures and default prices; other users are denied catalog changes.",
+      "Create identified draft plans with tooth/multiple-tooth/whole-mouth procedure items and permission-controlled price overrides/discount reasons.",
+      "Catalog updates do not rewrite existing plan prices; procedure durations integrate with appointment suggestions."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nauthorized catalog/default prices, identified draft plans and priced procedure items with tooth/multi-tooth/whole-mouth scope, permitted price overrides and reasoned discounts. Catalog changes preserve existing item prices; integrate duration suggestions with appointments when catalog data is present.\r\n\r\nPlanning ID: 12. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Authorized catalog managers maintain procedures and default prices; other users are denied catalog changes.\r\n- [ ] Create identified draft plans with tooth/multiple-tooth/whole-mouth procedure items and permission-controlled price overrides/discount reasons.\r\n- [ ] Catalog updates do not rewrite existing plan prices; procedure durations integrate with appointment suggestions.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #4 — https://github.com/aymanobeid0/clinic-app/issues/4 — Resolve financial contracts and document rules\r\n- #10 — https://github.com/aymanobeid0/clinic-app/issues/10 — Assign and share patients with scoped clinical access\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/13",
+    "issue": 13,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 13,
+    "title": "Present, accept, and revise treatment plans",
+    "blockers": [
+      12
+    ],
+    "delivery": "plan lifecycle, printable proposal, acceptance identity/time/method, retained versions and renewed acceptance for changed scope/prices, accepted itemized extras. Signed-attachment evidence connects when ticket 18 lands; text acceptance works independently.",
+    "criteria": [
+      "Present/print proposals and record acceptance identity, timestamp and method with retained plan versions.",
+      "Scope/price changes and itemized extra fees require renewed acceptance; routine notes do not.",
+      "Plan lifecycle and conflict handling follow accepted rules; signed evidence connects when attachment support is available."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nplan lifecycle, printable proposal, acceptance identity/time/method, retained versions and renewed acceptance for changed scope/prices, accepted itemized extras. Signed-attachment evidence connects when ticket 18 lands; text acceptance works independently.\r\n\r\nPlanning ID: 13. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Present/print proposals and record acceptance identity, timestamp and method with retained plan versions.\r\n- [ ] Scope/price changes and itemized extra fees require renewed acceptance; routine notes do not.\r\n- [ ] Plan lifecycle and conflict handling follow accepted rules; signed evidence connects when attachment support is available.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #13 — https://github.com/aymanobeid0/clinic-app/issues/13 — Manage the procedure catalog and create a treatment proposal\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/14",
+    "issue": 14,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 14,
+    "title": "Start visits and record work on planned procedures",
+    "blockers": [
+      10,
+      13
+    ],
+    "delivery": "booked/walk-in visit drafts, selection of multiple procedures, explicit procedure start/completion across unlimited visit counts, and idempotent start behavior. Expose the settled procedure-start event/transaction boundary for billing; no invoice automatically issued.",
+    "criteria": [
+      "Start booked or walk-in care as a visit draft and select several procedures actually worked on.",
+      "Procedures start/complete explicitly and can span any number of visits; ending a visit does not complete procedures implicitly.",
+      "Retrying starts does not duplicate visits or start events; accepted procedure-start boundary is available for billing integration."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nbooked/walk-in visit drafts, selection of multiple procedures, explicit procedure start/completion across unlimited visit counts, and idempotent start behavior. Expose the settled procedure-start event/transaction boundary for billing; no invoice automatically issued.\r\n\r\nPlanning ID: 14. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Start booked or walk-in care as a visit draft and select several procedures actually worked on.\r\n- [ ] Procedures start/complete explicitly and can span any number of visits; ending a visit does not complete procedures implicitly.\r\n- [ ] Retrying starts does not duplicate visits or start events; accepted procedure-start boundary is available for billing integration.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #11 — https://github.com/aymanobeid0/clinic-app/issues/11 — Book and manage appointments and walk-in arrival\r\n- #14 — https://github.com/aymanobeid0/clinic-app/issues/14 — Present, accept, and revise treatment plans\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/15",
+    "issue": 15,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 15,
+    "title": "Autosave, finalize, and correct visit notes",
+    "blockers": [
+      14
+    ],
+    "delivery": "free-text note drafts, visible autosave states, stale-edit conflict review, tab-memory network-loss protection, finalization/corrections and pending-note tasks after care ends. Financial actions remain explicit.",
+    "criteria": [
+      "Free-text drafts autosave with accurate saving/saved/error feedback and remain in current-tab memory during network loss.",
+      "Concurrent edits require review and finalization preserves original notes with dated corrections.",
+      "Visits can end with a visible pending-note task; unauthorized staff cannot finalize."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nfree-text note drafts, visible autosave states, stale-edit conflict review, tab-memory network-loss protection, finalization/corrections and pending-note tasks after care ends. Financial actions remain explicit.\r\n\r\nPlanning ID: 15. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Free-text drafts autosave with accurate saving/saved/error feedback and remain in current-tab memory during network loss.\r\n- [ ] Concurrent edits require review and finalization preserves original notes with dated corrections.\r\n- [ ] Visits can end with a visible pending-note task; unauthorized staff cannot finalize.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #15 — https://github.com/aymanobeid0/clinic-app/issues/15 — Start visits and record work on planned procedures\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/16",
+    "issue": 16,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 16,
+    "title": "Confirm chart updates and print manual prescriptions",
+    "blockers": [
+      11,
+      14
+    ],
+    "delivery": "confirmation of supported procedure-to-chart suggestions, manual prescription creation/reusable printing, and correction history under ticket 4 contracts. No guessed mappings or medication advice.",
+    "criteria": [
+      "Supported procedure completion suggests chart updates requiring dentist confirmation; unsupported mappings create no invented findings.",
+      "Authorized doctors create and print manual prescriptions using approved fields/templates without drug recommendations.",
+      "Prescription corrections preserve history and clinical access is enforced."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nconfirmation of supported procedure-to-chart suggestions, manual prescription creation/reusable printing, and correction history under ticket 4 contracts. No guessed mappings or medication advice.\r\n\r\nPlanning ID: 16. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Supported procedure completion suggests chart updates requiring dentist confirmation; unsupported mappings create no invented findings.\r\n- [ ] Authorized doctors create and print manual prescriptions using approved fields/templates without drug recommendations.\r\n- [ ] Prescription corrections preserve history and clinical access is enforced.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #12 — https://github.com/aymanobeid0/clinic-app/issues/12 — Maintain medical history and the manual dental chart\r\n- #15 — https://github.com/aymanobeid0/clinic-app/issues/15 — Start visits and record work on planned procedures\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/17",
+    "issue": 17,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 17,
+    "title": "Provide revocable historical clinical access",
+    "blockers": [
+      11,
+      13,
+      15,
+      16
+    ],
+    "delivery": "restricted former-doctor login reading historical clinical versions through removal cutoff, excluding later entries/edits; no financial/edit/print/download/export routes; manager revocation. Existing versioned slices provide records to verify the historical view.",
+    "criteria": [
+      "Historical accounts read only clinical versions within the accepted care period, excluding future entries and later edits to old records.",
+      "No application financial/edit/print/download/export route is available to historical logins.",
+      "Manager revocation removes all access; direct requests verify these boundaries."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nrestricted former-doctor login reading historical clinical versions through removal cutoff, excluding later entries/edits; no financial/edit/print/download/export routes; manager revocation. Existing versioned slices provide records to verify the historical view.\r\n\r\nPlanning ID: 17. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Historical accounts read only clinical versions within the accepted care period, excluding future entries and later edits to old records.\r\n- [ ] No application financial/edit/print/download/export route is available to historical logins.\r\n- [ ] Manager revocation removes all access; direct requests verify these boundaries.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #12 — https://github.com/aymanobeid0/clinic-app/issues/12 — Maintain medical history and the manual dental chart\r\n- #14 — https://github.com/aymanobeid0/clinic-app/issues/14 — Present, accept, and revise treatment plans\r\n- #16 — https://github.com/aymanobeid0/clinic-app/issues/16 — Autosave, finalize, and correct visit notes\r\n- #17 — https://github.com/aymanobeid0/clinic-app/issues/17 — Confirm chart updates and print manual prescriptions\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/18",
+    "issue": 18,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 18,
+    "title": "Upload and manage patient attachments within quota",
+    "blockers": [
+      5,
+      9
+    ],
+    "delivery": "authorized PDF/JPEG/PNG upload/view, provisional 1 GB quota and usage display, reasoned deletion, preserved finalized references/history, signed acceptance attachment linking when a plan exists. Quota blocks only new uploads. Add coverage for historical accounts if ticket 17 is present; restricted attachment access must be implemented from the outset.",
+    "criteria": [
+      "Assigned authorized users upload/view approved PDF/JPEG/PNG files within per-file limits and provisional clinic 1 GB quota.",
+      "At quota only new uploads pause; existing authorized files and core operations remain available.",
+      "Reasoned deletion preserves history/finalized references; signed acceptance linking and historical-account restrictions obey contracts."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nauthorized PDF/JPEG/PNG upload/view, provisional 1 GB quota and usage display, reasoned deletion, preserved finalized references/history, signed acceptance attachment linking when a plan exists. Quota blocks only new uploads. Add coverage for historical accounts if ticket 17 is present; restricted attachment access must be implemented from the outset.\r\n\r\nPlanning ID: 18. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Assigned authorized users upload/view approved PDF/JPEG/PNG files within per-file limits and provisional clinic 1 GB quota.\r\n- [ ] At quota only new uploads pause; existing authorized files and core operations remain available.\r\n- [ ] Reasoned deletion preserves history/finalized references; signed acceptance linking and historical-account restrictions obey contracts.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #6 — https://github.com/aymanobeid0/clinic-app/issues/6 — Resolve file handling and pilot data requirements\r\n- #10 — https://github.com/aymanobeid0/clinic-app/issues/10 — Assign and share patients with scoped clinical access\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/19",
+    "issue": 19,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 19,
+    "title": "Show due procedure charges and documented opening balances",
+    "blockers": [
+      3,
+      14
+    ],
+    "delivery": "billing workspace where accepted unstarted treatment is not debt and procedure start creates the full agreed charge exactly once; documented opening balances, separate planned/due totals, and accepted price-adjustment reconciliation.",
+    "criteria": [
+      "Accepted unstarted procedures show planned amounts without debt; start creates the full agreed due charge once.",
+      "Documented opening balances are entered without fabricated historical payments.",
+      "Billing workspace separates planned/due values and reconciles accepted price adjustments without rewriting protected history."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nbilling workspace where accepted unstarted treatment is not debt and procedure start creates the full agreed charge exactly once; documented opening balances, separate planned/due totals, and accepted price-adjustment reconciliation.\r\n\r\nPlanning ID: 19. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Accepted unstarted procedures show planned amounts without debt; start creates the full agreed due charge once.\r\n- [ ] Documented opening balances are entered without fabricated historical payments.\r\n- [ ] Billing workspace separates planned/due values and reconciles accepted price adjustments without rewriting protected history.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #4 — https://github.com/aymanobeid0/clinic-app/issues/4 — Resolve financial contracts and document rules\r\n- #15 — https://github.com/aymanobeid0/clinic-app/issues/15 — Start visits and record work on planned procedures\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/20",
+    "issue": 20,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 20,
+    "title": "Record deposits and manually settle procedure charges",
+    "blockers": [
+      19
+    ],
+    "delivery": "manager-configurable methods, explicit deposits/excess entries, manual allocations from new money/existing credit/both, numbered receipts and reprints, and separate credit/debt totals. Transactional/retry-safe operations prevent duplicate receipts and double spending.",
+    "criteria": [
+      "Record explicit deposits and manual allocations using existing credit, new money or both with configurable methods.",
+      "Receipts distinguish new funds from already received credit; excess funds use separate deposit entries and totals reconcile.",
+      "Concurrent/retried requests cannot overspend credit, duplicate receipts or duplicate receipt of funds."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nmanager-configurable methods, explicit deposits/excess entries, manual allocations from new money/existing credit/both, numbered receipts and reprints, and separate credit/debt totals. Transactional/retry-safe operations prevent duplicate receipts and double spending.\r\n\r\nPlanning ID: 20. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Record explicit deposits and manual allocations using existing credit, new money or both with configurable methods.\r\n- [ ] Receipts distinguish new funds from already received credit; excess funds use separate deposit entries and totals reconcile.\r\n- [ ] Concurrent/retried requests cannot overspend credit, duplicate receipts or duplicate receipt of funds.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #20 — https://github.com/aymanobeid0/clinic-app/issues/20 — Show due procedure charges and documented opening balances\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/21",
+    "issue": 21,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 21,
+    "title": "Issue settled procedure invoices and whole-plan summaries",
+    "blockers": [
+      20
+    ],
+    "delivery": "manual invoice issue only for completed fully paid procedures, unique numbers and stable reprints, whole-procedure details without installment breakdown, and completion summaries referencing invoices while showing any remaining balance without duplicate charges.",
+    "criteria": [
+      "Only completed, fully paid procedures permit manual whole-procedure invoice issue with unique numbering.",
+      "Reprints retain invoice identity and omit installment breakdown while receipts retain their payment details.",
+      "Completed-plan summaries show all procedures, paid/due totals and invoice references without duplicate charges."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nmanual invoice issue only for completed fully paid procedures, unique numbers and stable reprints, whole-procedure details without installment breakdown, and completion summaries referencing invoices while showing any remaining balance without duplicate charges.\r\n\r\nPlanning ID: 21. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Only completed, fully paid procedures permit manual whole-procedure invoice issue with unique numbering.\r\n- [ ] Reprints retain invoice identity and omit installment breakdown while receipts retain their payment details.\r\n- [ ] Completed-plan summaries show all procedures, paid/due totals and invoice references without duplicate charges.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #21 — https://github.com/aymanobeid0/clinic-app/issues/21 — Record deposits and manually settle procedure charges\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/22",
+    "issue": 22,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 22,
+    "title": "Correct payments, refund funds, and cancel charged treatment",
+    "blockers": [
+      21
+    ],
+    "delivery": "permission-controlled reasoned reversal/refund/credit workflows, partial-care final charge, preserved issued documents and allocations, and post-settlement behavior from ticket 3. No automatic refund or silent deletion.",
+    "criteria": [
+      "Authorized reasoned refunds, reversals and credits follow the approved allocation and post-settlement contracts.",
+      "Partial-care cancellation explicitly sets the final charge and adjusts excess charges without automatic refund.",
+      "Issued documents, care records and financial histories remain preserved and reports can reconcile adjustments."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\npermission-controlled reasoned reversal/refund/credit workflows, partial-care final charge, preserved issued documents and allocations, and post-settlement behavior from ticket 3. No automatic refund or silent deletion.\r\n\r\nPlanning ID: 22. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Authorized reasoned refunds, reversals and credits follow the approved allocation and post-settlement contracts.\r\n- [ ] Partial-care cancellation explicitly sets the final charge and adjusts excess charges without automatic refund.\r\n- [ ] Issued documents, care records and financial histories remain preserved and reports can reconcile adjustments.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #22 — https://github.com/aymanobeid0/clinic-app/issues/22 — Issue settled procedure invoices and whole-plan summaries\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/23",
+    "issue": 23,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 23,
+    "title": "Receive batches and review stock availability",
+    "blockers": [
+      7
+    ],
+    "delivery": "item/supplier setup, whole-pack receiving with expiry/cost, stock by batch, item thresholds and configurable expiry warnings. Settle expiry date boundaries explicitly in this ticket; no unit conversions or procurement accounting.",
+    "criteria": [
+      "Maintain items/suppliers and receive whole packs by batch with quantity, cost and expiry where applicable.",
+      "Display available stock with item-level low thresholds and clinic expiry warning settings.",
+      "Specify/test expiry boundaries; permissions apply to reads and receiving; no conversion or purchasing-accounting scope."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nitem/supplier setup, whole-pack receiving with expiry/cost, stock by batch, item thresholds and configurable expiry warnings. Settle expiry date boundaries explicitly in this ticket; no unit conversions or procurement accounting.\r\n\r\nPlanning ID: 23. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Maintain items/suppliers and receive whole packs by batch with quantity, cost and expiry where applicable.\r\n- [ ] Display available stock with item-level low thresholds and clinic expiry warning settings.\r\n- [ ] Specify/test expiry boundaries; permissions apply to reads and receiving; no conversion or purchasing-accounting scope.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #8 — https://github.com/aymanobeid0/clinic-app/issues/8 — Manage staff accounts, permissions, and recovery\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/24",
+    "issue": 24,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 24,
+    "title": "Consume packs and record inventory corrections",
+    "blockers": [
+      23
+    ],
+    "delivery": "manual batch selection, consume whole pack on opening, reasoned waste/disposal/count adjustments, immutable movement history, and atomic expired/negative-stock checks under concurrent use. No treatment-visit linkage.",
+    "criteria": [
+      "Staff manually select batches and consume a whole pack on opening; reject fractional consumption.",
+      "Waste, disposal and count corrections are explicit reasoned movements preserving history.",
+      "Expired consumption and concurrent negative stock are blocked; usage is not linked to treatment visits."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nmanual batch selection, consume whole pack on opening, reasoned waste/disposal/count adjustments, immutable movement history, and atomic expired/negative-stock checks under concurrent use. No treatment-visit linkage.\r\n\r\nPlanning ID: 24. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Staff manually select batches and consume a whole pack on opening; reject fractional consumption.\r\n- [ ] Waste, disposal and count corrections are explicit reasoned movements preserving history.\r\n- [ ] Expired consumption and concurrent negative stock are blocked; usage is not linked to treatment visits.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #24 — https://github.com/aymanobeid0/clinic-app/issues/24 — Receive batches and review stock availability\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/25",
+    "issue": 25,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 25,
+    "title": "Review daily operations, balances, and follow-up tasks",
+    "blockers": [
+      15,
+      22,
+      24
+    ],
+    "delivery": "permission-scoped daily appointment, invoice/payment, balance and low/expiring-stock reports, in-app follow-up tasks and manual message sharing. Reconcile receipts versus applied credit and exclude future treatment from debt; include adjustments rather than relying on issued invoices alone. No automated delivery or advanced BI.",
+    "criteria": [
+      "Authorized users view daily appointment, invoice/payment, outstanding balance and low/expiring-stock reports.",
+      "Financial reports distinguish new money, applied credit, opening balances and adjustments; unstarted treatment is not debt.",
+      "In-app follow-up tasks and manual sharing work without automated delivery or advanced BI."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\npermission-scoped daily appointment, invoice/payment, balance and low/expiring-stock reports, in-app follow-up tasks and manual message sharing. Reconcile receipts versus applied credit and exclude future treatment from debt; include adjustments rather than relying on issued invoices alone. No automated delivery or advanced BI.\r\n\r\nPlanning ID: 25. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Authorized users view daily appointment, invoice/payment, outstanding balance and low/expiring-stock reports.\r\n- [ ] Financial reports distinguish new money, applied credit, opening balances and adjustments; unstarted treatment is not debt.\r\n- [ ] In-app follow-up tasks and manual sharing work without automated delivery or advanced BI.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #16 — https://github.com/aymanobeid0/clinic-app/issues/16 — Autosave, finalize, and correct visit notes\r\n- #23 — https://github.com/aymanobeid0/clinic-app/issues/23 — Correct payments, refund funds, and cancel charged treatment\r\n- #25 — https://github.com/aymanobeid0/clinic-app/issues/25 — Consume packs and record inventory corrections\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/26",
+    "issue": 26,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 26,
+    "title": "Export authorized clinic records and attachments",
+    "blockers": [
+      5,
+      17,
+      18,
+      22,
+      24
+    ],
+    "delivery": "manager-authorized export of supported records/documents/files in approved formats, including reconciled financial and stock histories. Apply the settled clinical export permissions rather than bypass non-doctor-manager restrictions. Historical logins cannot export.",
+    "criteria": [
+      "Authorized users export supported clinic records and attachment files in approved formats.",
+      "Clinical export restrictions remain enforced for non-doctor managers and other scoped users; historical logins cannot export.",
+      "Exports include supported financial/stock history and reconcile to persisted records without bypassing attachment access."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nmanager-authorized export of supported records/documents/files in approved formats, including reconciled financial and stock histories. Apply the settled clinical export permissions rather than bypass non-doctor-manager restrictions. Historical logins cannot export.\r\n\r\nPlanning ID: 26. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Authorized users export supported clinic records and attachment files in approved formats.\r\n- [ ] Clinical export restrictions remain enforced for non-doctor managers and other scoped users; historical logins cannot export.\r\n- [ ] Exports include supported financial/stock history and reconcile to persisted records without bypassing attachment access.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #6 — https://github.com/aymanobeid0/clinic-app/issues/6 — Resolve file handling and pilot data requirements\r\n- #18 — https://github.com/aymanobeid0/clinic-app/issues/18 — Provide revocable historical clinical access\r\n- #19 — https://github.com/aymanobeid0/clinic-app/issues/19 — Upload and manage patient attachments within quota\r\n- #23 — https://github.com/aymanobeid0/clinic-app/issues/23 — Correct payments, refund funds, and cancel charged treatment\r\n- #25 — https://github.com/aymanobeid0/clinic-app/issues/25 — Consume packs and record inventory corrections\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/27",
+    "issue": 27,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 27,
+    "title": "Rehearse deployment, backup, and restoration with fictional data",
+    "blockers": [
+      1,
+      5,
+      18,
+      20,
+      24
+    ],
+    "delivery": "approved test deployment and outside-VPS backups, measured independent restoration of records/files, permission checks after restore, and evidence against one-hour recovery/loss targets. Obtain deployment/service spending authorization at execution time if needed; unresolved recovery-budget tradeoff gates acceptance. This is an operational deliverable, not a substitute for tests in feature tickets.",
+    "criteria": [
+      "Use fictional data and approved operational authorization to verify deployment and outside-VPS database/file backup arrangements.",
+      "Restore independently, check record/file consistency and permissions, and measure both recovery point and recovery time.",
+      "Resolve cost/target tradeoff with the owner if targets fail; document exact evidence and rerun after corrections before real-data approval."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\napproved test deployment and outside-VPS backups, measured independent restoration of records/files, permission checks after restore, and evidence against one-hour recovery/loss targets. Obtain deployment/service spending authorization at execution time if needed; unresolved recovery-budget tradeoff gates acceptance. This is an operational deliverable, not a substitute for tests in feature tickets.\r\n\r\nPlanning ID: 27. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Use fictional data and approved operational authorization to verify deployment and outside-VPS database/file backup arrangements.\r\n- [ ] Restore independently, check record/file consistency and permissions, and measure both recovery point and recovery time.\r\n- [ ] Resolve cost/target tradeoff with the owner if targets fail; document exact evidence and rerun after corrections before real-data approval.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #2 — https://github.com/aymanobeid0/clinic-app/issues/2 — Define the selected stack's foundation and assess VPS constraints\r\n- #6 — https://github.com/aymanobeid0/clinic-app/issues/6 — Resolve file handling and pilot data requirements\r\n- #19 — https://github.com/aymanobeid0/clinic-app/issues/19 — Upload and manage patient attachments within quota\r\n- #21 — https://github.com/aymanobeid0/clinic-app/issues/21 — Record deposits and manually settle procedure charges\r\n- #25 — https://github.com/aymanobeid0/clinic-app/issues/25 — Consume packs and record inventory corrections\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/28",
+    "issue": 28,
+    "nativeBlockersVerified": true
+  },
+  {
+    "id": 28,
+    "title": "Validate and cut over the controlled clinic pilot",
+    "blockers": [
+      16,
+      17,
+      21,
+      22,
+      25,
+      26,
+      27
+    ],
+    "delivery": "full fictional-data rehearsal with the clinic's roles, resolved real-data prerequisites, verified opening balances, agreed cutover date, and evidence for booking → care → acceptance → payment/receipt → invoice → stock/report/export. Start selected real-patient use only after prerequisites and restore targets or explicitly accepted revised targets are satisfied.",
+    "criteria": [
+      "Clinic roles complete the full fictional-data journey with reconciled financial and stock reports, print/export and permissions.",
+      "Resolve real-data deployment prerequisites, verify selected opening balances and agree a cutover date preventing duplicate legacy payment entry.",
+      "Record acceptance evidence and demonstrated restoration; controlled real-patient use starts only after gates and agreed recovery targets pass."
+    ],
+    "body": "## Parent\r\n\r\nhttps://github.com/aymanobeid0/clinic-app/issues/1\r\n\r\n## What to build\r\n\r\nfull fictional-data rehearsal with the clinic's roles, resolved real-data prerequisites, verified opening balances, agreed cutover date, and evidence for booking → care → acceptance → payment/receipt → invoice → stock/report/export. Start selected real-patient use only after prerequisites and restore targets or explicitly accepted revised targets are satisfied.\r\n\r\nPlanning ID: 28. Deliver a complete vertical slice, including persistence, application behavior, French UI/documents, authorization and tests.\r\n\r\n## Acceptance criteria\r\n\r\n- [ ] Clinic roles complete the full fictional-data journey with reconciled financial and stock reports, print/export and permissions.\r\n- [ ] Resolve real-data deployment prerequisites, verify selected opening balances and agree a cutover date preventing duplicate legacy payment entry.\r\n- [ ] Record acceptance evidence and demonstrated restoration; controlled real-patient use starts only after gates and agreed recovery targets pass.\r\n- [ ] Verify observable behavior through approved application-boundary tests, including authorization and relevant failure/concurrency cases; demonstrate the French user journey.\r\n\r\n## Blocked by\r\n\r\n- #17 — https://github.com/aymanobeid0/clinic-app/issues/17 — Confirm chart updates and print manual prescriptions\r\n- #18 — https://github.com/aymanobeid0/clinic-app/issues/18 — Provide revocable historical clinical access\r\n- #22 — https://github.com/aymanobeid0/clinic-app/issues/22 — Issue settled procedure invoices and whole-plan summaries\r\n- #23 — https://github.com/aymanobeid0/clinic-app/issues/23 — Correct payments, refund funds, and cancel charged treatment\r\n- #26 — https://github.com/aymanobeid0/clinic-app/issues/26 — Review daily operations, balances, and follow-up tasks\r\n- #27 — https://github.com/aymanobeid0/clinic-app/issues/27 — Export authorized clinic records and attachments\r\n- #28 — https://github.com/aymanobeid0/clinic-app/issues/28 — Rehearse deployment, backup, and restoration with fictional data\r\n",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/29",
+    "issue": 29,
+    "nativeBlockersVerified": true
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "super_board": {
+    "repository": "https://github.com/EricTechPro/super-board",
+    "version": "3.1.1",
+    "commit": "35e215615c98fa5da011368e764f38f86959bf95",
+    "license": "MIT"
+  },
+  "matt_skills": {
+    "plugin_version": "1.2.3",
+    "source": "installed openai-curated-remote plugin"
+  },
+  "installed_on": "2026-10-10",
+  "compatibility": "scripts/patch-super-board.py"
+}

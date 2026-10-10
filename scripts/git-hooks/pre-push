@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ] && [ "$remote_ref" = "refs/heads/main" ]; then
+    continue # First branch creation in the empty repository.
+  fi
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master)
+      echo 'Protected base: use a codex/ branch and a human-reviewed pull request.' >&2
+      exit 1 ;;
+  esac
+done
