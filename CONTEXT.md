@@ -19,6 +19,12 @@ A person receiving dental care at a clinic.
 **Assigned patient**:
 A patient whose clinical record a doctor may access through an explicit care assignment. Access to other patients requires explicit sharing.
 
+**Historical patient access**:
+An explicit, revocable manager grant allowing a former treating doctor to view permitted clinical record versions through a specified care-removal cutoff.
+
+**Historical-only account**:
+A departed doctor's account restricted to explicitly granted historical patient views, including read-only financial snapshots for their own performed work through the care-removal cutoff, without active-care, operational or financial editing actions.
+
 **Appointment**:
 A scheduled visit for a patient with a clinic clinician.
 

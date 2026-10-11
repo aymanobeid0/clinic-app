@@ -2,6 +2,8 @@
 
 Status: approved by user on 2026-10-10. No dependencies installed; versions are not locked yet. Official documentation was consulted; React Hook Form documentation could not be fetched and its compatibility must be verified before installation.
 
+Foundation follow-up on 2026-10-10: foundation-version-research.md records exact metadata-compatible package/image candidates, including React Hook Form peer compatibility and the planned test execution contract. No installation, lockfile or runtime compatibility is established yet. foundation-infrastructure-assessment.md records the owner's Contabo/Dokploy facts, approved ingress adaptation, backup budget and remaining acceptance proposals.
+
 ## Confirmed stack
 
 React and TypeScript frontend; Node.js/Express/TypeScript backend; PostgreSQL with Prisma; Docker and Nginx. Maintenance primarily through AI coding tools.
@@ -29,6 +31,10 @@ One repository with frontend, backend, and shared validation/API contracts. A Re
 | Local/deployment services | Docker Compose | Define API, PostgreSQL and Nginx services and persistent volumes. Backups must be outside the VPS. |
 
 Core React/React DOM, Express, Prisma CLI/client, TypeScript and PostgreSQL are already selected, not additional choices. Prisma's required PostgreSQL driver adapter and matching packages will be included according to the approved version. Add corresponding TypeScript type packages where necessary.
+
+## Validation decision
+
+On 2026-10-10, the owner explicitly confirmed Zod after comparing it with class-validator. Share Zod transport schemas between React forms and Express, deriving TypeScript types from schemas. The backend independently validates incoming data; authorization, financial/stock invariants and database-dependent business rules remain in backend modules and transactions. class-validator is not part of the selected baseline.
 
 ## UI and document proposal
 
