@@ -1,5 +1,7 @@
 # File/data prerequisite review — issue #6
 
+> Status reconciliation — 2026-10-11: statements below about open issues, uncommitted work, pending planning review or absent implementation describe the original document snapshot. Prerequisite evidence is now merged in PR #30, workflow retirement in PR #31, and owner-approved issues #2–#6 are closed. Only the initial #7 HTTP/session slice is implemented, in draft PR #32. See [current delivery status](delivery-status.md) for completed work and remaining gates. Approved product rules remain authoritative; later approved contracts supersede discovery proposals.
+
 Date: 2026-10-11. One independent reviewer checked both standards and issue #6 compliance for file-data-decisions.md, pilot-data-requirements.md and the 2 GB quota alignment. Result: planning pass, zero actionable findings. The same reviewer also passed final focused alignment across Spec 001, MVP scope, identity contract and application architecture, excluding unrelated changes. git diff --check passed.
 
 Owner approved 20 MB PDF/JPEG/PNG uploads, 2 GB clinic quota counting retained versions; protected reasoned logical removal; no ordinary permanent deletion; legally approved administrative purge and backup expiry/deletion replay; scoped financial/mixed mutations and CSV/JSON/attachment ZIP exports. These decisions are in the consolidated file contract.

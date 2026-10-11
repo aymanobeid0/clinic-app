@@ -1,0 +1,33 @@
+{
+  "asOf": "2026-10-11",
+  "timezone": "Africa/Bamako",
+  "planningIssues": {
+    "closedWithOwnerApproval": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "pullRequests": {
+    "30": "merged",
+    "31": "merged",
+    "32": "open-draft"
+  },
+  "implementation": {
+    "issue": 7,
+    "state": "in-progress",
+    "branch": "codex/issue-7-manager-bootstrap",
+    "commit": "3227073fc042464f5dc54a8438096847126be21d",
+    "scope": "initial HTTP/session foundation only",
+    "evidence": "issue-7-implementation.md",
+    "review": "issue-7-initial-review.md"
+  },
+  "prismaMcp": {
+    "ownerRequestedUse": true,
+    "usedForImplementation": false
+  },
+  "liveDataDeploymentAuthorized": false,
+  "publicationPayload": "ticket-publication.json"
+}

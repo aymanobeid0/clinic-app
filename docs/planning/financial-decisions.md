@@ -1,5 +1,7 @@
 # Financial contracts and document rules — issue #4
 
+> Status reconciliation — 2026-10-11: statements below about open issues, uncommitted work, pending planning review or absent implementation describe the original document snapshot. Prerequisite evidence is now merged in PR #30, workflow retirement in PR #31, and owner-approved issues #2–#6 are closed. Only the initial #7 HTTP/session slice is implemented, in draft PR #32. See [current delivery status](delivery-status.md) for completed work and remaining gates. Approved product rules remain authoritative; later approved contracts supersede discovery proposals.
+
 Date: 2026-10-11. Status: compact owner decision batch approved; independent planning review passed; see financial-review.md. No implementation authorized. Sources: live issue #4, existing billing workflow in Spec 001, and owner popup answers. This consolidated note replaces its earlier pending-question text. Issue #4 is open with no listed blockers at the last read.
 
 ## Currency and exact amounts

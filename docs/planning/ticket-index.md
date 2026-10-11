@@ -1,5 +1,7 @@
 # Spec 001 — published implementation tickets
 
+Current execution status: [delivery-status.md](delivery-status.md). ticket-publication.json is the original publication payload, not a live issue-status tracker. Native blocker links are retained even after their issues close.
+
 Parent specification: https://github.com/aymanobeid0/clinic-app/issues/1
 
 All 28 approved tickets are published with `ready-for-agent`. Native GitHub blocking relationships were verified for every ticket with blockers. Parent issue was not edited or closed. Planning IDs are not GitHub issue numbers.

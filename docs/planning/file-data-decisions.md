@@ -1,5 +1,7 @@
 # File handling and pilot data requirements — issue #6
 
+> Status reconciliation — 2026-10-11: statements below about open issues, uncommitted work, pending planning review or absent implementation describe the original document snapshot. Prerequisite evidence is now merged in PR #30, workflow retirement in PR #31, and owner-approved issues #2–#6 are closed. Only the initial #7 HTTP/session slice is implemented, in draft PR #32. See [current delivery status](delivery-status.md) for completed work and remaining gates. Approved product rules remain authoritative; later approved contracts supersede discovery proposals.
+
 Date: 2026-10-11. Status: compact owner batch approved with 2 GB quota; independent planning review passed; see file-data-review.md. No implementation authorized. Sources: current issue #6, existing Spec 001/identity contracts and owner answers. This contract supersedes earlier pending-question text. Issue #6 remains open with no listed blockers at last read.
 
 ## Upload and quota contract
