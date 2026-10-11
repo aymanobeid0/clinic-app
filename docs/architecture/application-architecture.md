@@ -1,16 +1,19 @@
-# Application architecture proposal
+# Application architecture
 
-Status: architectural shape, shared clinic isolation and SSE/REST approved by owner on 2026-10-10. Detailed implementation policies below are the design baseline; explicitly listed follow-ups remain open. Related: foundation issue #2 and Spec 001. This document selects implementation structure; unresolved product contracts remain in issues #3-#6. The owner condition for initial baseline publication is satisfied; future work uses human-reviewed pull requests.
+Status: architectural shape, shared clinic isolation and SSE/REST approved by owner on 2026-10-10. Detailed implementation policies below are the design baseline; explicitly listed follow-ups remain open. Related: foundation issue #2 and Spec 001. This document selects implementation structure; owner product contracts for issues #3-#6 are recorded in their decision notes; outstanding evidence and real-data gates remain explicit. The owner condition for initial baseline publication is satisfied; future work uses human-reviewed pull requests.
 
 ## Shape
 
 One npm-workspaces repository: `apps/web` (React/TypeScript/Vite), `apps/api` (Express/TypeScript), and `packages/contracts` (Zod input/output schemas and transport types). Keep deployment files in `infra/` and Prisma schema/migrations with the backend. Share transport contracts; expose neither database models nor authorization logic to the browser.
 
-Nginx terminates HTTPS, serves the compiled SPA, and proxies `/api/v1` to Express on the same origin. API and PostgreSQL use a private Compose network. Only the web entry point is public. Start with one API process and one database; use separate isolated test persistence. PostgreSQL-backed sessions support later additional API processes without changing authentication storage.
+On the approved Dokploy host, Traefik terminates public HTTPS and forwards to internal Nginx. Nginx serves the compiled SPA and proxies `/api/v1` to Express on the same origin. API and PostgreSQL use a private Compose network. Only the web entry point is public. Start with one API process and one database; use separate isolated test persistence. PostgreSQL-backed sessions support later additional API processes without changing authentication storage.
+
+For the owner's existing Contabo/Dokploy host, the owner approved an ingress adaptation on 2026-10-10: Dokploy's Traefik terminates public HTTPS and forwards to internal Nginx, which serves the SPA and proxies the API. Nginx does not bind host ports 80/443. Only Nginx joins ingress; API/PostgreSQL remain private. Validate forwarded headers, secure cookies and SSE through both proxies. See ../planning/foundation-infrastructure-assessment.md for deployment evidence and remaining gates; the diagram below includes the approved ingress hop.
 
 ```mermaid
 flowchart LR
-  PC[Clinic browsers] --> N[Nginx / HTTPS]
+  PC[Clinic browsers] --> T[Dokploy Traefik / HTTPS]
+  T --> N[Internal Nginx]
   N --> SPA[React SPA]
   N --> API[Express modules]
   API --> DB[(PostgreSQL)]
@@ -40,17 +43,17 @@ Cross-module business actions use explicit orchestration. Starting a procedure a
 
 Owner selected one shared application/database, with a clinic ID on every clinic-owned record. Derive the authorized clinic from server-verified membership; client-supplied IDs never confer access. Use clinic-scoped uniqueness and composite references to prevent cross-clinic relationships. Every query, command, file delivery and report enforces both clinic scope and the actor's permission/patient scope. Prove isolation with tests involving two clinics.
 
-Database row-level security is a possible additional layer, not a substitute for application permissions. Decide its initial use after checking the pinned Prisma version and transaction/connection behavior. PostgreSQL table owners normally bypass row security, so claiming RLS without the correct runtime role would give misleading protection.
+Owner approved database row-level security as an additional layer on 2026-10-10; application permissions remain mandatory. Use the restricted runtime role and transaction-local clinic context described in ../planning/foundation-version-research.md, with verification through the pinned Prisma adapter/pool before claiming isolation is proven. PostgreSQL table owners normally bypass row security, so claiming RLS without the correct runtime role would give misleading protection.
 
-Accounts belong to one clinic for MVP; global username uniqueness versus clinic-qualified sign-in remains an explicit identity contract in #3. The product supports tenant isolation without adding self-service clinic registration or a platform administrator UI.
+Accounts belong to one clinic for MVP. Reviewed issue #3 selects stable globally unique clinic codes plus case-insensitive clinic-unique usernames; see ../planning/identity-access-decisions.md for syntax, recovery/session lifecycle, full permission matrix and financial/historical scopes. The product supports tenant isolation without adding self-service clinic registration or a platform administrator UI.
 
 ## Consistency and history
 
 Use PostgreSQL constraints and transactions for money allocation, document numbering, stock decrements and appointment conflict enforcement. Prisma remains the ORM; use reviewed parameterized SQL/migrations when required constraints or locking cannot be expressed through its pinned interface.
 
-Store money in integer minor units with the clinic currency and defined precision; confirm rounding and adjustment rules in #4. Preserve immutable financial entries and link corrections/reversals. Clinical finalized records and accepted plan versions retain dated revisions. Use record versions for draft/plan updates, returning an explicit conflict instead of silently overwriting. Consequential POST operations accept idempotency keys so a retried request cannot create a second payment, receipt or stock movement.
+Store exact integer minor units with the currency on every monetary record. Manager-enabled currencies have separate balances/no conversion; reject excess precision without rounding. financial-decisions.md defines owner-approved numbering, allocation and correction rules; verify precision for enabled currencies. Preserve immutable financial entries and link corrections/reversals. Clinical finalized records and accepted plan versions retain dated revisions. Use record versions for draft/plan updates, returning an explicit conflict instead of silently overwriting. Consequential POST operations accept idempotency keys so a retried request cannot create a second payment, receipt or stock movement.
 
-Keep essential audit events independent of the future paid searchable-history presentation. Historical access queries select permitted versions at the approved cutoff, rather than returning the current record with hidden fields. Details remain gated by #3/#5.
+Keep essential audit events independent of the future paid searchable-history presentation. Historical access queries select permitted versions at the approved cutoff, rather than returning the current record with hidden fields. Identity and clinical decision notes define cutoff/revision behavior; runtime verification remains required.
 
 ## Browser state and synchronization
 
@@ -64,13 +67,13 @@ Recommended initial file adapter: private persistent VPS volume with metadata in
 
 No separate queue infrastructure initially. Short operations run in request transactions. Introduce a persistent PostgreSQL job/outbox table and a worker from the same backend image when exports or future paid automation need durable asynchronous work. Schedule backups independently of application requests. AI work later uses a separate resource-limited worker through a documented interface; it does not run inside billing or clinical save transactions.
 
-Compose defines reproducible API, database and Nginx deployment. Build immutable images, health checks, graceful API shutdown, resource/log limits and explicit migrations. Test on fictional data before live use. TLS provisioning, provider/domain/workloads, backup retention/destination/cost and restore rehearsal remain infrastructure gates; the one-hour recovery targets are not established by this architecture.
+Compose defines reproducible API, database and Nginx deployment. Build immutable images, health checks, graceful API shutdown, resource/log limits and explicit migrations. Test on fictional data before live use. TLS provisioning, provider/domain/workloads, backup retention-policy approval under #6, final destination cost/capability checks and restore rehearsal remain infrastructure gates; the one-hour recovery targets are not established by this architecture.
 
 ## Verification and remaining choices
 
 Use the already approved HTTP/application workflow tests against real isolated PostgreSQL, plus a small Playwright suite. Prioritize clinic/patient isolation, financial/stock concurrency, idempotent retries, note conflicts and historical cutoff behavior. Restore verification is a separate rehearsal.
 
-Owner decisions complete: modular monolith, shared application/database with clinic isolation, and SSE plus REST for immediate updates. Technical follow-up: exact compatible version pins, RLS integration decision, CSRF implementation, baseline performance targets and job thresholds. Identity, financial, clinical and file product contracts keep their existing prerequisite tickets. None is silently marked complete by accepting the architecture.
+Owner decisions complete: modular monolith, shared application/database with clinic isolation, SSE plus REST for immediate updates, RLS and session-bound CSRF baselines, and performance workload/thresholds. See the foundation research and infrastructure notes for the 2026-10-10 decisions. Technical follow-up: version-pin verification, RLS/CSRF implementation and runtime verification, performance measurements, verification of the selected Contabo S3 EU/250 GB backup baseline and conditional retention, recovery feasibility, and job thresholds. Identity/access planning review passed; its reviewed contract governs current account/patient/financial access boundaries. Financial, clinical and file owner contracts are in their respective decision notes; #6 defines financial/mixed file capability mapping. Qualified clinical/legal validation, account-specific provider/transfer/retention evidence, transactional-mail delivery and runtime verification remain gates. None is silently marked complete by accepting the architecture.
 
 ## Primary references consulted
 

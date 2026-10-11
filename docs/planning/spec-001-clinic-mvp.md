@@ -14,7 +14,7 @@ The clinic needs connected records, clear outstanding balances, controlled staff
 
 Provide a browser application with individual accounts usable from any clinic PC. Connect appointments, patient profiles, manual dental charting, treatment plans, visits, prescriptions, billing, inventory, and basic reports. Deliver the pilot interface and printed documents in French.
 
-Keep patient and staff counts unlimited in the free core, with a provisional 1 GB attachment allowance per clinic. Validate the core in the owner's clinic before adding paid purchasing for storage, searchable history, and automated reminders.
+Keep patient and staff counts unlimited in the free core, with a 2 GB attachment allowance per clinic. Validate the core in the owner's clinic before adding paid purchasing for storage, searchable history, and automated reminders.
 
 Starting a procedure creates the full amount due in a billing workspace. Payments receive receipts. Staff issue a procedure invoice only after that procedure is completed and fully paid. A whole-plan summary references invoices and can show remaining debt without duplicating charges.
 
@@ -89,28 +89,29 @@ The workspace has product discovery, a domain glossary, design references, and p
 
 Organize the future application around identity/access, patient records, scheduling, clinical care/plans, billing, inventory, attachments/documents, and reporting. These are responsibility boundaries, not a decision to deploy separate services. The user selected React with TypeScript for the frontend, Node.js and Express with TypeScript for the backend, PostgreSQL with Prisma ORM, and Docker with Nginx for deployment. Supporting libraries, versions, service layout, and persistence details require review. Prefer one application-facing behavior boundary for automated testing. Maintenance will primarily use AI coding tools.
 
-All authoritative access checks must apply at the server boundary, including reads, writes, history, file access, printing, and exports. Hiding interface controls alone is insufficient. Permission settings must not allow a non-doctor manager to acquire clinical access contrary to the confirmed rule. Exact permission matrix remains an explicit implementation prerequisite.
+All authoritative access checks must apply at the server boundary, including reads, writes, history, file access, printing, and exports. Hiding interface controls alone is insufficient. Permission settings must not allow a non-doctor manager to acquire clinical access contrary to the confirmed rule. The reviewed matrix in identity-access-decisions.md governs account/action/patient scope; financial/mixed attachment action permissions and content scopes are defined in file-data-decisions.md.
 
 ### Identity and clinic settings
 
 Frontend state responsibilities: use Zustand for shared local UI state, TanStack Query for server records, and React Hook Form for form state. Component-private state can use React hooks. Do not persist clinical drafts or sensitive state to browser storage; connection-loss drafts remain in current-tab memory.
 
-- Manager, doctor, and staff account types; manager retains administration and may also be a treating doctor.
-- Manager creates usernames and initial passwords and handles requested username/password changes. Password change is supported; mandatory first-login timing remains unresolved.
-- Username/password is the settled creation flow. Optional phone sign-in and optional email remain planned but require identifier uniqueness and recovery contracts before implementation.
-- Store passwords securely; never provide recovery by revealing an existing password. Recovery/reset and session invalidation details require specification.
-- Manager recovery codes are in scope; MFA and configurable idle locking are deferred.
-- Clinic chooses one currency before financial activity; lock currency after the first financial transaction. No conversion or relabeling historical amounts.
-- Catalog management and patient-plan price overrides are separate permissions. Preserve historical plan prices when catalog defaults change.
+- Manager, doctor and staff accounts follow the complete reviewed identity/access matrix in identity-access-decisions.md (owner decisions through Q36; review evidence in identity-access-review.md). That contract settles identity, permissions, historical cutoff and recovery choices previously carried as open items here.
+- Managers create usernames/temporary passwords and handle authorized changes/resets. Login uses globally unique stable clinic code plus case-insensitive clinic-unique username; exact syntax, lengths and no username reuse are in the contract. Initial/reset temporary passwords expire after 24 hours and must be replaced before clinic access.
+- Doctor/staff phone/email are optional contact-only fields; shared contacts allowed. Phone sign-in is deferred. Managers require distinct verified recovery email within clinic, with the explicit warning to use a real accessible email and verification before clinic access. Ten single-use offline codes must be saved before manager setup completes.
+- Recovery/reset never reveals existing passwords. Ordinary email changes require current password, new-address verification and old-address notification; restricted code/other-manager recovery may replace a lost address after verification. Recovery links expire after 30 minutes, verification links after 24 hours; single-use/replacement invalidation and code rotation follow the contract.
+- Password reset/change, completed recovery, disablement and account-type changes revoke all sessions. Permission/grant changes apply on the next server request and terminate affected streams. Fixed 12-hour maximum sessions, no remember-me; MFA/configurable idle locking deferred. Recovery never lifts account restrictions. Protect the last active fully set-up manager from disablement/demotion.
+- All managers have full clinic-wide financial authority, including procedure/tooth references in billing, financial documents/reports/exports and correction actions; immutable history remains mandatory. Non-doctor managers may see patient personal details, but never clinical charts, diagnoses, visit notes, prescriptions or clinical attachments. Doctor-managers need active patient scope for clinical records.
+- Ordinary doctors' financial visibility/actions require the relevant capability and active patient access and cover only dental work personally performed by them. Permitted staff may handle clinic-wide restricted billing; without separate clinical access, expose identity, neutral charge references, amounts, dates and eligibility, not clinical descriptions. Apply financial scopes to documents, searches, files, reports and aggregates.
+- Managers choose multiple currencies with separate charges/payments/credits/balances, no conversion and no relabeling existing amounts. Preserve exact amounts; reject unsupported precision rather than round. Catalog management and patient-plan price overrides remain separate capabilities; catalog changes preserve agreed plan prices. See financial-decisions.md for owner-approved examples, receipt/invoice rules and refund approval; independent finance planning review passed; see financial-review.md.
 
 ### Patient access and history
 
-- A patient may be assigned to several doctors. Only the manager or assignment-authorized users may grant assignment/sharing.
-- Doctor-managers follow the same assignment rules. Permitted staff receive clinical access only for explicitly assigned/shared patients and cannot finalize clinical content.
-- Former treating doctors may have revocable historical read-only access, bounded to their care-removal timestamp. Later edits to old records must not leak through this historical view: return the appropriate historical version.
-- Historical logins expose no financial access or application print/download/export actions. Browser viewing cannot guarantee prevention of screenshots or capture.
-- Archive rather than delete finalized patient history. Exceptional permanent-removal, retention, and backup interactions remain open.
-- Separate basic identity/contact access from clinical record access. Exact handling of clinically descriptive billing/export fields must be resolved in the permission matrix, rather than granting broad access implicitly.
+- Patients may have multiple assigned doctors. Managers or assignment-authorized users grant sharing; non-doctor managers use patient personal details without opening clinical records. Account permission administration remains manager-only.
+- Clinical capabilities require explicit patient scope, including for doctor-managers and staff. Staff may draft history/chart/plan/note/prescription and acceptance evidence; doctors finalize, confirm accepted plans, start/complete procedures and sign prescriptions. Authorized doctors may review/finalize another user's draft with retained author/finalizer attribution. Finalized changes create dated revisions; detailed clinical workflow remains in #5.
+- Clinical attachment upload, replace/version and removal are separate capabilities plus active clinical patient scope for eligible doctors/staff, never non-doctor managers or historical users. Preserve versions needed by history/retention. Financial/mixed attachment mutations use file-data-decisions.md capabilities and combined content scopes. Logical removal preserves retained versions; ordinary permanent deletion is unavailable, and administrative purge requires approved retention/legal policy.
+- Removal immediately ends active care access; historical read-only access requires an explicit manager grant at removal cutoff. Return then-available permitted record/file versions; exclude later entries, later edits to old records and later uploads. Historical financial visibility is limited to the doctor's own performed work at cutoff, read-only. Other financial content is redacted; hide inseparable mixed attachments with unauthorized content.
+- Historical access prohibits all edits and print/download/export actions. Plain permitted clinical attachments may be viewed inline; browser capture cannot be prevented. Account-wide historical-only mode loses operational and clinic-wide financial authority, retaining only explicit historical snapshots. Active reassignment cannot lift disabled/historical-only account status. Every subsequent removal needs a new explicit historical grant/cutoff; full revocation removes all patient grants.
+- Archive rather than delete finalized history. Patient merge/permanent deletion are unavailable until explicit contracts are approved. Clinical document actions require document permission plus active patient clinical access; financial authority cannot open clinical records.
 
 ### Scheduling and clinical workflows
 
@@ -120,9 +121,9 @@ Frontend state responsibilities: use Zustand for shared local UI state, TanStack
 - Select procedures actually treated; completing a visit does not complete every procedure. Doctor explicitly completes procedures after any required number of visits.
 - Plans have identifiers, related procedures, version history, and draft/presented/accepted/in-progress/completed/cancelled lifecycle. Renew acceptance for scope or price changes; routine notes do not require it.
 - Acceptance includes who, when, how, and optional signed attachment. No patient portal or mandatory digital signature.
-- Dental chart supports FDI permanent/primary/mixed dentition and dated tooth/surface findings. Exact finding vocabulary and procedure-to-chart suggestion mapping remain open; unsupported mappings must not silently invent findings.
+- Dental chart uses approved FDI permanent/primary/mixed positions, valid surface combinations and coexisting dated manual findings in clinical-decisions.md. Extraction/restoration/crown/root-canal/implant completion may suggest explicit chart events only after dentist confirmation; unsupported mappings stay manual. Unknown is not sound; final changes retain revisions.
 - Notes use a single free-text field with draft/finalized/correction lifecycle. Pending-note tasks survive visit completion.
-- Prescriptions record medicine, dose, route, frequency, duration, instructions, patient, and prescriber, with print templates. No automatic medication recommendation.
+- Prescriptions follow clinical-decisions.md: manual medicine/dose/route/frequency/duration/instructions, patient/prescriber/date and reusable French print header/footer. Doctors manage optional reusable drug entries copied into editable drafts; catalog changes never alter saved prescriptions. Doctors finalize; corrections create linked replacements and mark old versions superseded. No automatic medication recommendation; qualified/legal validation remains a real-use gate.
 
 ### Billing invariants and documents
 
@@ -135,13 +136,13 @@ The following supersedes earlier interview alternatives concerning partial invoi
 5. Excess funds are entered separately as a deposit. Reconcile all money received with allocated payment plus separately recorded deposit; existing credit applied is not a new cash receipt.
 6. Give numbered receipts for payments; receipt presentation for credit-only and mixed settlements must distinguish new money from previously receipted deposits.
 7. Staff manually issue a numbered invoice only for a completed, fully paid procedure. It covers the whole procedure; installments are receipt entries, not partial invoices.
-8. Once issued, reprints retain the invoice number. Prevent duplicate charge-bearing invoices for the same procedure; combined-document grouping rules require detailed document design.
+8. Once issued, reprints retain the invoice number. Prevent duplicate charge-bearing invoices for the same procedure; eligible whole completed/fully paid procedures may be grouped for the same patient/currency under financial-decisions.md.
 9. At plan completion, print a whole-plan summary even with unpaid amounts. It references existing invoices and does not introduce charges.
 10. Outstanding amounts derive from started charges and opening balances less allocations and explicit charge adjustments, not from unpaid issued invoices. Show available patient credit separately from debt.
-11. Refunds represent money returned; reversals correct erroneous entries; credits reduce charges. Record actor, reason, links, and history. Reallocation and downstream-document effects must be specified before implementing reversals.
+11. Refunds represent money returned; reversals correct erroneous entries; credits reduce charges. Record actor, reason, links, and history. Reallocation and linked issued-document corrections follow financial-decisions.md; refunds require manager or concerned own-work doctor approval.
 12. Partly performed cancellation requires an explicit final charge and credit adjustment as needed. No automatic refund or deletion of performed care.
 
-Use atomic financial operations and retry-safe commands so concurrent allocation cannot spend patient credit twice. Money precision, rounding, numbering policy, and legally required document content remain unresolved technical/domain prerequisites; no compliance claim is made.
+Use atomic financial operations and retry-safe commands so concurrent allocation cannot spend patient credit twice. Use financial-decisions.md: separate manager-selected currencies, exact minor-unit amounts with no rounding, excess-precision rejection and separate yearly receipt/invoice sequences. Verify enabled-currency precision and legally required document content before real use; no compliance claim is made.
 
 ### Inventory, files, and reports
 
@@ -149,8 +150,8 @@ Use atomic financial operations and retry-safe commands so concurrent allocation
 - Receive batches with supplier, quantity, cost, and expiry where applicable. Staff select consumption batches manually.
 - Block expired consumption and negative stock, including concurrent requests. Waste/disposal/count correction are separate reasoned movements.
 - Per-item low-stock thresholds and configurable clinic expiry warning window. Expiry boundary/date handling requires explicit design.
-- PDF/JPEG/PNG uploads; provisional 1 GB clinic quota. Show usage and block new uploads at quota while retaining existing file and core access.
-- Permission-controlled attachment removal requires a reason and preserves deletion history and finalized references. Exact retention and physical-deletion rules remain open.
+- PDF/JPEG/PNG uploads; 2 GB clinic quota with 20 MB per file, counting all retained versions. Show usage and block new uploads at quota while retaining existing file and core access.
+- file-data-decisions.md defines reasoned logical removal, protected finalized/history versions, separate financial/mixed capabilities and permission-filtered CSV/JSON/attachment ZIP exports. Retained versions count toward quota. No ordinary permanent deletion; restricted purge requires approved retention/legal policy, with deletion instructions reapplied after restoration.
 - Free reports cover daily appointments, invoices/payments, outstanding balances, and low/expiring stock. Report cash receipts separately from applied existing credit and future planned care.
 - Free authorized printing/export and essential per-record history. Cross-record searchable history is paid later; free record history remains necessary for corrections and accepted plan versions.
 
@@ -160,7 +161,7 @@ Use atomic financial operations and retry-safe commands so concurrent allocation
 - Detect stale concurrent edits and require reconciliation. Do not silently overwrite another user's changes.
 - During network loss retain the current draft in tab memory, warn, and retry safely. No cross-restart device persistence or offline workflow.
 - Recovery point target: at most one hour of lost work. Recovery time target: service restored within one hour. Both require cost/feasibility assessment and measured restoration, not assumptions based on VPS size.
-- Existing German Ubuntu VPS is user-reported at 6 CPUs, 12 GB RAM, 200 GB disk; USD 10/month server budget. No backups currently exist. User maintains hosting and is willing to subscribe to backups. Provider, shared workloads, domain, available capacity, and backup budget are unknown.
+- Existing German Ubuntu VPS is user-reported at 6 CPUs, 12 GB RAM, 200 GB disk; USD 10/month server budget. On 2026-10-10 the owner identified Contabo, Ubuntu 24 and Dokploy, with up to USD 5/month additional budget for off-VPS backup comparisons. No backups currently exist. Shared workloads, domain, exact host versions and available capacity remain unknown. The approved Dokploy ingress adaptation and proposed acceptance targets are recorded in foundation-infrastructure-assessment.md.
 
 ## Testing Decisions
 
@@ -210,7 +211,7 @@ Pilot acceptance requires the four dentists and reception staff to complete the 
 
 ### Open items and gates
 
-Before implementation of affected behavior: settle the permission matrix and clinical leakage through billing/exports; login identifiers/recovery lifecycle; historical snapshot and record-sharing boundaries; chart vocabulary/mapping; money rounding, credit/refund/reversal contracts, document grouping and numbering; file size/retention/deletion/export policy; and performance criteria. These are deliberately open, not license to choose silently.
+Before implementation of affected behavior: use the reviewed identity-access-decisions.md matrix, identifier/recovery lifecycle and historical-sharing boundaries. Use clinical-decisions.md for chart/revision/prescription/drug-catalog rules, financial-decisions.md for exact multi-currency accounting and corrections, and file-data-decisions.md for upload/quota/retention/export capabilities. Performance targets are accepted in foundation-infrastructure-assessment.md, pending measurement. Transactional-email delivery and runtime/security verification remain gates; no unresolved choice may be silently assumed.
 
 Before real-patient pilot: assess the actual VPS, provider/location/data handling requirements, applicable invoice and prescription requirements, domain/TLS configuration, outside-VPS backups and recovery budget; run restoration and permission scenarios; confirm operational ownership, cutover date, and evidence checklist. Budget versus recovery targets remains explicitly undecided pending assessment.
 
