@@ -9,3 +9,5 @@ coverage/
 *.key
 .claude/worktrees/
 **/__pycache__/
+
+apps/api/src/generated/

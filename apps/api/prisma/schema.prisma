@@ -1,0 +1,15 @@
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+  importFileExtension = "js"
+}
+datasource db {
+  provider = "postgresql"
+}
+model Session {
+  sid String @id @db.VarChar
+  sess Json
+  expire DateTime @db.Timestamp(6)
+  @@index([expire])
+  @@map("session")
+}
