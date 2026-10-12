@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+  importFileExtension = "js"
+}
+datasource db {
+  provider = "postgresql"
+}
+model Session {
+  sid String @id @db.VarChar
+  sess Json
+  expire DateTime @db.Timestamp(6)
+  @@index([expire])
+  @@map("session")
+}
+
+model Clinic {
+  id String @id @default(uuid()) @db.Uuid
+  code String @unique
+  name String
+  accounts Account[]
+}
+
+model Account {
+  id String @id @default(uuid()) @db.Uuid
+  clinicId String @db.Uuid
+  clinic Clinic @relation(fields: [clinicId], references: [id])
+  username String
+  displayName String
+  loginMethod String @default("clinic_username")
+  loginEmail String? @unique
+  isManager Boolean @default(false)
+  passwordHash String
+  temporaryExpiresAt DateTime? @db.Timestamptz(6)
+  credentialVersion Int @default(0)
+  disabled Boolean @default(false)
+  recoveryEmail String?
+  verifiedEmail String?
+  verificationHash String?
+  verificationExpiresAt DateTime? @db.Timestamptz(6)
+  codesBatchId String? @db.Uuid
+  codesSaved Boolean @default(false)
+  recoveryCodes RecoveryCode[]
+  @@unique([clinicId, username])
+  @@unique([clinicId, verifiedEmail])
+  @@unique([clinicId, id])
+}
+
+model RecoveryCode {
+  id String @id @default(uuid()) @db.Uuid
+  clinicId String @db.Uuid
+  accountId String @db.Uuid
+  account Account @relation(fields: [clinicId, accountId], references: [clinicId, id])
+  hash String
+  @@index([clinicId, accountId])
+}

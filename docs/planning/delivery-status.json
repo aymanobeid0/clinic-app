@@ -1,0 +1,47 @@
+{
+  "asOf": "2026-10-12",
+  "timezone": "Africa/Bamako",
+  "planningIssues": {
+    "closedWithOwnerApproval": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "pullRequests": {
+    "30": "merged",
+    "31": "merged",
+    "32": "merged"
+  },
+  "implementation": {
+    "issue": 7,
+    "state": "in-progress",
+    "branch": "codex/issue-7-manager-email-login",
+    "scope": "primary-manager email authentication; independent login method and manager authority; doctor-manager retains employee login",
+    "evidence": "issue-7-implementation.md",
+    "review": "issue-7-email-login-review.md",
+    "initialCommit": "3227073fc042464f5dc54a8438096847126be21d",
+    "publication": "reviewed amendment ready for new human-reviewed PR; prior PR32 merged",
+    "checks": {
+      "httpTestsPassed": 16,
+      "browserJourneysPassed": 3,
+      "typecheck": "pass",
+      "lint": "pass",
+      "apiContractsWebBuild": "pass",
+      "auditFindings": null,
+      "auditNote": "not rerun for this amendment; dependencies unchanged, prior PR32 audit had zero findings"
+    },
+    "reviewStatus": "same separate reviewer: standards/specification pass after P2 independence fix",
+    "loginPolicy": "primary manager: globally unique normalized verified email/password; employees and promoted doctors: clinic code/username/password; manager authority independent",
+    "organization": "feature folders: routes, controller, service, repository"
+  },
+  "prismaMcp": {
+    "ownerRequestedUse": true,
+    "usedForImplementation": true,
+    "use": "documentation lookup only; no cloud mutations"
+  },
+  "liveDataDeploymentAuthorized": false,
+  "publicationPayload": "ticket-publication.json"
+}

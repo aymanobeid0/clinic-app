@@ -1,0 +1,13 @@
+# Current delivery status
+
+As of 2026-10-12 (Africa/Bamako). Machine-readable companion: delivery-status.json. Approved specifications/contracts govern behavior; this document records execution status.
+
+Prerequisite evidence PR #30 and super-board retirement/workflow PR #31 are merged. Owner approved closing planning #2–#6 and starting #7; #7 stays open. Native blocker edges remain intact. No super-board workflow is active.
+
+PR #32 is merged at the previous login contract. Current owner-authorized amendment is on codex/issue-7-manager-email-login, reviewed by the same separate reviewer and ready for a new human-reviewed PR. Primary managers sign in by globally unique normalized email/password; employees and doctors promoted to manager keep clinic-code/username/password. Login method is independent from manager authority. Initial unverified email sessions grant only restricted activation, with the provisioned address fixed until verified. Feature-based Routes -> Controller -> Service -> Repository organization remains unchanged; visual design is deferred.
+
+Builder passed 16 HTTP tests and three Chromium journeys, typecheck, lint and API/contracts/web build. New cases prove primary email login/no username bypass, normalized concurrent uniqueness, narrow SELECT-only email RLS, ordinary employee versus promoted-manager setup and retained doctor login. Browser journeys include email activation/shared-PC isolation and doctor-manager username login. Independent amendment review passed standards/specification after fixing the P2 authority/login-method constraint; historical PR32 review applies only to that prior contract. Audit was not rerun; dependencies are unchanged and prior evidence recorded zero findings. See issue-7-implementation.md and issue-7-email-login-review.md.
+
+Remaining gates: human review/merge, live transactional email/provider/sender/delivery, Linux API/native compatibility, ingress/secure cookies, host evidence, backup cost/capacity/restore rehearsal and qualified clinical/legal/real-data handling checks. Recovery consumption/account/permission administration is subsequent #8. Production deployment/live migrations/patient data require separate authorization.
+
+Historical discovery/review files are dated snapshots. ticket-publication.json is the original issue publication payload and blocker mapping, not a live status tracker. package.json/package-lock.json hold installed dependency pins; no dependency versions changed during this continuation. All JSON/config consistency and whitespace checks should pass before commit. Preserve unrelated design relocations and local HANDOFF; exclude them from implementation commits.
