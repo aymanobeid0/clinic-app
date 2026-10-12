@@ -1,7 +1,5 @@
 # Supporting dependency proposal
 
-> Status reconciliation — 2026-10-11: statements below about open issues, uncommitted work, pending planning review or absent implementation describe the original document snapshot. Prerequisite evidence is now merged in PR #30, workflow retirement in PR #31, and owner-approved issues #2–#6 are closed. The initial #7 HTTP/session slice was published in draft PR #32; subsequent implementation status is recorded in the linked delivery status. See [current delivery status](delivery-status.md) for completed work and remaining gates. Approved product rules remain authoritative; later approved contracts supersede discovery proposals.
-
 Status: approved by user on 2026-10-10. No dependencies installed; versions are not locked yet. Official documentation was consulted; React Hook Form documentation could not be fetched and its compatibility must be verified before installation.
 
 Foundation follow-up on 2026-10-10: foundation-version-research.md records exact metadata-compatible package/image candidates, including React Hook Form peer compatibility and the planned test execution contract. No installation, lockfile or runtime compatibility is established yet. foundation-infrastructure-assessment.md records the owner's Contabo/Dokploy facts, approved ingress adaptation, backup budget and remaining acceptance proposals.

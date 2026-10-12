@@ -39,35 +39,6 @@ Each module exposes a small public entry point; other modules use that interface
 
 Cross-module business actions use explicit orchestration. Starting a procedure and recording its full agreed charge must commit together in one database transaction. Billing owns financial invariants; the caller passes the transaction context to participating internal operations. Never independently commit the clinical half and then attempt the financial half. HTTP routes authenticate, validate and call application behavior; they do not duplicate business rules.
 
-## File organization — owner approved 2026-10-12
-
-Keep one modular monolith and group files by feature. The owner explicitly selected Routes → Controller → Service → Repository within each feature; this supersedes the previous loosely specified internal layout. These are concrete feature classes/functions, not a generic CRUD framework.
-
-```text
-apps/api/src/
-  application.ts                  # Compose middleware and feature routes
-  database.ts                     # Pool, runtime-role checks, scoped transactions
-  middleware/                     # Sessions, CSRF, safe HTTP errors
-  modules/identity/
-    index.ts                      # Public entry/wiring and operator provisioning
-    identity.routes.ts            # URLs, methods, route-level rate limits
-    identity.controller.ts        # Parse input, HTTP responses, browser session
-    identity.service.ts           # Login/onboarding rules and workflow orchestration
-    identity.repository.ts        # Prisma queries, row locks, atomic persistence
-apps/web/src/
-  main.tsx                        # Mount React and query provider
-  features/identity/
-    IdentityPage.tsx               # Select the current screen
-    useIdentitySession.ts         # Query lifecycle and page actions
-    identity.api.ts                # Typed HTTP operations, in-memory CSRF token
-    components/                   # Separate login/password/email/code forms
-packages/contracts/src/index.ts   # Zod transport schemas and types
-```
-
-A controller never queries Prisma; a repository never reads Express requests, sessions or sends HTTP responses. Services own stage/expiry/password/recovery rules. A service workflow uses one repository transaction callback for the account lock, checks and writes; repository helpers must not independently commit parts of a consequential workflow. Database transaction-local clinic context is set on the same connection as its queries. No new abstract interfaces/base repositories or dependency-injection container are required.
-
-Use this pattern for later features when implemented; do not create empty feature folders in advance. Frontend forms own their React Hook Form state; TanStack Query owns identity/clinic server records; page-only transient state uses local React hooks. Private server models are never browser contracts. Current local #7 endpoints use `/api`; validate deployment proxy paths against the implemented namespace before deployment.
-
 ## Clinic isolation — owner confirmed
 
 Owner selected one shared application/database, with a clinic ID on every clinic-owned record. Derive the authorized clinic from server-verified membership; client-supplied IDs never confer access. Use clinic-scoped uniqueness and composite references to prevent cross-clinic relationships. Every query, command, file delivery and report enforces both clinic scope and the actor's permission/patient scope. Prove isolation with tests involving two clinics.

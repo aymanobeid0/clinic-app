@@ -1,7 +1,5 @@
 # Spec 001 — proposed ticket breakdown
 
-> Status reconciliation — 2026-10-11: statements below about open issues, uncommitted work, pending planning review or absent implementation describe the original document snapshot. Prerequisite evidence is now merged in PR #30, workflow retirement in PR #31, and owner-approved issues #2–#6 are closed. The initial #7 HTTP/session slice was published in draft PR #32; subsequent implementation status is recorded in the linked delivery status. See [current delivery status](delivery-status.md) for completed work and remaining gates. Approved product rules remain authoritative; later approved contracts supersede discovery proposals.
-
 Status: approved and published as GitHub issues #2–#29. All 28 tickets have ready-for-agent labels; 49 native blocking edges verified. See ticket-index.md for issue links. Planning IDs below remain distinct from GitHub issue numbers.
 Parent: https://github.com/aymanobeid0/clinic-app/issues/1
 
