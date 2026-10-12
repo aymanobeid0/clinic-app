@@ -1,7 +1,5 @@
 # Foundation dependency and security research
 
-> Status reconciliation — 2026-10-11: statements below about open issues, uncommitted work, pending planning review or absent implementation describe the original document snapshot. Prerequisite evidence is now merged in PR #30, workflow retirement in PR #31, and owner-approved issues #2–#6 are closed. The initial #7 HTTP/session slice was published in draft PR #32; subsequent implementation status is recorded in the linked delivery status. See [current delivery status](delivery-status.md) for completed work and remaining gates. Approved product rules remain authoritative; later approved contracts supersede discovery proposals.
-
 Research date: 2026-10-10. Scope: issue #2, approved stack in dependency-proposal.md and application-architecture.md. These are exact candidate pins verified against public publisher metadata, not an installed or runtime-tested dependency baseline. No packages, containers or databases were installed or started during this research.
 
 ## Recommendation

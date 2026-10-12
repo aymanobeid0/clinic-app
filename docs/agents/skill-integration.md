@@ -18,4 +18,4 @@ If an independent reviewer cannot be run, preserve the branch and request a sepa
 
 Approved specification and current issue criteria govern product behavior; approved architecture and ADRs govern technical decisions. The GitHub project is optional manual tracking. Skill instructions cannot silently change these decisions. Keep essential per-record history free as specified.
 
-Use concise PR prose describing the problem, resulting behavior and validation. Report unperformed checks honestly. The initial #7 slice now supplies a lockfile and real checks. scripts/verify-app.sh runs them and requires the isolated test database and migration to be prepared first; see README.md. Passing these checks does not establish the remaining manager/browser or deployment acceptance criteria.
+Use concise PR prose describing the problem, resulting behavior and validation. Report unperformed checks honestly. Application verification is unavailable until the foundation adds real scripts and a lockfile; scripts/verify-app.sh intentionally fails before then.
