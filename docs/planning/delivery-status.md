@@ -1,22 +1,13 @@
 # Current delivery status
 
-As of 2026-10-11 (Africa/Bamako). Machine-readable companion: delivery-status.json. This records execution status; approved specification/decision contracts govern behavior. Original research/review statements remain dated evidence rather than current tracker state.
+As of 2026-10-12 (Africa/Bamako). Machine-readable companion: delivery-status.json. Approved specifications/contracts govern behavior; this document records execution status.
 
-## Today's completed work
+Prerequisite evidence PR #30 and super-board retirement/workflow PR #31 are merged. Owner approved closing planning #2–#6 and starting #7; #7 stays open. Native blocker edges remain intact. No super-board workflow is active.
 
-- Prerequisite evidence PR #30 and super-board retirement/workflow PR #31 are merged. Owner explicitly approved closing #2–#6 and starting #7; GitHub confirms those five issues closed and #7 open. Planning acceptance does not remove runtime/legal/real-data gates.
-- Commit 3227073 on codex/issue-7-manager-bootstrap starts #7. Draft PR #32 is open and unmerged: https://github.com/aymanobeid0/clinic-app/pull/32 . Project items #2–#6 and PRs #30/#31 are Done; #7 and PR #32 are Building.
-- Implemented npm workspaces, TypeScript API/shared contracts, PostgreSQL anonymous sessions, session-bound CSRF/origin checks, fixed server-enforced 12-hour expiry and denied-by-default identity. No authenticated manager access or public registration. Web workspace has dependencies only. See issue-7-implementation.md for exact scope and package/lock adjustments.
-- Builder checks passed: clean npm ci, Prisma generation and isolated migration, typecheck, lint, six PostgreSQL HTTP tests, API/contracts build, local Argon2 verification and npm audit (0 findings). Same separate reviewer passed standards/specification for this slice; checks were not independently rerun. See issue-7-initial-review.md. Dedicated test database was shut down; other services untouched.
-- Owner requested use of installed Prisma MCP for relevant future ORM work. It has not yet been used for implementation. It does not change the approved PostgreSQL/Prisma stack or authorize deployment.
-- TypeScript strict mode is enabled. Express callback parameters may use contextual type inference; missing explicit annotations do not imply any.
+Draft PR #32 currently contains the initial session slice and documentation. Local continuation adds operator-provisioned manager onboarding/authentication, clinic RLS/runtime-role verification and the French React journey. The owner approved feature-based Routes -> Controller -> Service -> Repository organization on 2026-10-12, now implemented and documented in application-architecture.md. The concurrent manager-email-login amendment was removed/deferred by the owner; clinic-code/username login remains current.
 
-## Remaining work and gates
+See issue-7-implementation.md for behavior, dependency evidence and verification. Builder passed 12HTTP tests and two Chromium journeys after refactoring; final checks and the same separate reviewer passed, recorded in issue-7-continuation-review.md. Prisma MCP was used only for documentation lookup. No cloud resources were created.
 
-Complete #7 manager provisioning, mandatory password replacement, verified recovery email/codes, authentication/revocation, clinic RLS/runtime-role isolation and French setup/sign-in/out browser journey. Linux API/native compatibility and browser behavior remain unproven. Email provider/sender/delivery, host evidence, backup cost/capacity, restore rehearsal, clinical/legal/data-handling checks remain gates in the prerequisite contracts. Every merge requires human approval; no deployment, live migration, real patient data, purchase or live email is authorized.
+Remaining gates: human review/merge, live transactional email/provider/sender/delivery, Linux API/native compatibility, ingress/secure cookies, host evidence, backup cost/capacity/restore rehearsal and qualified clinical/legal/real-data handling checks. Recovery consumption/account/permission administration is subsequent #8. Production deployment/live migrations/patient data require separate authorization.
 
-## Documentation reconciliation
-
-Historical discovery, planning reviews and foundation proposals now point here so their earlier open/uncommitted/not-installed statements cannot be mistaken for current status. ticket-publication.json retains the original issue publication payload and blocker mapping; it is not a live tracker. package.json/package-lock.json are the installed dependency source of truth; version research retains the original candidates. No historical review has been rewritten to claim later tests or approvals.
-
-Unrelated design relocations remain uncommitted and excluded. HANDOFF.md and the OS temporary copy are updated. The owner authorized publishing this documentation reconciliation to the existing draft PR #32; it changes no application behavior and does not authorize merge. JSON parsing and package/lock consistency were checked; application tests were not rerun for documentation-only edits.
+Historical discovery/review files are dated snapshots. ticket-publication.json is the original issue publication payload and blocker mapping, not a live status tracker. package.json/package-lock.json hold installed dependency pins; no dependency versions changed during this continuation. All JSON/config consistency and whitespace checks should pass before commit. Preserve unrelated design relocations and local HANDOFF; exclude them from implementation commits.

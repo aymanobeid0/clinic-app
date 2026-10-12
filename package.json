@@ -13,11 +13,15 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "build": "npm run build --workspace @clinic/contracts && npm run build --workspace @clinic/api",
+    "build": "npm run build --workspace @clinic/contracts && npm run build --workspace @clinic/api && npm run build --workspace @clinic/web",
     "dev": "tsx apps/api/src/server.ts",
     "test:db:up": "docker compose -p clinic-issue7-test -f infra/compose.test.yml up -d --wait",
     "test:db:down": "docker compose -p clinic-issue7-test -f infra/compose.test.yml down",
-    "postinstall": "npm run build --workspace @clinic/contracts && npm run db:generate --workspace @clinic/api"
+    "postinstall": "npm run build --workspace @clinic/contracts && npm run db:generate --workspace @clinic/api",
+    "dev:web": "npm run dev --workspace @clinic/web",
+    "provision": "tsx apps/api/src/provision.ts",
+    "test:browser": "npm run test:browser --workspace @clinic/web",
+    "test:db:prepare": "tsx apps/api/test/prepare.ts"
   },
   "devDependencies": {
     "typescript": "6.0.3",

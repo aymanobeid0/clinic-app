@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-11",
+  "asOf": "2026-10-12",
   "timezone": "Africa/Bamako",
   "planningIssues": {
     "closedWithOwnerApproval": [
@@ -19,14 +19,27 @@
     "issue": 7,
     "state": "in-progress",
     "branch": "codex/issue-7-manager-bootstrap",
-    "commit": "3227073fc042464f5dc54a8438096847126be21d",
-    "scope": "initial HTTP/session foundation only",
+    "scope": "manager onboarding/authentication, restricted runtime RLS, French browser journey; feature-based controller/service/repository organization",
     "evidence": "issue-7-implementation.md",
-    "review": "issue-7-initial-review.md"
+    "review": "issue-7-continuation-review.md",
+    "initialCommit": "3227073fc042464f5dc54a8438096847126be21d",
+    "publication": "continuation prepared for draft PR32 review; no merge approval",
+    "checks": {
+      "httpTestsPassed": 12,
+      "browserJourneysPassed": 2,
+      "typecheck": "pass",
+      "lint": "pass",
+      "apiContractsWebBuild": "pass",
+      "auditFindings": 0
+    },
+    "reviewStatus": "standards/specification pass after same-reviewer fixes",
+    "loginPolicy": "clinic code plus username/password; manager-email amendment removed/deferred by owner",
+    "organization": "feature folders: routes, controller, service, repository"
   },
   "prismaMcp": {
     "ownerRequestedUse": true,
-    "usedForImplementation": false
+    "usedForImplementation": true,
+    "use": "documentation lookup only; no cloud mutations"
   },
   "liveDataDeploymentAuthorized": false,
   "publicationPayload": "ticket-publication.json"

@@ -11,3 +11,6 @@ coverage/
 **/__pycache__/
 
 apps/api/src/generated/
+
+apps/web/test-results/
+apps/web/playwright-report/

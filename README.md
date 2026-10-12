@@ -1,18 +1,30 @@
 # Clinic app — implementation in progress
 
-Prerequisite evidence is in docs/planning; issue #7 is the first application slice. There is no public registration route. Live patient data, deployment and live migrations are not authorized.
+Issue #7 now has operator-provisioned clinic/manager identity, restricted onboarding, authentication and a French browser journey. No public clinic registration. Live patient data, deployment, live migrations and live email are not authorized.
 
 ## Local fictional-data checks
 
-Use Node 24 (deployment candidate in .node-version), npm and Docker Desktop. Existing databases are not used. This slice uses the explicitly named clinic-issue7-test Compose project, PostgreSQL 18.6, a loopback-only port and temporary storage. The credentials in compose.test.yml are fictional test values only.
+Use Node 24, npm and Docker Desktop. Existing databases are not used. The dedicated clinic-issue7-test Compose project uses loopback-only PostgreSQL 18.6 and temporary storage. All checked-in test credentials are fictional.
 
-1. `npm ci` — install the committed lockfile.
-2. `npm run test:db:up` — start only the dedicated disposable test database.
-3. `npm run db:generate --workspace @clinic/api` — generate the Prisma client.
-4. `npm run db:migrate --workspace @clinic/api` — apply the isolated test migration (the Prisma config defaults only to the named local test database).
-5. `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
-6. `npm run test:db:down` — stop only this test project's database.
+1. `npm ci` installs the pinned lockfile and generates Prisma/builds contracts.
+2. `npm run test:db:up` starts only the dedicated test database.
+3. `npm run test:db:prepare` applies migrations and creates the fictional restricted runtime login.
+4. `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` check API/contracts/web.
+5. `npx playwright install chromium`, then `npm run test:browser` prove the French journey. Optional PLAYWRIGHT_BROWSERS_PATH can keep browser downloads in an ignored local directory. The test starts its own loopback API and Vite; ports 3000/4173 must be free.
+6. `npm run test:db:down` removes only this disposable project.
 
-TEST_DATABASE_URL may select another explicitly isolated fictional-data database. Never point these tests or migrations at a live clinic. The runtime server requires DATABASE_URL, SESSION_SECRET and APP_ORIGIN; no production credential defaults are provided. COOKIE_SECURE defaults on, and may be disabled only for local HTTP development.
+The browser test provisions fictional data and injects a fake mail adapter in-process. It never sends email or exposes a fake verification endpoint. API tests also use a real isolated PostgreSQL database. The infrastructure isolation test deliberately omits application filters to prove RLS through the actual runtime Prisma pool.
 
-The initial slice implements the persistent anonymous session and denied identity boundary. Manager provisioning, onboarding, authenticated identity and the French browser journey remain in issue #7; the web workspace currently declares dependencies only and is not part of the build. No complete sign-in or clinic-isolation claim is made at this stage.
+## Runtime and provisioning
+
+The API requires DATABASE_URL, SESSION_SECRET and APP_ORIGIN. DATABASE_URL must use a non-owner login with clinic_runtime membership; startup rejects superuser, bypass-RLS, database/role-creation and table-owner privileges. Migrations and operator provisioning use separate privileged credentials; provisioning must be able to insert despite FORCE RLS (a non-super table owner alone is insufficient). Production role provisioning still needs rehearsal. Cookie security is enabled by default; COOKIE_SECURE=false is local HTTP only and rejected in production. Local frontend: `npm run dev:web`; API: `npm run dev`.
+
+`npm run provision` is an operator-only stdin JSON tool, not an HTTP registration endpoint. Set PROVISION_DATABASE_URL out of band to the authorized owner connection. Input includes clinicCode, clinicName, username, displayName and temporaryPassword. Use secure stdin rather than command arguments or committed files. The temporary password expires after 24 hours and must be replaced before access; replacement revokes all sessions and requires sign-in again. Initial password validation accepts 12–128 characters without changing the owner's account/recovery lifecycle.
+
+A replaceable mail adapter is accepted by createApplication. The shipped runtime intentionally has no live provider adapter; verification returns 503 until delivery is configured. No fake verification fallback exists in the runtime. Test-only delivery proves the onboarding flow, not live email readiness. Verification URLs use fragments so tokens are not sent in HTTP request URLs; verification remains an authenticated, CSRF-protected POST. Code regeneration requires the current password and invalidates the previous batch; losing the one-time display requires regeneration. Recovery consumption and staff administration remain #8.
+
+Production Linux API/native compatibility, ingress/secure-cookie configuration, actual email delivery, recovery rehearsal and real-data gates remain unproven. See docs/planning/delivery-status.md and issue-7-implementation.md. #7 stays open pending independent final review and human merge approval.
+
+## File organization
+
+Owner approved feature folders with Routes -> Controller -> Service -> Repository. Start with apps/api/src/modules/identity/identity.routes.ts; its controller handles HTTP, service implements the rules, and repository contains Prisma queries. application.ts only assembles middleware/routes. Frontend identity screens/forms are in apps/web/src/features/identity. See docs/architecture/application-architecture.md for the file tree and system design.
