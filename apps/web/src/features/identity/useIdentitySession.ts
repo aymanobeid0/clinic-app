@@ -92,7 +92,7 @@ export function useIdentitySession() {
     verifyEmail(token: string) {
       return run(async () => {
         const result = await identityApi.verifyEmail(token);
-        if (accountKey) setCodes({ ...result, owner: accountKey });
+        if (accountKey && result) setCodes({ ...result, owner: accountKey });
         setVerificationToken('');
         await reloadIdentity();
       });

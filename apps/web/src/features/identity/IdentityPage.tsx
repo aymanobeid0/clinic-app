@@ -17,6 +17,7 @@ export function IdentityPage() {
       case 'email':
         return (
           <EmailVerificationForm
+            loginEmail={session.identity?.loginEmail ?? null}
             busy={session.busy}
             token={session.verificationToken}
             onSend={session.sendVerification}

@@ -27,6 +27,9 @@ model Account {
   clinic Clinic @relation(fields: [clinicId], references: [id])
   username String
   displayName String
+  loginMethod String @default("clinic_username")
+  loginEmail String? @unique
+  isManager Boolean @default(false)
   passwordHash String
   temporaryExpiresAt DateTime? @db.Timestamptz(6)
   credentialVersion Int @default(0)

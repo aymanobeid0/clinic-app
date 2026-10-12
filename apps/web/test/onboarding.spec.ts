@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { hash } from 'argon2';
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { test, expect } from '@playwright/test';
@@ -24,10 +25,27 @@ test.beforeAll(async () => {
   await runtime.assertRuntimeRole();
   await provisionClinic(operator, {
     clinicCode,
+    email: `${clinicCode}@example.invalid`,
     clinicName: 'Clinique de démonstration',
     username: 'manager',
     displayName: 'Camille',
     temporaryPassword: 'Fictional-browser-initial-1',
+  });
+  const clinic = await operator.client.clinic.findUniqueOrThrow({
+    where: { code: clinicCode },
+  });
+  // #8 owns promotion APIs. Fixture models an already configured promoted doctor.
+  await operator.client.account.create({
+    data: {
+      clinicId: clinic.id,
+      username: 'doctor',
+      displayName: 'Docteur responsable',
+      passwordHash: await hash('Fictional-doctor-browser-1'),
+      isManager: true,
+      verifiedEmail: `doctor-${clinicCode}@example.invalid`,
+      recoveryEmail: `doctor-${clinicCode}@example.invalid`,
+      codesSaved: true,
+    },
   });
   const app = createApplication({
     database: runtime,
@@ -43,6 +61,7 @@ test.beforeAll(async () => {
   for (const code of switchClinics) {
     await provisionClinic(operator, {
       clinicCode: code,
+      email: `${code}@example.invalid`,
       clinicName: 'Clinique fictive',
       username: 'manager',
       displayName: 'Responsable',
@@ -60,21 +79,25 @@ test.beforeAll(async () => {
       .send(body);
   csrf = (
     await post('sign-in', {
-      clinicCode: switchClinics[1],
-      username: 'manager',
+      method: 'email',
+      email: `${switchClinics[1]}@example.invalid`,
       password: 'Fictional-browser-initial-1',
     })
   ).body.csrfToken;
-  await post('onboarding/password', { password: 'Fictional-browser-replaced-2' });
+  await post('onboarding/password', {
+    password: 'Fictional-browser-replaced-2',
+  });
   csrf = (await managerB.get('/api/session')).body.csrfToken;
   csrf = (
     await post('sign-in', {
-      clinicCode: switchClinics[1],
-      username: 'manager',
+      method: 'email',
+      email: `${switchClinics[1]}@example.invalid`,
       password: 'Fictional-browser-replaced-2',
     })
   ).body.csrfToken;
-  await post('onboarding/email', { email: 'second-manager@example.invalid' });
+  await post('onboarding/email', {
+    email: `${switchClinics[1]}@example.invalid`,
+  });
   expect((await post('onboarding/verify-email', { token })).status).toBe(200);
   server = await new Promise<Server>((resolve) => {
     const listener = app.listen(3000, '127.0.0.1', () => resolve(listener));
@@ -93,8 +116,7 @@ test('French manager completes restricted setup and can sign in and out', async 
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Connexion à votre clinique' })).toBeVisible();
   async function login(password: string) {
-    await page.getByLabel('Code de la clinique').fill(clinicCode);
-    await page.getByLabel('Identifiant', { exact: true }).fill('MANAGER');
+    await page.getByLabel('Adresse e-mail de connexion').fill(`${clinicCode}@example.invalid`);
     await page.getByLabel('Mot de passe', { exact: true }).fill(password);
     await page.getByRole('button', { name: 'Se connecter' }).click();
   }
@@ -110,7 +132,9 @@ test('French manager completes restricted setup and can sign in and out', async 
   await expect(
     page.getByText('Utilisez une adresse e-mail réelle', { exact: false }),
   ).toBeVisible();
-  await page.getByLabel('Adresse e-mail de récupération').fill('manager@example.invalid');
+  await expect(page.getByLabel('Adresse e-mail de récupération')).toHaveValue(
+    `${clinicCode}@example.invalid`,
+  );
   await page.getByRole('button', { name: 'Envoyer le lien de vérification' }).click();
   await expect(page.getByRole('status')).toContainText('Message envoyé');
   await page.goto(`/#verification=${token}`);
@@ -134,7 +158,10 @@ test('French manager completes restricted setup and can sign in and out', async 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
-  await page.screenshot({ path: '../../.tools/issue7-sign-in-mobile.png', fullPage: true });
+  await page.screenshot({
+    path: '../../.tools/issue7-sign-in-mobile.png',
+    fullPage: true,
+  });
 });
 
 test('shared PC never shows previous manager recovery codes after authentication is lost', async ({
@@ -143,8 +170,7 @@ test('shared PC never shows previous manager recovery codes after authentication
 }) => {
   await page.goto('/');
   async function login(clinic: string, password: string) {
-    await page.getByLabel('Code de la clinique').fill(clinic);
-    await page.getByLabel('Identifiant', { exact: true }).fill('manager');
+    await page.getByLabel('Adresse e-mail de connexion').fill(`${clinic}@example.invalid`);
     await page.getByLabel('Mot de passe', { exact: true }).fill(password);
     await page.getByRole('button', { name: 'Se connecter' }).click();
   }
@@ -153,7 +179,9 @@ test('shared PC never shows previous manager recovery codes after authentication
   await page.getByRole('button', { name: 'Enregistrer le mot de passe' }).click();
   await expect(page.getByRole('heading', { name: 'Connexion à votre clinique' })).toBeVisible();
   await login(switchClinics[0], 'Fictional-browser-replaced-2');
-  await page.getByLabel('Adresse e-mail de récupération').fill('first-manager@example.invalid');
+  await expect(page.getByLabel('Adresse e-mail de récupération')).toHaveValue(
+    `${switchClinics[0]}@example.invalid`,
+  );
   await page.getByRole('button', { name: 'Envoyer le lien de vérification' }).click();
   await expect(page.getByRole('status')).toContainText('Message envoyé');
   await page.getByLabel('Code de vérification reçu').fill(token);
@@ -168,4 +196,18 @@ test('shared PC never shows previous manager recovery codes after authentication
   await expect(page.locator('.codes li')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Remplacer mes codes' })).toBeVisible();
   for (const code of oldCodes) await expect(page.getByText(code, { exact: true })).toHaveCount(0);
+});
+
+test('promoted doctor signs in with clinic code and username, without a login email', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByLabel('Mode de connexion').selectOption('clinic_username');
+  await expect(page.getByLabel('Adresse e-mail de connexion')).toHaveCount(0);
+  await page.getByLabel('Code de la clinique').fill(clinicCode);
+  await page.getByLabel('Identifiant', { exact: true }).fill(' DOCTOR ');
+  await page.getByLabel('Mot de passe', { exact: true }).fill('Fictional-doctor-browser-1');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page.getByText('Configuration terminée', { exact: true })).toBeVisible();
+  await expect(page.getByText('Bonjour Docteur responsable.', { exact: false })).toBeVisible();
 });

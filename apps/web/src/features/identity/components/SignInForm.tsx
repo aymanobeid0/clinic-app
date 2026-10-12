@@ -13,11 +13,24 @@ type Props = {
 export function SignInForm({ busy, unavailable, onSubmit, onInvalid }: Props) {
   const form = useForm<z.input<typeof signInSchema>, unknown, SignIn>({
     resolver: zodResolver(signInSchema),
+    defaultValues: { method: 'email' },
+    shouldUnregister: true,
   });
+  const method = form.watch('method');
   return (
     <>
       <h2>Connexion à votre clinique</h2>
-      <p className="description">Utilisez le code de votre clinique et votre identifiant.</p>
+      <p className="description">
+        Responsable principal : e-mail. Équipe et médecins responsables : identifiants de la
+        clinique.
+      </p>
+      <label>
+        Mode de connexion
+        <select {...form.register('method')} disabled={busy}>
+          <option value="email">Responsable principal — e-mail</option>
+          <option value="clinic_username">Équipe / médecin responsable — identifiant</option>
+        </select>
+      </label>
       <form
         onSubmit={form.handleSubmit(
           async (input) => {
@@ -27,17 +40,25 @@ export function SignInForm({ busy, unavailable, onSubmit, onInvalid }: Props) {
           () => onInvalid('Vérifiez le code clinique, l’identifiant et le mot de passe.'),
         )}
       >
-        <Field label="Code de la clinique">
-          <input
-            autoComplete="organization"
-            {...form.register('clinicCode')}
-            required
-            placeholder="ex. clinique-centre"
-          />
-        </Field>
-        <Field label="Identifiant">
-          <input autoComplete="username" {...form.register('username')} required />
-        </Field>
+        {method === 'email' ? (
+          <Field label="Adresse e-mail de connexion">
+            <input type="email" autoComplete="username" {...form.register('email')} required />
+          </Field>
+        ) : (
+          <>
+            <Field label="Code de la clinique">
+              <input
+                autoComplete="organization"
+                {...form.register('clinicCode')}
+                required
+                placeholder="ex. clinique-centre"
+              />
+            </Field>
+            <Field label="Identifiant">
+              <input autoComplete="username" {...form.register('username')} required />
+            </Field>
+          </>
+        )}
         <Field label="Mot de passe">
           <input
             type="password"

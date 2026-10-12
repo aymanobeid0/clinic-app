@@ -27,8 +27,9 @@ const digest = (value: string) => createHash('sha256').update(value).digest('hex
 
 function onboardingStage(account: ManagerAccount): Identity['stage'] {
   if (account.temporaryExpiresAt) return 'password';
-  if (!account.verifiedEmail) return 'email';
-  if (!account.codesSaved) return 'codes';
+  if (!account.verifiedEmail && (account.isManager || account.loginMethod === 'email'))
+    return 'email';
+  if (account.isManager && !account.codesSaved) return 'codes';
   return 'ready';
 }
 
@@ -52,9 +53,12 @@ export class IdentityService {
   }
 
   async signIn(input: SignIn) {
-    const account = await this.repository.findLoginAccount(input.clinicCode, input.username);
+    const account =
+      input.method === 'email'
+        ? await this.repository.findEmailAccount(input.email)
+        : await this.repository.findLoginAccount(input.clinicCode, input.username);
     const valid = await verify(account?.passwordHash ?? (await this.dummyHash), input.password);
-    if (!valid || !account || this.isUnavailable(account)) {
+    if (!valid || !account || account.loginMethod !== input.method || this.isUnavailable(account)) {
       throw new IdentityError(401, 'Identifiants invalides.');
     }
     return {
@@ -72,6 +76,9 @@ export class IdentityService {
       accountId: account.id,
       clinicId: account.clinicId,
       username: account.username,
+      loginMethod: account.loginMethod as Identity['loginMethod'],
+      isManager: account.isManager,
+      loginEmail: account.loginEmail,
       displayName: account.displayName,
       stage: onboardingStage(account),
     }));
@@ -107,6 +114,9 @@ export class IdentityService {
       if (onboardingStage(account) !== 'email') {
         throw new IdentityError(409, 'Étape de configuration incorrecte.');
       }
+      if (account.loginMethod === 'email' && email !== account.loginEmail) {
+        throw new IdentityError(400, 'Vérifiez votre adresse de connexion.');
+      }
       await transaction.saveVerification(account.id, email, tokenHash, new Date(this.now() + DAY));
       return { clinicId: account.clinicId, accountId: account.id };
     });
@@ -138,13 +148,13 @@ export class IdentityService {
         throw new IdentityError(400, 'Lien invalide ou expiré.');
       }
       await transaction.verifyEmail(account.id, account.recoveryEmail);
-      return this.issueCodes(account, transaction);
+      return account.isManager ? this.issueCodes(account, transaction) : null;
     });
   }
 
   regenerateCodes(actor: Actor | undefined, password: string) {
     return this.withAuthenticatedAccount(actor, async (account, transaction) => {
-      if (!account.verifiedEmail || account.temporaryExpiresAt) {
+      if (!account.isManager || !account.verifiedEmail || account.temporaryExpiresAt) {
         throw new IdentityError(409, 'Vérifiez votre adresse courriel.');
       }
       if (!(await verify(account.passwordHash, password))) {
@@ -157,6 +167,7 @@ export class IdentityService {
   confirmSavedCodes(actor: Actor | undefined, batchId: string) {
     return this.withAuthenticatedAccount(actor, async (account, transaction) => {
       if (
+        !account.isManager ||
         !account.verifiedEmail ||
         account.temporaryExpiresAt ||
         account.codesBatchId !== batchId

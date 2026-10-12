@@ -38,6 +38,7 @@ describe('manager onboarding', () => {
     const clinicCode = `test-${randomUUID()}`.slice(0, 32);
     await provisionClinic(database, {
       clinicCode,
+      email: `${clinicCode}@example.invalid`,
       clinicName: 'Clinique fictive',
       username: 'Manager',
       displayName: 'Responsable fictif',
@@ -49,7 +50,11 @@ describe('manager onboarding', () => {
       .post('/api/sign-in')
       .set('Origin', origin)
       .set('x-csrf-token', session.body.csrfToken)
-      .send({ clinicCode, username: ' MANAGER ', password: 'Fictional-initial-pass-1' });
+      .send({
+        method: 'email',
+        email: ` ${clinicCode.toUpperCase()}@EXAMPLE.INVALID `,
+        password: 'Fictional-initial-pass-1',
+      });
     expect(login.status).toBe(200);
     expect(login.body.stage).toBe('password');
     expect((await browser.get('/api/clinic')).status).toBe(403);
@@ -64,6 +69,7 @@ describe('manager onboarding', () => {
     const clinicCode = `test-${randomUUID()}`.slice(0, 32);
     await provisionClinic(database, {
       clinicCode,
+      email: `${clinicCode}@example.invalid`,
       clinicName: 'Clinique fictive',
       username: 'manager',
       displayName: 'Responsable',
@@ -77,7 +83,11 @@ describe('manager onboarding', () => {
         .post('/api/sign-in')
         .set('Origin', origin)
         .set('x-csrf-token', session.body.csrfToken)
-        .send({ clinicCode, username: 'manager', password: 'Fictional-initial-pass-1' });
+        .send({
+          method: 'email',
+          email: `${clinicCode}@example.invalid`,
+          password: 'Fictional-initial-pass-1',
+        });
       tokens.push(login.body.csrfToken);
     }
     const responses = await Promise.all(
@@ -97,7 +107,11 @@ describe('manager onboarding', () => {
         .post('/api/sign-in')
         .set('Origin', origin)
         .set('x-csrf-token', session.body.csrfToken)
-        .send({ clinicCode, username: 'manager', password });
+        .send({
+          method: 'email',
+          email: `${clinicCode}@example.invalid`,
+          password,
+        });
     expect((await signIn('Fictional-initial-pass-1')).status).toBe(401);
     expect((await signIn('Fictional-replacement-pass-2')).body.stage).toBe('email');
   });
@@ -106,6 +120,7 @@ describe('manager onboarding', () => {
     const clinicCode = `test-${randomUUID()}`.slice(0, 32);
     await provisionClinic(database, {
       clinicCode,
+      email: `${clinicCode}@example.invalid`,
       clinicName: 'Clinique démonstration',
       username: 'manager',
       displayName: 'Responsable',
@@ -117,26 +132,34 @@ describe('manager onboarding', () => {
       browser.post(path).set('Origin', origin).set('x-csrf-token', csrf).send(body);
     csrf = (
       await post('/api/sign-in', {
-        clinicCode,
-        username: 'manager',
+        method: 'email',
+        email: `${clinicCode}@example.invalid`,
         password: 'Fictional-initial-pass-1',
       })
     ).body.csrfToken;
-    await post('/api/onboarding/password', { password: 'Fictional-replacement-pass-2' });
+    await post('/api/onboarding/password', {
+      password: 'Fictional-replacement-pass-2',
+    });
     csrf = (await browser.get('/api/session')).body.csrfToken;
     csrf = (
       await post('/api/sign-in', {
-        clinicCode,
-        username: 'manager',
+        method: 'email',
+        email: `${clinicCode}@example.invalid`,
         password: 'Fictional-replacement-pass-2',
       })
     ).body.csrfToken;
-    expect((await post('/api/onboarding/email', { email: 'manager@example.invalid' })).status).toBe(
-      202,
-    );
+    expect(
+      (
+        await post('/api/onboarding/email', {
+          email: `${clinicCode}@example.invalid`,
+        })
+      ).status,
+    ).toBe(202);
     const first = deliveries.at(-1)!;
     expect((await browser.get('/api/clinic')).status).toBe(403);
-    await post('/api/onboarding/email', { email: 'manager@example.invalid' });
+    await post('/api/onboarding/email', {
+      email: `${clinicCode}@example.invalid`,
+    });
     expect((await post('/api/onboarding/verify-email', { token: first.token })).status).toBe(400);
     const token = deliveries.at(-1)!.token;
     const verified = await post('/api/onboarding/verify-email', { token });
@@ -146,8 +169,12 @@ describe('manager onboarding', () => {
     expect((await post('/api/onboarding/verify-email', { token })).status).toBe(400);
     expect((await browser.get('/api/clinic')).status).toBe(403);
     expect(
-      (await post('/api/onboarding/codes-saved', { batchId: verified.body.batchId, saved: true }))
-        .status,
+      (
+        await post('/api/onboarding/codes-saved', {
+          batchId: verified.body.batchId,
+          saved: true,
+        })
+      ).status,
     ).toBe(204);
     expect((await browser.get('/api/clinic')).body).toEqual({
       code: clinicCode,
@@ -164,6 +191,7 @@ describe('manager onboarding', () => {
       database,
       {
         clinicCode,
+        email: `${clinicCode}@example.invalid`,
         clinicName: 'Clinique fictive',
         username: 'manager',
         displayName: 'Responsable',
@@ -175,9 +203,11 @@ describe('manager onboarding', () => {
     const session = await browser.get('/api/session');
     expect(
       (
-        await browser
-          .post('/api/sign-in')
-          .send({ clinicCode, username: 'manager', password: 'Fictional-initial-pass-1' })
+        await browser.post('/api/sign-in').send({
+          method: 'email',
+          email: `${clinicCode}@example.invalid`,
+          password: 'Fictional-initial-pass-1',
+        })
       ).status,
     ).toBe(403);
     for (const code of [clinicCode, 'unknown-clinic']) {
@@ -185,7 +215,11 @@ describe('manager onboarding', () => {
         .post('/api/sign-in')
         .set('Origin', origin)
         .set('x-csrf-token', session.body.csrfToken)
-        .send({ clinicCode: code, username: 'manager', password: 'Fictional-initial-pass-1' });
+        .send({
+          method: 'email',
+          email: `${code}@example.invalid`,
+          password: 'Fictional-initial-pass-1',
+        });
       expect(response.status).toBe(401);
       expect(response.body).toEqual({ error: 'Identifiants invalides.' });
     }
@@ -197,12 +231,15 @@ describe('manager onboarding', () => {
     for (const clinicCode of codes)
       await provisionClinic(database, {
         clinicCode,
+        email: `${clinicCode}@example.invalid`,
         clinicName: clinicCode,
         username: 'manager',
         displayName: 'Responsable',
         temporaryPassword: 'Fictional-initial-pass-1',
       });
-    const clinics = await database.client.clinic.findMany({ where: { code: { in: codes } } });
+    const clinics = await database.client.clinic.findMany({
+      where: { code: { in: codes } },
+    });
     // Infrastructure security boundary: deliberately omit application WHERE filters
     // to demonstrate database RLS, rather than assert application storage internals.
     expect(await runtime.client.account.findMany()).toEqual([]);
@@ -211,7 +248,9 @@ describe('manager onboarding', () => {
         const clinic = clinics[i % 2];
         return runtime.clinicTransaction(clinic.id, async (tx) => {
           const visible = await tx.clinic.findMany({ select: { code: true } });
-          const accounts = await tx.account.findMany({ select: { clinicId: true } });
+          const accounts = await tx.account.findMany({
+            select: { clinicId: true },
+          });
           expect(visible).toEqual([{ code: clinic.code }]);
           expect(accounts).toEqual([{ clinicId: clinic.id }]);
         });
@@ -220,7 +259,9 @@ describe('manager onboarding', () => {
     expect(results).toHaveLength(12);
     expect(await runtime.client.account.findMany()).toEqual([]);
     await expect(
-      runtime.client.clinic.create({ data: { code: 'forbidden', name: 'Forbidden' } }),
+      runtime.client.clinic.create({
+        data: { code: 'forbidden', name: 'Forbidden' },
+      }),
     ).rejects.toThrow();
   });
 
@@ -233,6 +274,7 @@ describe('manager onboarding', () => {
       database,
       {
         clinicCode,
+        email: `${clinicCode}@example.invalid`,
         clinicName: 'Clinique fictive',
         username: 'manager',
         displayName: 'Responsable',
@@ -256,23 +298,38 @@ describe('manager onboarding', () => {
       browser.post(path).set('Origin', origin).set('x-csrf-token', csrf).send(body);
     const login = async (password: string) => {
       csrf = (await browser.get('/api/session')).body.csrfToken;
-      csrf = (await post('/api/sign-in', { clinicCode, username: 'manager', password })).body
-        .csrfToken;
+      csrf = (
+        await post('/api/sign-in', {
+          method: 'email',
+          email: `${clinicCode}@example.invalid`,
+          password,
+        })
+      ).body.csrfToken;
     };
     await login('Fictional-initial-pass-1');
-    await post('/api/onboarding/password', { password: 'Fictional-replacement-pass-2' });
+    await post('/api/onboarding/password', {
+      password: 'Fictional-replacement-pass-2',
+    });
     await login('Fictional-replacement-pass-2');
-    expect((await post('/api/onboarding/email', { email: 'manager@example.invalid' })).status).toBe(
-      503,
-    );
+    expect(
+      (
+        await post('/api/onboarding/email', {
+          email: `${clinicCode}@example.invalid`,
+        })
+      ).status,
+    ).toBe(503);
     expect((await post('/api/onboarding/verify-email', { token: delivered })).status).toBe(400);
     failDelivery = false;
-    await post('/api/onboarding/email', { email: 'manager@example.invalid' });
+    await post('/api/onboarding/email', {
+      email: `${clinicCode}@example.invalid`,
+    });
     const expiredToken = delivered;
     time += 24 * 60 * 60 * 1000;
     await login('Fictional-replacement-pass-2');
     expect((await post('/api/onboarding/verify-email', { token: expiredToken })).status).toBe(400);
-    await post('/api/onboarding/email', { email: 'manager@example.invalid' });
+    await post('/api/onboarding/email', {
+      email: `${clinicCode}@example.invalid`,
+    });
     const responses = await Promise.all([
       post('/api/onboarding/verify-email', { token: delivered }),
       post('/api/onboarding/verify-email', { token: delivered }),
@@ -286,7 +343,12 @@ describe('manager onboarding', () => {
     expect(replacement.status).toBe(200);
     expect(replacement.body.codes.some((code: string) => batch.codes.includes(code))).toBe(false);
     expect(
-      (await post('/api/onboarding/codes-saved', { batchId: batch.batchId, saved: true })).status,
+      (
+        await post('/api/onboarding/codes-saved', {
+          batchId: batch.batchId,
+          saved: true,
+        })
+      ).status,
     ).toBe(409);
     expect(
       (

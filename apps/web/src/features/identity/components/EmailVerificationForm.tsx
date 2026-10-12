@@ -3,12 +3,15 @@ import { useForm } from 'react-hook-form';
 import { Field } from './Field.js';
 type Props = {
   busy: boolean;
+  loginEmail: string | null;
   token: string;
   onSend: (email: string) => Promise<void>;
   onVerify: (token: string) => Promise<void>;
 };
-export function EmailVerificationForm({ busy, token, onSend, onVerify }: Props) {
-  const emailForm = useForm<{ email: string }>();
+export function EmailVerificationForm({ busy, token, loginEmail, onSend, onVerify }: Props) {
+  const emailForm = useForm<{ email: string }>({
+    defaultValues: { email: loginEmail ?? '' },
+  });
   const tokenForm = useForm<{ token: string }>({ defaultValues: { token } });
   const { setValue } = tokenForm;
   useEffect(() => {
@@ -23,7 +26,13 @@ export function EmailVerificationForm({ busy, token, onSend, onVerify }: Props) 
       </p>
       <form onSubmit={emailForm.handleSubmit(({ email }) => onSend(email))}>
         <Field label="Adresse e-mail de récupération">
-          <input type="email" autoComplete="email" {...emailForm.register('email')} required />
+          <input
+            type="email"
+            readOnly={Boolean(loginEmail)}
+            autoComplete="email"
+            {...emailForm.register('email')}
+            required
+          />
         </Field>
         <button disabled={busy}>Envoyer le lien de vérification</button>
       </form>

@@ -47,7 +47,7 @@ export const identityApi = {
     return post('onboarding/email', { email });
   },
   verifyEmail(token: string) {
-    return post<RecoveryCodes>('onboarding/verify-email', { token });
+    return post<RecoveryCodes | null>('onboarding/verify-email', { token });
   },
   regenerateCodes(password: string) {
     return post<RecoveryCodes>('onboarding/codes', { password });

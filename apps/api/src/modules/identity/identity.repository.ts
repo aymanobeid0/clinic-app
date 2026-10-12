@@ -5,6 +5,7 @@ import type { Account, Prisma } from '../../generated/prisma/client.js';
 export type ManagerAccount = Account;
 
 type ProvisionRecord = {
+  email: string;
   clinicCode: string;
   clinicName: string;
   username: string;
@@ -19,21 +20,33 @@ export class IdentityTransaction {
   replacePassword(accountId: string, passwordHash: string) {
     return this.tx.account.update({
       where: { id: accountId },
-      data: { passwordHash, temporaryExpiresAt: null, credentialVersion: { increment: 1 } },
+      data: {
+        passwordHash,
+        temporaryExpiresAt: null,
+        credentialVersion: { increment: 1 },
+      },
     });
   }
 
   saveVerification(accountId: string, email: string, tokenHash: string, expiresAt: Date) {
     return this.tx.account.update({
       where: { id: accountId },
-      data: { recoveryEmail: email, verificationHash: tokenHash, verificationExpiresAt: expiresAt },
+      data: {
+        recoveryEmail: email,
+        verificationHash: tokenHash,
+        verificationExpiresAt: expiresAt,
+      },
     });
   }
 
   verifyEmail(accountId: string, email: string) {
     return this.tx.account.update({
       where: { id: accountId },
-      data: { verifiedEmail: email, verificationHash: null, verificationExpiresAt: null },
+      data: {
+        verifiedEmail: email,
+        verificationHash: null,
+        verificationExpiresAt: null,
+      },
     });
   }
 
@@ -42,7 +55,11 @@ export class IdentityTransaction {
       where: { clinicId: account.clinicId, accountId: account.id },
     });
     await this.tx.recoveryCode.createMany({
-      data: hashes.map((hash) => ({ clinicId: account.clinicId, accountId: account.id, hash })),
+      data: hashes.map((hash) => ({
+        clinicId: account.clinicId,
+        accountId: account.id,
+        hash,
+      })),
     });
     await this.tx.account.update({
       where: { id: account.id },
@@ -51,7 +68,10 @@ export class IdentityTransaction {
   }
 
   confirmSavedCodes(accountId: string) {
-    return this.tx.account.update({ where: { id: accountId }, data: { codesSaved: true } });
+    return this.tx.account.update({
+      where: { id: accountId },
+      data: { codesSaved: true },
+    });
   }
 
   getClinic(clinicId: string) {
@@ -74,6 +94,10 @@ export class IdentityRepository {
         data: {
           clinicId: clinic.id,
           username: record.username,
+          loginMethod: 'email',
+          loginEmail: record.email,
+          recoveryEmail: record.email,
+          isManager: true,
           displayName: record.displayName,
           passwordHash: record.passwordHash,
           temporaryExpiresAt: record.temporaryExpiresAt,
@@ -83,10 +107,19 @@ export class IdentityRepository {
     });
   }
 
+  findEmailAccount(email: string) {
+    return this.database.client.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT set_config('app.login_email', ${email}, true)`;
+      return tx.account.findUnique({ where: { loginEmail: email } });
+    });
+  }
+
   findLoginAccount(clinicCode: string, username: string) {
     return this.database.client.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT set_config('app.clinic_code', ${clinicCode}, true)`;
-      const clinic = await tx.clinic.findUnique({ where: { code: clinicCode } });
+      const clinic = await tx.clinic.findUnique({
+        where: { code: clinicCode },
+      });
       if (!clinic) return null;
       await tx.$queryRaw`SELECT set_config('app.clinic_id', ${clinic.id}, true)`;
       return tx.account.findUnique({
