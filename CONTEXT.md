@@ -5,7 +5,7 @@ A clinic manages patient care, scheduling, treatment, billing, and supplies. The
 ## Language
 
 **Manager account**:
-An individual clinic account responsible for managing staff permissions and clinic settings. Its holder may also practice dentistry.
+An individual clinic account responsible for managing staff permissions and clinic settings. Its holder may also practice dentistry. Manager authority is independent from login method: primary clinic managers use verified unique email/password; a doctor granted manager authority keeps clinic-code/username/password login.
 
 **Doctor account**:
 An individual account for a treating dentist, with permissions controlled by the clinic manager.

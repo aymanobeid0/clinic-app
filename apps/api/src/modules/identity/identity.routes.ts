@@ -12,7 +12,10 @@ export function identityRoutes(controller: IdentityController) {
     legacyHeaders: false,
     keyGenerator: (req) => {
       const input = signInSchema.safeParse(req.body);
-      return input.success ? `${input.data.clinicCode}:${input.data.username}` : 'invalid';
+      if (!input.success) return 'invalid';
+      return input.data.method === 'email'
+        ? `email:${input.data.email}`
+        : `clinic:${input.data.clinicCode}:${input.data.username}`;
     },
     message: { error: 'Trop de tentatives. Réessayez plus tard.' },
   });
