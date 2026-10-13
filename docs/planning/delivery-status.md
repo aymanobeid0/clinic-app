@@ -11,3 +11,5 @@ Remaining gates: independent review followed by human PR review/merge; actual tr
 Historical discovery/review files and ticket-publication.json are dated snapshots rather than live tracker substitutes. Preserve unrelated root design relocations/AGENTS/HANDOFF changes. Dependency versions remain unchanged.
 
 Independent #8 review completed against b8dc3b5 on implementation64335cb: zero residual material standards/spec findings, reviewer independently reran10 account HTTP tests successfully. See issue-8-review.md. Human-reviewed PR publication/merge remains pending; #8 is not closed.
+
+Publication: open PR #36 https://github.com/aymanobeid0/clinic-app/pull/36; independent review passed, issue/project #8 is in Review. Human approval/merge and issue acceptance remain pending. No merge or production action performed.

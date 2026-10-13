@@ -14,17 +14,18 @@
     "30": "merged",
     "31": "merged",
     "32": "merged",
-    "35": "merged"
+    "35": "merged",
+    "36": "open; human approval required"
   },
   "implementation": {
     "issue": 8,
-    "state": "reviewed-prepared",
+    "state": "published-for-human-review",
     "branch": "codex/issue-8-accounts",
     "base": "b8dc3b51f13e01be085bf815e0f9bba7da65f4cd",
     "scope": "individual identities, permission configuration, manager promotion, username/password workflows and manager recovery",
     "evidence": "issue-8-implementation.md",
     "review": "issue-8-review.md",
-    "publication": "pending human-reviewed PR publication",
+    "publication": "https://github.com/aymanobeid0/clinic-app/pull/36 (open; not merged)",
     "checks": {
       "httpTestsPassed": 26,
       "browserJourneysPassed": 6,
