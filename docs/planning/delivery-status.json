@@ -18,13 +18,13 @@
   },
   "implementation": {
     "issue": 8,
-    "state": "implementation-prepared",
+    "state": "reviewed-prepared",
     "branch": "codex/issue-8-accounts",
     "base": "b8dc3b51f13e01be085bf815e0f9bba7da65f4cd",
     "scope": "individual identities, permission configuration, manager promotion, username/password workflows and manager recovery",
     "evidence": "issue-8-implementation.md",
     "review": "issue-8-review.md",
-    "publication": "pending independent review and human-reviewed PR",
+    "publication": "pending human-reviewed PR publication",
     "checks": {
       "httpTestsPassed": 26,
       "browserJourneysPassed": 6,
@@ -34,7 +34,7 @@
       "auditFindings": 0,
       "auditNote": "pinned npm ci audit: zero vulnerabilities; dependencies unchanged"
     },
-    "reviewStatus": "pending final independent review",
+    "reviewStatus": "independent standards/spec pass; reviewer reran 10 account HTTP tests",
     "loginPolicy": "primary manager email; employees/promoted doctors retain clinic code/username; authority independent",
     "organization": "feature folders: routes, controller, service, repository"
   },

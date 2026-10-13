@@ -9,3 +9,5 @@ Planning #2–#6 are closed with owner approval. PR #35 merged the complete #7 l
 Remaining gates: independent review followed by human PR review/merge; actual transactional mail delivery/provider/sender; Linux/native runtime; ingress/secure cookies; provider/host evidence; backup capacity/cost and restore rehearsal; qualified clinical/legal/real-data handling. Patient/files/financial endpoint scopes and affected operational stream termination remain subsequent feature work. No production deployment, live migration or patient-data authorization exists.
 
 Historical discovery/review files and ticket-publication.json are dated snapshots rather than live tracker substitutes. Preserve unrelated root design relocations/AGENTS/HANDOFF changes. Dependency versions remain unchanged.
+
+Independent #8 review completed against b8dc3b5 on implementation64335cb: zero residual material standards/spec findings, reviewer independently reran10 account HTTP tests successfully. See issue-8-review.md. Human-reviewed PR publication/merge remains pending; #8 is not closed.
