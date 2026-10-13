@@ -7,7 +7,7 @@ export async function refreshSession() {
   csrfToken = (await response.json()).csrfToken;
 }
 
-async function post<T = undefined>(path: string, body: object): Promise<T> {
+export async function post<T = undefined>(path: string, body: object): Promise<T> {
   const response = await fetch(`/api/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },

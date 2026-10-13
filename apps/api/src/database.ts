@@ -3,7 +3,11 @@ import { Pool } from 'pg';
 import { PrismaClient, type Prisma } from './generated/prisma/client.js';
 
 export function openDatabase(connectionString: string) {
-  const pool = new Pool({ connectionString, max: 5, connectionTimeoutMillis: 5000 });
+  const pool = new Pool({
+    connectionString,
+    max: 5,
+    connectionTimeoutMillis: 5000,
+  });
   const client = new PrismaClient({ adapter: new PrismaPg(pool) });
   return {
     client,
@@ -22,7 +26,7 @@ export function openDatabase(connectionString: string) {
       const result = await pool.query<{ unsafe: boolean }>(`
         SELECT (r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb OR
           NOT pg_has_role(current_user, 'clinic_runtime', 'MEMBER') OR EXISTS (
-            SELECT 1 FROM pg_class c WHERE c.relname IN ('Clinic', 'Account', 'RecoveryCode', 'session')
+            SELECT 1 FROM pg_class c WHERE c.relname IN ('Clinic', 'Account', 'RecoveryCode', 'ReservedUsername', 'session')
             AND c.relnamespace = 'public'::regnamespace AND pg_has_role(current_user, c.relowner, 'MEMBER')
           )) AS unsafe FROM pg_roles r WHERE r.rolname = current_user`);
       if (result.rows[0]?.unsafe !== false)

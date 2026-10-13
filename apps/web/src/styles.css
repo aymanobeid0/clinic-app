@@ -333,3 +333,33 @@ footer {
     font-size: 26px;
   }
 }
+select {
+  font: inherit;
+  max-width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+}
+fieldset {
+  margin-block: 16px;
+  border: 1px solid var(--border);
+  max-height: 240px;
+  overflow: auto;
+}
+input[type='checkbox'] {
+  display: inline-block;
+  width: auto;
+  margin-inline-end: 8px;
+}
+section[aria-label='Gestion des comptes'] form {
+  border-block-start: 1px solid var(--border);
+  margin-block: 24px;
+  padding-block: 16px;
+}
+details {
+  margin-block: 16px;
+}
+summary {
+  cursor: pointer;
+}

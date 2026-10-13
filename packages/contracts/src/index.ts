@@ -28,6 +28,10 @@ export const identitySchema = z.object({
   username: z.string(),
   loginMethod: z.enum(['email', 'clinic_username']),
   isManager: z.boolean(),
+  kind: z.enum(['doctor', 'staff']),
+  permissions: z.array(z.string()),
+  historicalOnly: z.boolean(),
+  recoverySetup: z.boolean(),
   loginEmail: recoveryEmailSchema.nullable(),
   displayName: z.string(),
   stage: z.enum(['password', 'email', 'codes', 'ready']),
@@ -57,3 +61,134 @@ export const confirmCodesSchema = z.object({
   saved: z.literal(true),
 });
 export type RecoveryCodes = { codes: string[]; batchId: string };
+export const accountKindSchema = z.enum(['doctor', 'staff']);
+export const permissionSchema = z.enum([
+  'patients.read',
+  'patients.create',
+  'patients.edit',
+  'patients.archive',
+  'patients.assign',
+  'appointments.manage',
+  'appointments.override',
+  'clinical.read',
+  'clinical.history',
+  'chart.draft',
+  'history.draft',
+  'plans.draft',
+  'notes.draft',
+  'prescriptions.draft',
+  'acceptance.draft',
+  'chart.finalize',
+  'history.finalize',
+  'plans.finalize',
+  'notes.finalize',
+  'plans.accept',
+  'procedures.start',
+  'procedures.complete',
+  'prescriptions.sign',
+  'attachments.upload',
+  'attachments.replace',
+  'attachments.remove',
+  'catalog.manage',
+  'billing.read',
+  'billing.edit',
+  'payments.record',
+  'receipts.issue',
+  'invoices.issue',
+  'financial.history',
+  'refunds',
+  'reversals',
+  'discounts',
+  'prices.override',
+  'inventory.read',
+  'inventory.receive',
+  'inventory.consume',
+  'inventory.adjust',
+  'reports.operational',
+  'reports.financial',
+  'clinical.print',
+  'clinical.download',
+  'financial.print',
+  'financial.download',
+  'exports.patients',
+  'exports.financial',
+  'exports.inventory',
+  'financial.attachments.upload',
+  'financial.attachments.replace',
+  'financial.attachments.remove',
+  'mixed.attachments.upload',
+  'mixed.attachments.replace',
+  'mixed.attachments.remove',
+]);
+export const currentPasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(128),
+});
+export const createAccountSchema = currentPasswordSchema.extend({
+  username: usernameSchema,
+  displayName: z.string().trim().min(1).max(120),
+  kind: accountKindSchema,
+  temporaryPassword: passwordSchema,
+  contactEmail: recoveryEmailSchema.nullable().optional(),
+  phone: z.string().trim().max(64).nullable().optional(),
+});
+export const accountMutationSchema = currentPasswordSchema.extend({
+  revision: z.int().nonnegative(),
+});
+export const permissionsSchema = accountMutationSchema.extend({
+  permissions: z.array(permissionSchema).max(100),
+});
+export const renameAccountSchema = accountMutationSchema.extend({
+  username: usernameSchema,
+});
+export const accountKindChangeSchema = accountMutationSchema.extend({
+  kind: accountKindSchema,
+});
+export const managerAuthoritySchema = accountMutationSchema.extend({
+  isManager: z.boolean(),
+});
+export const accountStatusSchema = accountMutationSchema.extend({
+  status: z.enum(['active', 'historical', 'disabled']),
+});
+export const resetAccountSchema = accountMutationSchema.extend({
+  temporaryPassword: passwordSchema,
+});
+export const changePasswordSchema = currentPasswordSchema.extend({
+  password: passwordSchema,
+});
+export type AccountSummary = {
+  revision: number;
+  id: string;
+  username: string;
+  displayName: string;
+  kind: 'doctor' | 'staff';
+  isManager: boolean;
+  disabled: boolean;
+  historicalOnly: boolean;
+  permissions: string[];
+  contactEmail: string | null;
+  phone: string | null;
+};
+export const recoveryIdentitySchema = z.discriminatedUnion('method', [
+  z.object({ method: z.literal('email'), email: recoveryEmailSchema }),
+  z.object({
+    method: z.literal('clinic_username'),
+    clinicCode: clinicCodeSchema,
+    username: usernameSchema,
+  }),
+]);
+export const recoverCodeSchema = z.object({
+  identity: recoveryIdentitySchema,
+  code: z.string().regex(/^[a-f0-9]{32}$/),
+  password: passwordSchema,
+});
+export const recoverRequestSchema = z.object({
+  identity: recoveryIdentitySchema,
+});
+export const recoverEmailSchema = z.object({
+  identity: recoveryIdentitySchema,
+  token: z.string().regex(/^[a-f0-9]{64}$/),
+  password: passwordSchema,
+});
+export const changeEmailSchema = currentPasswordSchema.extend({
+  email: recoveryEmailSchema,
+});

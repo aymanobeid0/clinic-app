@@ -1,3 +1,4 @@
+import { AccountTransaction } from './account.repository.js';
 import type { Database } from '../../database.js';
 import type { Account, Prisma } from '../../generated/prisma/client.js';
 
@@ -16,6 +17,10 @@ type ProvisionRecord = {
 
 export class IdentityTransaction {
   constructor(private readonly tx: Prisma.TransactionClient) {}
+
+  accounts(clinicId: string) {
+    return new AccountTransaction(this.tx, clinicId);
+  }
 
   replacePassword(accountId: string, passwordHash: string) {
     return this.tx.account.update({
@@ -44,6 +49,8 @@ export class IdentityTransaction {
       where: { id: accountId },
       data: {
         verifiedEmail: email,
+        recoverySetup: false,
+        recoveryNotificationEmail: null,
         verificationHash: null,
         verificationExpiresAt: null,
       },
@@ -67,6 +74,55 @@ export class IdentityTransaction {
     });
   }
 
+  async consumeRecovery(account: ManagerAccount, passwordHash: string) {
+    await this.tx.recoveryCode.deleteMany({
+      where: { clinicId: account.clinicId, accountId: account.id },
+    });
+    return this.tx.account.update({
+      where: { id: account.id },
+      data: {
+        passwordHash,
+        temporaryExpiresAt: null,
+        credentialVersion: { increment: 1 },
+        verifiedEmail: null,
+        recoverySetup: true,
+        recoveryNotificationEmail: account.verifiedEmail ?? account.recoveryNotificationEmail,
+        codesSaved: false,
+        codesBatchId: null,
+        recoveryHash: null,
+        recoveryExpiresAt: null,
+        verificationHash: null,
+        verificationExpiresAt: null,
+      },
+    });
+  }
+  hasCode(accountId: string, hash: string) {
+    return this.tx.recoveryCode.findFirst({ where: { accountId, hash } });
+  }
+  saveRecovery(accountId: string, recoveryHash: string, recoveryExpiresAt: Date) {
+    return this.tx.account.update({
+      where: { id: accountId },
+      data: { recoveryHash, recoveryExpiresAt },
+    });
+  }
+  invalidateRecovery(accountId: string, recoveryHash: string) {
+    return this.tx.account.updateMany({
+      where: { id: accountId, recoveryHash },
+      data: { recoveryHash: null, recoveryExpiresAt: null },
+    });
+  }
+  revokeSessions(accountId: string) {
+    return this.tx.account.update({
+      where: { id: accountId },
+      data: { credentialVersion: { increment: 1 } },
+    });
+  }
+  replaceLoginEmail(accountId: string, loginEmail: string) {
+    return this.tx.account.update({
+      where: { id: accountId },
+      data: { loginEmail, credentialVersion: { increment: 1 } },
+    });
+  }
   confirmSavedCodes(accountId: string) {
     return this.tx.account.update({
       where: { id: accountId },
@@ -90,7 +146,7 @@ export class IdentityRepository {
       const clinic = await tx.clinic.create({
         data: { code: record.clinicCode, name: record.clinicName },
       });
-      await tx.account.create({
+      const account = await tx.account.create({
         data: {
           clinicId: clinic.id,
           username: record.username,
@@ -101,6 +157,13 @@ export class IdentityRepository {
           displayName: record.displayName,
           passwordHash: record.passwordHash,
           temporaryExpiresAt: record.temporaryExpiresAt,
+        },
+      });
+      await tx.reservedUsername.create({
+        data: {
+          clinicId: clinic.id,
+          accountId: account.id,
+          username: account.username,
         },
       });
       return { clinicCode: clinic.code };
@@ -136,6 +199,7 @@ export class IdentityRepository {
     action: (account: ManagerAccount | null, transaction: IdentityTransaction) => Promise<T>,
   ) {
     return this.database.clinicTransaction(clinicId, async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${clinicId}, 0))::text`;
       await tx.$queryRaw`SELECT id FROM "Account" WHERE id = ${accountId}::uuid FOR UPDATE`;
       const account = await tx.account.findUnique({ where: { id: accountId } });
       return action(account, new IdentityTransaction(tx));
