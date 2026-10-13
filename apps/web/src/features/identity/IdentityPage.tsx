@@ -6,6 +6,7 @@ import { SignInForm } from './components/SignInForm.js';
 import { PasswordForm } from './components/PasswordForm.js';
 import { EmailVerificationForm } from './components/EmailVerificationForm.js';
 import { RecoveryCodesForm } from './components/RecoveryCodesForm.js';
+import { PatientsPanel } from '../patients/PatientsPanel.js';
 
 export function IdentityPage() {
   const session = useIdentitySession();
@@ -55,6 +56,12 @@ export function IdentityPage() {
               Bonjour {session.identity?.displayName}. Votre compte est prêt.
             </p>
             {session.identity && <AccountsPanel identity={session.identity} />}
+            {session.identity && (
+              <PatientsPanel
+                key={`${session.identity.clinicId}:${session.identity.accountId}`}
+                identity={session.identity}
+              />
+            )}
             {session.identity?.isManager && (
               <details>
                 <summary>Renouveler mes codes de récupération</summary>

@@ -1,6 +1,6 @@
 # Clinic app — implementation in progress
 
-Issue #7 is merged/closed through PR #35. Issue #8 adds individual doctor/staff account creation, permissions, promotion, account restrictions, resets and manager recovery, with functional French forms. No public clinic registration. Live patient data, deployment, live migrations and live email are not authorized.
+Issues #7/#8 are merged/closed through PR #35/#36. Issue #9 adds permission-controlled patient registration, contact search/editing, duplicate warnings, archive/reactivation and essential per-record history, with functional French forms and SSE invalidation. No public clinic registration. Live patient data, deployment, live migrations and live email are not authorized.
 
 ## Local fictional-data checks
 
@@ -25,7 +25,7 @@ The temporary password expires after 24 hours and must be replaced before access
 
 A replaceable mail adapter is accepted by createApplication. The shipped runtime intentionally has no live provider adapter; verification returns 503 until delivery is configured. No fake verification fallback exists in the runtime. Test-only delivery proves the onboarding flow, not live email readiness. Verification URLs use fragments so tokens are not sent in HTTP request URLs; verification remains an authenticated, CSRF-protected POST. Code regeneration requires the current password and invalidates the previous batch; losing the one-time display requires regeneration. Manager recovery consumption and staff administration are implemented in #8. The mail adapter additionally supports sendRecovery and sendNotification; recovery/email replacement remains blocked where the required delivery method is absent.
 
-Production Linux API/native compatibility, ingress/secure-cookie configuration, actual email delivery, recovery rehearsal and real-data gates remain unproven. See docs/planning/delivery-status.md and issue-7-implementation.md. #7 is complete through merged PR #35. #8 passed independent standards/specification review and is published in open PR #36; human PR review and merge remain pending. See issue-8-implementation.md.
+Production Linux API/native compatibility, ingress/secure-cookie/SSE configuration, actual email delivery, recovery rehearsal and real-data gates remain unproven. See docs/planning/delivery-status.md and issue-7-implementation.md. #7/#8 are complete through merged PR #35/#36. #9 implementation awaits independent review and a human-reviewed PR; see docs/planning/issue-9-implementation.md.
 
 ## File organization
 

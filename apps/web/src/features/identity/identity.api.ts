@@ -1,6 +1,14 @@
 import { identitySchema, type Identity, type RecoveryCodes, type SignIn } from '@clinic/contracts';
 
 let csrfToken = '';
+export class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
 export async function refreshSession() {
   const response = await fetch('/api/session', { cache: 'no-store' });
   if (!response.ok) throw new Error('Service indisponible. Réessayez.');
@@ -16,7 +24,8 @@ export async function post<T = undefined>(path: string, body: object): Promise<T
   });
   const data =
     response.status === 204 || response.status === 202 ? undefined : await response.json();
-  if (!response.ok) throw new Error(data?.error ?? 'Service indisponible. Réessayez.');
+  if (!response.ok)
+    throw new HttpError(response.status, data?.error ?? 'Service indisponible. Réessayez.');
   if (data?.csrfToken) csrfToken = data.csrfToken;
   return data as T;
 }

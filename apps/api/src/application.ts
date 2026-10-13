@@ -1,7 +1,8 @@
 import express from 'express';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
-import { createIdentityRoutes, type Mail } from './modules/identity/index.js';
+import { createIdentityRoutes, createIdentityAccess, type Mail } from './modules/identity/index.js';
+import { createPatientRoutes } from './modules/patients/index.js';
 import { browserSession, enforceSessionAge } from './middleware/session.js';
 import { requireBrowserWrite } from './middleware/csrf.js';
 import { handleErrors } from './middleware/errors.js';
@@ -30,7 +31,12 @@ export function createApplication(options: Options) {
   app.use(express.json({ limit: '16kb' }));
   app.use(
     '/api',
-    rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: 'draft-8', legacyHeaders: false }),
+    rateLimit({
+      windowMs: 60_000,
+      limit: 120,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+    }),
   );
   app.use(browserSession(config));
   app.use(enforceSessionAge(config.now));
@@ -40,6 +46,10 @@ export function createApplication(options: Options) {
   });
   app.use('/api', requireBrowserWrite(config.origin));
   app.use('/api', createIdentityRoutes(config));
+  app.use(
+    '/api',
+    createPatientRoutes(createIdentityAccess(config.database, config.now), config.now),
+  );
   app.use(handleErrors);
   return app;
 }

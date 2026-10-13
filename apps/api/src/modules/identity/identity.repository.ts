@@ -18,6 +18,10 @@ type ProvisionRecord = {
 export class IdentityTransaction {
   constructor(private readonly tx: Prisma.TransactionClient) {}
 
+  databaseTransaction<T>(action: (tx: Prisma.TransactionClient) => Promise<T>) {
+    return action(this.tx);
+  }
+
   accounts(clinicId: string) {
     return new AccountTransaction(this.tx, clinicId);
   }

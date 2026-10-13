@@ -192,3 +192,45 @@ export const recoverEmailSchema = z.object({
 export const changeEmailSchema = currentPasswordSchema.extend({
   email: recoveryEmailSchema,
 });
+
+export const patientDetailsSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120),
+    phone: z
+      .string()
+      .trim()
+      .min(3)
+      .max(64)
+      .regex(/^\+?[0-9 ()\-\.]+$/)
+      .refine((v) => v.replace(/\D/g, '').length >= 3),
+    contactKind: z.enum(['patient', 'guardian']),
+    contactName: z.string().trim().max(120).default(''),
+  })
+  .strict()
+  .refine((v) => v.contactKind !== 'guardian' || v.contactName.length > 0, {
+    message: 'Nom du contact requis.',
+    path: ['contactName'],
+  });
+export const registerPatientSchema = patientDetailsSchema.safeExtend({
+  commandId: z.uuid(),
+});
+export type PatientDetails = z.infer<typeof patientDetailsSchema>;
+export type Patient = PatientDetails & {
+  id: string;
+  patientNumber: number;
+  archived: boolean;
+  revision: number;
+};
+export const patientMutationSchema = z
+  .object({ commandId: z.uuid(), revision: z.int().nonnegative() })
+  .strict();
+export const editPatientSchema = patientDetailsSchema.safeExtend({
+  commandId: z.uuid(),
+  revision: z.int().nonnegative(),
+});
+export type PatientHistory = {
+  action: string;
+  at: string;
+  actorId: string;
+  patient: Patient;
+};

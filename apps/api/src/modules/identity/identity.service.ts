@@ -249,6 +249,34 @@ export class IdentityService {
     });
   }
 
+  withPermission<T>(
+    actor: Actor | undefined,
+    permission: string,
+    action: (
+      context: {
+        clinicId: string;
+        accountId: string;
+        permissions: readonly string[];
+      },
+      tx: import('../../database.js').ClinicTransaction,
+    ) => Promise<T>,
+  ) {
+    return this.withReadyAccount(actor, (account, transaction) => {
+      if (!account.permissions.includes(permission))
+        throw new IdentityError(403, 'Autorisation requise.');
+      return transaction.databaseTransaction((tx) =>
+        action(
+          {
+            clinicId: account.clinicId,
+            accountId: account.id,
+            permissions: account.permissions,
+          },
+          tx,
+        ),
+      );
+    });
+  }
+
   getClinic(actor: Actor | undefined) {
     return this.withReadyAccount(actor, (account, tx) => tx.getClinic(account.clinicId));
   }

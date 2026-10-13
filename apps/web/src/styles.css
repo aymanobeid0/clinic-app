@@ -363,3 +363,30 @@ details {
 summary {
   cursor: pointer;
 }
+.patients {
+  margin-block: 24px;
+  border-block-start: 1px solid var(--border);
+}
+.patient-fields {
+  max-height: none;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.patient-record {
+  margin-block: 24px;
+  border-block-start: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.patient-pagination {
+  display: flex;
+  gap: 8px;
+}
+.patients li {
+  margin-block: 8px;
+}
+.patients button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

@@ -8,6 +8,14 @@ import { IdentityRepository } from './identity.repository.js';
 import { IdentityService, type Mail } from './identity.service.js';
 import { identityRoutes } from './identity.routes.js';
 export { IdentityError, type Mail } from './identity.service.js';
+export type { Actor } from './identity.service.js';
+
+// Permission checks and consuming-module writes share the identity transaction.
+export function createIdentityAccess(database: Database, now: () => number) {
+  const service = new IdentityService(new IdentityRepository(database), now, '');
+  return { withPermission: service.withPermission.bind(service) };
+}
+export type IdentityAccess = ReturnType<typeof createIdentityAccess>;
 
 type Options = {
   database: Database;
