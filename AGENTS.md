@@ -7,7 +7,7 @@ Online dental clinic MVP. Product decisions live in docs/planning/mvp-scope.md; 
 - Read the assigned GitHub issue, its acceptance criteria and open blockers. For tracker/readiness rules, read docs/agents/issue-tracker.md.
 - For dependencies or architecture, read docs/planning/dependency-proposal.md and docs/architecture/application-architecture.md. Preserve the approved stack and Zustand/TanStack Query state boundaries.
 - For interface work, read design/design.md and design/designtokens.md (or the root design.md and designtokens.md before their relocation is published); prototypes are visual references, with the approved spec governing behavior.
-- Before implementation or review, read docs/agents/skill-integration.md for the one-builder/one-reviewer workflow.
+- Before every authorized ticket implementation, review, and PR opening, read docs/agents/skill-integration.md and complete its applicable per-ticket skill and handoff checkpoints. A previous ticket's skill check does not satisfy the current ticket.
 
 ## Boundaries
 
