@@ -19,6 +19,21 @@ const switchClinics = [
 ];
 let token = '';
 let server: Server;
+let app: ReturnType<typeof createApplication>;
+function createBrowserApplication() {
+  return createApplication({
+    database: runtime,
+    sessionSecret: 'fictional-browser-session-secret-32-characters',
+    origin: 'http://127.0.0.1:4173',
+    secureCookies: false,
+    mail: {
+      async sendNotification() {},
+      async sendVerification(message) {
+        token = message.token;
+      },
+    },
+  });
+}
 test.beforeAll(async () => {
   await operator.connect();
   await runtime.connect();
@@ -47,17 +62,7 @@ test.beforeAll(async () => {
       codesSaved: true,
     },
   });
-  const app = createApplication({
-    database: runtime,
-    sessionSecret: 'fictional-browser-session-secret-32-characters',
-    origin: 'http://127.0.0.1:4173',
-    secureCookies: false,
-    mail: {
-      async sendVerification(message) {
-        token = message.token;
-      },
-    },
-  });
+  app = createBrowserApplication();
   for (const code of switchClinics) {
     await provisionClinic(operator, {
       clinicCode: code,
@@ -99,6 +104,13 @@ test.beforeAll(async () => {
     email: `${switchClinics[1]}@example.invalid`,
   });
   expect((await post('onboarding/verify-email', { token })).status).toBe(200);
+});
+test.beforeEach(async () => {
+  if (server)
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  app = createBrowserApplication();
   server = await new Promise<Server>((resolve) => {
     const listener = app.listen(3000, '127.0.0.1', () => resolve(listener));
   });
@@ -147,6 +159,19 @@ test('French manager completes restricted setup and can sign in and out', async 
   await page.getByRole('button', { name: 'Terminer la configuration' }).click();
   await expect(page.getByRole('heading', { name: 'Clinique de démonstration' })).toBeVisible();
   await page.reload();
+  await expect(page.getByText('Configuration terminée', { exact: true })).toBeVisible();
+  await page.getByText('Renouveler mes codes de récupération', { exact: true }).click();
+  const rotation = page
+    .locator('details')
+    .filter({ has: page.getByText('Renouveler mes codes de récupération', { exact: true }) });
+  await rotation
+    .getByLabel('Mot de passe actuel', { exact: true })
+    .fill('Fictional-browser-replaced-2');
+  await rotation.getByRole('button', { name: 'Remplacer mes codes' }).click();
+  await expect(page.locator('.codes li')).toHaveCount(10);
+  await expect(page.getByText('Configuration terminée', { exact: true })).toHaveCount(0);
+  await page.getByLabel('J’ai conservé ces codes dans un endroit sûr.').check();
+  await page.getByRole('button', { name: 'Terminer la configuration' }).click();
   await expect(page.getByText('Configuration terminée', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
   await expect(page.getByRole('heading', { name: 'Connexion à votre clinique' })).toBeVisible();
@@ -210,4 +235,206 @@ test('promoted doctor signs in with clinic code and username, without a login em
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await expect(page.getByText('Configuration terminée', { exact: true })).toBeVisible();
   await expect(page.getByText('Bonjour Docteur responsable.', { exact: false })).toBeVisible();
+});
+test('French manager creates a staff account, changes its permissions and disables access from another PC', async ({
+  page,
+  browser,
+}) => {
+  await page.goto('/');
+  await page.getByLabel('Mode de connexion').selectOption('clinic_username');
+  await page.getByLabel('Code de la clinique', { exact: true }).fill(clinicCode);
+  await page.getByLabel('Identifiant', { exact: true }).fill('doctor');
+  await page.getByLabel('Mot de passe', { exact: true }).fill('Fictional-doctor-browser-1');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page.getByRole('heading', { name: 'Comptes individuels' })).toBeVisible();
+  const creation = page
+    .locator('form')
+    .filter({ has: page.getByRole('heading', { name: 'Créer un compte' }) });
+  await creation.getByLabel('Nom affiché').fill('Accueil fictif');
+  await creation.getByLabel('Nouvel identifiant').fill('reception.browser');
+  await creation.getByLabel('Profil').selectOption('staff');
+  await creation
+    .getByLabel('Mot de passe temporaire', { exact: true })
+    .fill('Fictional-reception-temp');
+  await creation.getByLabel('Votre mot de passe actuel').fill('wrong');
+  await creation.getByRole('button', { name: 'Créer le compte' }).click();
+  await expect(page.getByRole('alert')).toContainText('Mot de passe incorrect');
+  await creation.getByLabel('Nom affiché').fill('Accueil fictif');
+  await creation.getByLabel('Nouvel identifiant').fill('reception.browser');
+  await creation
+    .getByLabel('Mot de passe temporaire', { exact: true })
+    .fill('Fictional-reception-temp');
+  await creation.getByLabel('Votre mot de passe actuel').fill('Fictional-doctor-browser-1');
+  await creation.getByRole('button', { name: 'Créer le compte' }).click();
+  const editor = page.locator('form').filter({
+    has: page.getByRole('heading', {
+      name: 'Accueil fictif (reception.browser)',
+    }),
+  });
+  await expect(editor).toBeVisible();
+  await editor.getByLabel('Stock — Consulter', { exact: true }).check();
+  await editor
+    .getByLabel('Confirmez votre mot de passe pour reception.browser')
+    .fill('Fictional-doctor-browser-1');
+  await editor.getByRole('button', { name: 'Enregistrer pour reception.browser' }).click();
+  await expect(editor.getByLabel('Stock — Consulter', { exact: true })).toBeChecked();
+  const other = await browser.newContext();
+  const staff = await other.newPage();
+  await staff.goto('/');
+  await staff.getByLabel('Mode de connexion').selectOption('clinic_username');
+  await staff.getByLabel('Code de la clinique', { exact: true }).fill(clinicCode);
+  await staff.getByLabel('Identifiant', { exact: true }).fill('RECEPTION.BROWSER');
+  await staff.getByLabel('Mot de passe', { exact: true }).fill('Fictional-reception-temp');
+  await staff.getByRole('button', { name: 'Se connecter' }).click();
+  await staff
+    .getByLabel('Nouveau mot de passe', { exact: true })
+    .fill('Fictional-reception-personal');
+  await staff.getByRole('button', { name: 'Enregistrer le mot de passe' }).click();
+  await expect(staff.getByRole('heading', { name: 'Connexion à votre clinique' })).toBeVisible();
+  await staff.getByLabel('Mode de connexion').selectOption('clinic_username');
+  await staff.getByLabel('Code de la clinique', { exact: true }).fill(clinicCode);
+  await staff.getByLabel('Identifiant', { exact: true }).fill('reception.browser');
+  await staff.getByLabel('Mot de passe', { exact: true }).fill('Fictional-reception-personal');
+  await staff.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(staff.getByText('Bonjour Accueil fictif.', { exact: false })).toBeVisible();
+  await expect(staff.getByRole('heading', { name: 'Créer un compte' })).toHaveCount(0);
+  await editor.getByLabel('Action pour reception.browser').selectOption('status');
+  await editor.getByLabel('Nouvel état').selectOption('disabled');
+  await editor
+    .getByLabel('Confirmez votre mot de passe pour reception.browser')
+    .fill('Fictional-doctor-browser-1');
+  await editor.getByRole('button', { name: 'Enregistrer pour reception.browser' }).click();
+  await staff.reload();
+  await expect(staff.getByRole('heading', { name: 'Connexion à votre clinique' })).toBeVisible();
+  await other.close();
+});
+
+test('offline recovery from the French sign-in screen replaces a lost primary mailbox and requires saving new codes', async ({
+  page,
+}) => {
+  const code = `recover-${randomUUID()}`.slice(0, 32);
+  const email = `${code}@example.invalid`;
+  await provisionClinic(operator, {
+    clinicCode: code,
+    clinicName: 'Clinique récupération',
+    username: 'manager',
+    displayName: 'Responsable récupération',
+    email,
+    temporaryPassword: 'Fictional-recover-temp',
+  });
+  const setup = request.agent(app);
+  let csrf = (await setup.get('/api/session')).body.csrfToken;
+  const post = (path: string, body: object) =>
+    setup
+      .post(`/api${path}`)
+      .set('Origin', 'http://127.0.0.1:4173')
+      .set('x-csrf-token', csrf)
+      .send(body);
+  const login = async (password: string) => {
+    csrf = (await setup.get('/api/session')).body.csrfToken;
+    csrf = (await post('/sign-in', { method: 'email', email, password })).body.csrfToken;
+  };
+  await login('Fictional-recover-temp');
+  await post('/onboarding/password', { password: 'Fictional-recover-personal' });
+  await login('Fictional-recover-personal');
+  await post('/onboarding/email', { email });
+  const saved = await post('/onboarding/verify-email', { token });
+  await post('/onboarding/codes-saved', { saved: true, batchId: saved.body.batchId });
+  await page.goto('/');
+  await page.getByText('Récupérer mon compte responsable', { exact: true }).click();
+  await page.getByLabel('Adresse e-mail du compte', { exact: true }).fill(email);
+  await page.getByLabel('Code de récupération', { exact: true }).fill(saved.body.codes[0]);
+  await page.getByLabel('Nouveau mot de passe de récupération').fill('Fictional-recovered-browser');
+  await page.getByRole('button', { name: 'Récupérer et vérifier mes coordonnées' }).click();
+  const replacement = `new-${code}@example.invalid`;
+  await expect(page.getByLabel('Adresse e-mail de récupération')).toBeEditable();
+  await page.getByLabel('Adresse e-mail de récupération').fill(replacement);
+  await page.getByRole('button', { name: 'Envoyer le lien de vérification' }).click();
+  await expect(page.getByRole('status')).toContainText('Message envoyé');
+  await page.getByLabel('Code de vérification reçu').fill(token);
+  await page.getByRole('button', { name: 'Vérifier mon adresse' }).click();
+  await expect(page.getByRole('heading', { name: 'Connexion à votre clinique' })).toBeVisible();
+  await page.getByLabel('Adresse e-mail de connexion').fill(replacement);
+  await page.getByLabel('Mot de passe', { exact: true }).fill('Fictional-recovered-browser');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page.getByRole('heading', { name: 'Gardez vos codes en lieu sûr' })).toBeVisible();
+  await page.getByLabel('Mot de passe actuel', { exact: true }).fill('Fictional-recovered-browser');
+  await page.getByRole('button', { name: 'Remplacer mes codes' }).click();
+  await expect(page.locator('.codes li')).toHaveCount(10);
+  await page.getByLabel('J’ai conservé ces codes dans un endroit sûr.').check();
+  await page.getByRole('button', { name: 'Terminer la configuration' }).click();
+  await expect(page.getByText('Configuration terminée', { exact: true })).toBeVisible();
+});
+test('concurrent manager permission edits keep the stale draft until explicit reconciliation', async ({
+  page,
+  browser,
+}) => {
+  const setup = request.agent(app);
+  let csrf = (await setup.get('/api/session')).body.csrfToken;
+  csrf = (
+    await setup
+      .post('/api/sign-in')
+      .set('Origin', 'http://127.0.0.1:4173')
+      .set('x-csrf-token', csrf)
+      .send({
+        method: 'clinic_username',
+        clinicCode,
+        username: 'doctor',
+        password: 'Fictional-doctor-browser-1',
+      })
+  ).body.csrfToken;
+  const username = `staff-${randomUUID().slice(0, 8)}`;
+  await setup
+    .post('/api/accounts')
+    .set('Origin', 'http://127.0.0.1:4173')
+    .set('x-csrf-token', csrf)
+    .send({
+      username,
+      displayName: 'Conflit fictif',
+      kind: 'staff',
+      temporaryPassword: 'Fictional-stale-browser',
+      currentPassword: 'Fictional-doctor-browser-1',
+    });
+  async function login(p: typeof page) {
+    await p.goto('/');
+    await p.getByLabel('Mode de connexion').selectOption('clinic_username');
+    await p.getByLabel('Code de la clinique', { exact: true }).fill(clinicCode);
+    await p.getByLabel('Identifiant', { exact: true }).fill('doctor');
+    await p.getByLabel('Mot de passe', { exact: true }).fill('Fictional-doctor-browser-1');
+    await p.getByRole('button', { name: 'Se connecter' }).click();
+    await expect(p.getByRole('heading', { name: `Conflit fictif (${username})` })).toBeVisible();
+  }
+  await login(page);
+  const other = await browser.newContext();
+  const second = await other.newPage();
+  await login(second);
+  const editor = (p: typeof page) =>
+    p
+      .locator('form')
+      .filter({ has: p.getByRole('heading', { name: `Conflit fictif (${username})` }) });
+  await editor(page).getByLabel('Stock — Consulter', { exact: true }).check();
+  await editor(second).getByLabel('Rendez-vous — Gérer', { exact: true }).check();
+  await editor(second)
+    .getByLabel(`Confirmez votre mot de passe pour ${username}`)
+    .fill('Fictional-doctor-browser-1');
+  await editor(second)
+    .getByRole('button', { name: `Enregistrer pour ${username}` })
+    .click();
+  await expect(second.getByRole('status')).toContainText('Modification enregistrée');
+  await page.bringToFront();
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
+  await editor(page)
+    .getByLabel(`Confirmez votre mot de passe pour ${username}`)
+    .fill('Fictional-doctor-browser-1');
+  await editor(page)
+    .getByRole('button', { name: `Enregistrer pour ${username}` })
+    .click();
+  await expect(page.getByRole('alert')).toContainText('Ce compte a été modifié');
+  await expect(editor(page).getByLabel('Stock — Consulter', { exact: true })).toBeChecked();
+  await page
+    .getByRole('button', { name: 'Recharger les comptes et abandonner mes modifications' })
+    .click();
+  await expect(editor(page).getByLabel('Stock — Consulter', { exact: true })).not.toBeChecked();
+  await expect(editor(page).getByLabel('Rendez-vous — Gérer', { exact: true })).toBeChecked();
+  await other.close();
 });

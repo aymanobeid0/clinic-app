@@ -7,7 +7,10 @@ import { identityApi, refreshSession } from './identity.api.js';
 // One-time codes and notices remain only in this mounted page's memory.
 export function useIdentitySession() {
   const cache = useQueryClient();
-  const identity = useQuery({ queryKey: ['identity'], queryFn: identityApi.getIdentity });
+  const identity = useQuery({
+    queryKey: ['identity'],
+    queryFn: identityApi.getIdentity,
+  });
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -19,7 +22,7 @@ export function useIdentitySession() {
   const clinic = useQuery({
     queryKey: ['clinic', accountKey],
     queryFn: identityApi.getClinic,
-    enabled: identity.data?.stage === 'ready' && !!accountKey,
+    enabled: identity.data?.stage === 'ready' && !identity.data.historicalOnly && !!accountKey,
     gcTime: 0,
   });
   const visibleCodes = codes && codes.owner === accountKey ? codes : null;
@@ -101,6 +104,7 @@ export function useIdentitySession() {
       return run(async () => {
         const result = await identityApi.regenerateCodes(password);
         if (accountKey) setCodes({ ...result, owner: accountKey });
+        await reloadIdentity();
       });
     },
     confirmSavedCodes() {

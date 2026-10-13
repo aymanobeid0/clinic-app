@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-12",
+  "asOf": "2026-10-13",
   "timezone": "Africa/Bamako",
   "planningIssues": {
     "closedWithOwnerApproval": [
@@ -13,28 +13,29 @@
   "pullRequests": {
     "30": "merged",
     "31": "merged",
-    "32": "merged"
+    "32": "merged",
+    "35": "merged"
   },
   "implementation": {
-    "issue": 7,
-    "state": "in-progress",
-    "branch": "codex/issue-7-manager-email-login",
-    "scope": "primary-manager email authentication; independent login method and manager authority; doctor-manager retains employee login",
-    "evidence": "issue-7-implementation.md",
-    "review": "issue-7-email-login-review.md",
-    "initialCommit": "3227073fc042464f5dc54a8438096847126be21d",
-    "publication": "reviewed amendment ready for new human-reviewed PR; prior PR32 merged",
+    "issue": 8,
+    "state": "implementation-prepared",
+    "branch": "codex/issue-8-accounts",
+    "base": "b8dc3b51f13e01be085bf815e0f9bba7da65f4cd",
+    "scope": "individual identities, permission configuration, manager promotion, username/password workflows and manager recovery",
+    "evidence": "issue-8-implementation.md",
+    "review": "issue-8-review.md",
+    "publication": "pending independent review and human-reviewed PR",
     "checks": {
-      "httpTestsPassed": 16,
-      "browserJourneysPassed": 3,
+      "httpTestsPassed": 26,
+      "browserJourneysPassed": 6,
       "typecheck": "pass",
       "lint": "pass",
       "apiContractsWebBuild": "pass",
-      "auditFindings": null,
-      "auditNote": "not rerun for this amendment; dependencies unchanged, prior PR32 audit had zero findings"
+      "auditFindings": 0,
+      "auditNote": "pinned npm ci audit: zero vulnerabilities; dependencies unchanged"
     },
-    "reviewStatus": "same separate reviewer: standards/specification pass after P2 independence fix",
-    "loginPolicy": "primary manager: globally unique normalized verified email/password; employees and promoted doctors: clinic code/username/password; manager authority independent",
+    "reviewStatus": "pending final independent review",
+    "loginPolicy": "primary manager email; employees/promoted doctors retain clinic code/username; authority independent",
     "organization": "feature folders: routes, controller, service, repository"
   },
   "prismaMcp": {

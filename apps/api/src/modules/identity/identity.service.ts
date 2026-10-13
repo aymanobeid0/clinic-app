@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { hash, verify } from 'argon2';
-import type { Identity, SignIn } from '@clinic/contracts';
+import type { Identity, SignIn, recoveryIdentitySchema } from '@clinic/contracts';
 import { provisionClinicSchema } from '@clinic/contracts';
 import type { z } from 'zod';
 import {
@@ -11,6 +11,8 @@ import {
 
 export type Actor = { clinicId: string; accountId: string; version: number };
 export type Mail = {
+  sendRecovery?(message: { to: string; token: string; recoveryUrl: string }): Promise<void>;
+  sendNotification?(message: { to: string; subject: string }): Promise<void>;
   sendVerification(message: { to: string; token: string; verificationUrl: string }): Promise<void>;
 };
 export class IdentityError extends Error {
@@ -71,6 +73,154 @@ export class IdentityService {
     };
   }
 
+  private async notify(to: string, subject: string) {
+    if (!this.mail?.sendNotification)
+      throw new IdentityError(503, 'Service de notification non configuré.');
+    try {
+      await this.mail.sendNotification({ to, subject });
+    } catch {
+      throw new IdentityError(503, 'Envoi impossible. Réessayez.');
+    }
+  }
+  async changeEmail(actor: Actor | undefined, currentPassword: string, email: string) {
+    if (!this.mail) throw new IdentityError(503, 'Service de courriel non configuré.');
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = digest(token);
+    const recipient = await this.withReadyAccount(actor, async (account, tx) => {
+      if (!account.isManager && account.loginMethod !== 'email')
+        throw new IdentityError(403, 'Compte responsable requis.');
+      if (!(await verify(account.passwordHash, currentPassword)))
+        throw new IdentityError(401, 'Mot de passe incorrect.');
+      if (account.verifiedEmail === email) throw new IdentityError(409, 'Adresse déjà vérifiée.');
+      if (!this.mail?.sendNotification)
+        throw new IdentityError(503, 'Service de notification non configuré.');
+      await tx.saveVerification(account.id, email, tokenHash, new Date(this.now() + DAY));
+      return account;
+    });
+    try {
+      await this.mail.sendVerification({
+        to: email,
+        token,
+        verificationUrl: `${this.origin}/#verification=${token}`,
+      });
+    } catch {
+      await this.repository.invalidateUndeliveredVerification(
+        recipient.clinicId,
+        recipient.id,
+        tokenHash,
+      );
+      throw new IdentityError(503, 'Envoi impossible. Réessayez.');
+    }
+  }
+  async changePassword(actor: Actor | undefined, currentPassword: string, password: string) {
+    const passwordHash = await hash(password);
+    return this.withReadyAccount(actor, async (account, tx) => {
+      if (!(await verify(account.passwordHash, currentPassword)))
+        throw new IdentityError(401, 'Mot de passe incorrect.');
+      if (await verify(account.passwordHash, password))
+        throw new IdentityError(400, 'Choisissez un nouveau mot de passe.');
+      await tx.replacePassword(account.id, passwordHash);
+    });
+  }
+  private locate(identity: z.infer<typeof recoveryIdentitySchema>) {
+    return identity.method === 'email'
+      ? this.repository.findEmailAccount(identity.email)
+      : this.repository.findLoginAccount(identity.clinicCode, identity.username);
+  }
+  private recoverable(account: ManagerAccount | null) {
+    if (!account || !account.isManager || account.disabled || account.historicalOnly)
+      throw new IdentityError(400, 'Récupération invalide.');
+    return account;
+  }
+  async recoverCode(
+    identity: z.infer<typeof recoveryIdentitySchema>,
+    code: string,
+    password: string,
+  ) {
+    const located = await this.locate(identity);
+    const a = this.recoverable(located);
+    const passwordHash = await hash(password);
+    return this.repository.withAccount(a.clinicId, a.id, async (account, tx) => {
+      const current = this.recoverable(account);
+      if (!(await tx.hasCode(current.id, digest(code))))
+        throw new IdentityError(400, 'Récupération invalide.');
+      if (current.verifiedEmail)
+        await this.notify(current.verifiedEmail, 'Récupération de votre compte');
+      const recovered = await tx.consumeRecovery(current, passwordHash);
+      return {
+        clinicId: recovered.clinicId,
+        accountId: recovered.id,
+        version: recovered.credentialVersion,
+      };
+    });
+  }
+  async requestRecovery(identity: z.infer<typeof recoveryIdentitySchema>) {
+    if (!this.mail?.sendRecovery)
+      throw new IdentityError(503, 'Service de courriel non configuré.');
+    const located = await this.locate(identity);
+    if (
+      !located ||
+      !located.isManager ||
+      located.disabled ||
+      located.historicalOnly ||
+      !located.verifiedEmail
+    )
+      return;
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = digest(token);
+    const recipient = await this.repository.withAccount(
+      located.clinicId,
+      located.id,
+      async (account, tx) => {
+        if (
+          !account ||
+          !account.isManager ||
+          account.disabled ||
+          account.historicalOnly ||
+          !account.verifiedEmail
+        )
+          return null;
+        await tx.saveRecovery(account.id, tokenHash, new Date(this.now() + 30 * 60 * 1000));
+        return account.verifiedEmail;
+      },
+    );
+    if (!recipient) return;
+    try {
+      await this.mail.sendRecovery({
+        to: recipient,
+        token,
+        recoveryUrl: `${this.origin}/#recovery=${token}`,
+      });
+    } catch {
+      await this.repository.withAccount(located.clinicId, located.id, async (_a, tx) =>
+        tx.invalidateRecovery(located.id, tokenHash),
+      );
+      return;
+    }
+  }
+  async recoverEmail(
+    identity: z.infer<typeof recoveryIdentitySchema>,
+    token: string,
+    password: string,
+  ) {
+    const a = this.recoverable(await this.locate(identity));
+    const passwordHash = await hash(password);
+    return this.repository.withAccount(a.clinicId, a.id, async (account, tx) => {
+      const current = this.recoverable(account);
+      if (
+        current.recoveryHash !== digest(token) ||
+        !current.recoveryExpiresAt ||
+        current.recoveryExpiresAt.getTime() <= this.now()
+      )
+        throw new IdentityError(400, 'Lien invalide ou expiré.');
+      const recovered = await tx.consumeRecovery(current, passwordHash);
+      return {
+        clinicId: recovered.clinicId,
+        accountId: recovered.id,
+        version: recovered.credentialVersion,
+      };
+    });
+  }
   getIdentity(actor: Actor | undefined) {
     return this.withAuthenticatedAccount(actor, async (account) => ({
       accountId: account.id,
@@ -78,21 +228,30 @@ export class IdentityService {
       username: account.username,
       loginMethod: account.loginMethod as Identity['loginMethod'],
       isManager: account.isManager,
+      kind: account.kind as Identity['kind'],
+      permissions: account.permissions,
+      historicalOnly: account.historicalOnly,
+      recoverySetup: account.recoverySetup,
       loginEmail: account.loginEmail,
       displayName: account.displayName,
       stage: onboardingStage(account),
     }));
   }
 
-  getClinic(actor: Actor | undefined) {
+  withReadyAccount<T>(
+    actor: Actor | undefined,
+    action: (account: ManagerAccount, transaction: IdentityTransaction) => Promise<T>,
+  ) {
     return this.withAuthenticatedAccount(actor, async (account, transaction) => {
-      if (onboardingStage(account) !== 'ready') {
-        throw new IdentityError(403, 'Terminez la configuration.');
-      }
-      return transaction.getClinic(account.clinicId);
+      if (onboardingStage(account) !== 'ready' || account.historicalOnly)
+        throw new IdentityError(403, 'Accès limité.');
+      return action(account, transaction);
     });
   }
 
+  getClinic(actor: Actor | undefined) {
+    return this.withReadyAccount(actor, (account, tx) => tx.getClinic(account.clinicId));
+  }
   async replaceTemporaryPassword(actor: Actor | undefined, password: string) {
     const passwordHash = await hash(password);
     await this.withAuthenticatedAccount(actor, async (account, transaction) => {
@@ -114,7 +273,11 @@ export class IdentityService {
       if (onboardingStage(account) !== 'email') {
         throw new IdentityError(409, 'Étape de configuration incorrecte.');
       }
-      if (account.loginMethod === 'email' && email !== account.loginEmail) {
+      if (
+        account.loginMethod === 'email' &&
+        !account.recoverySetup &&
+        email !== account.loginEmail
+      ) {
         throw new IdentityError(400, 'Vérifiez votre adresse de connexion.');
       }
       await transaction.saveVerification(account.id, email, tokenHash, new Date(this.now() + DAY));
@@ -139,7 +302,7 @@ export class IdentityService {
   verifyEmail(actor: Actor | undefined, token: string) {
     return this.withAuthenticatedAccount(actor, async (account, transaction) => {
       const valid =
-        onboardingStage(account) === 'email' &&
+        (onboardingStage(account) === 'email' || onboardingStage(account) === 'ready') &&
         account.recoveryEmail &&
         account.verificationHash === digest(token) &&
         account.verificationExpiresAt &&
@@ -147,14 +310,35 @@ export class IdentityService {
       if (!valid || !account.recoveryEmail) {
         throw new IdentityError(400, 'Lien invalide ou expiré.');
       }
+      const changed =
+        account.verifiedEmail !== null && account.verifiedEmail !== account.recoveryEmail;
+      const loginChanged =
+        account.loginMethod === 'email' && account.loginEmail !== account.recoveryEmail;
+      if (loginChanged) await transaction.replaceLoginEmail(account.id, account.recoveryEmail);
+      if (
+        account.recoverySetup &&
+        account.recoveryNotificationEmail &&
+        account.recoveryNotificationEmail !== account.recoveryEmail
+      )
+        await this.notify(account.recoveryNotificationEmail, 'Adresse de récupération remplacée');
       await transaction.verifyEmail(account.id, account.recoveryEmail);
+      if (changed && account.verifiedEmail) {
+        await this.notify(account.verifiedEmail, 'Adresse courriel modifiée');
+        if (!loginChanged) await transaction.revokeSessions(account.id);
+        return null;
+      }
       return account.isManager ? this.issueCodes(account, transaction) : null;
     });
   }
 
   regenerateCodes(actor: Actor | undefined, password: string) {
     return this.withAuthenticatedAccount(actor, async (account, transaction) => {
-      if (!account.isManager || !account.verifiedEmail || account.temporaryExpiresAt) {
+      if (
+        !account.isManager ||
+        account.historicalOnly ||
+        !account.verifiedEmail ||
+        account.temporaryExpiresAt
+      ) {
         throw new IdentityError(409, 'Vérifiez votre adresse courriel.');
       }
       if (!(await verify(account.passwordHash, password))) {
@@ -168,6 +352,7 @@ export class IdentityService {
     return this.withAuthenticatedAccount(actor, async (account, transaction) => {
       if (
         !account.isManager ||
+        account.historicalOnly ||
         !account.verifiedEmail ||
         account.temporaryExpiresAt ||
         account.codesBatchId !== batchId

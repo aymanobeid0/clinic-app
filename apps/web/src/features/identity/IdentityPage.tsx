@@ -1,3 +1,5 @@
+import { RecoveryForm } from './components/RecoveryForm.js';
+import { AccountsPanel } from './components/AccountsPanel.js';
 import { useIdentitySession } from './useIdentitySession.js';
 import { IdentityLayout } from './components/IdentityLayout.js';
 import { SignInForm } from './components/SignInForm.js';
@@ -11,13 +13,25 @@ export function IdentityPage() {
 
   function renderStep() {
     if (session.loading) return <p role="status">Chargement…</p>;
+    if (session.identity?.historicalOnly)
+      return (
+        <>
+          <h2>Historique uniquement</h2>
+          <p>
+            Votre accès est limité aux historiques explicitement autorisés. Un responsable doit
+            restaurer votre compte pour les opérations courantes.
+          </p>
+        </>
+      );
     switch (stage) {
       case 'password':
         return <PasswordForm busy={session.busy} onSubmit={session.replacePassword} />;
       case 'email':
         return (
           <EmailVerificationForm
-            loginEmail={session.identity?.loginEmail ?? null}
+            loginEmail={
+              session.identity?.recoverySetup ? null : (session.identity?.loginEmail ?? null)
+            }
             busy={session.busy}
             token={session.verificationToken}
             onSend={session.sendVerification}
@@ -40,6 +54,27 @@ export function IdentityPage() {
             <p className="description">
               Bonjour {session.identity?.displayName}. Votre compte est prêt.
             </p>
+            {session.identity && <AccountsPanel identity={session.identity} />}
+            {session.identity?.isManager && (
+              <details>
+                <summary>Renouveler mes codes de récupération</summary>
+                <RecoveryCodesForm
+                  busy={session.busy}
+                  codes={session.codes}
+                  onRegenerate={session.regenerateCodes}
+                  onConfirm={session.confirmSavedCodes}
+                />
+              </details>
+            )}
+            {session.verificationToken && (
+              <EmailVerificationForm
+                loginEmail={null}
+                busy={session.busy}
+                token={session.verificationToken}
+                onSend={session.sendVerification}
+                onVerify={session.verifyEmail}
+              />
+            )}
             <div className="ready">
               <span className="ready-icon" aria-hidden="true">
                 ✓
@@ -52,12 +87,15 @@ export function IdentityPage() {
         );
       default:
         return (
-          <SignInForm
-            busy={session.busy}
-            unavailable={session.unavailable}
-            onSubmit={session.signIn}
-            onInvalid={session.setValidationError}
-          />
+          <>
+            <RecoveryForm />
+            <SignInForm
+              busy={session.busy}
+              unavailable={session.unavailable}
+              onSubmit={session.signIn}
+              onInvalid={session.setValidationError}
+            />
+          </>
         );
     }
   }

@@ -1,3 +1,5 @@
+import { AccountService } from './account.service.js';
+import { AccountController } from './account.controller.js';
 import type { z } from 'zod';
 import type { provisionClinicSchema } from '@clinic/contracts';
 import type { Database } from '../../database.js';
@@ -18,7 +20,10 @@ export function createIdentityRoutes(options: Options) {
   const repository = new IdentityRepository(options.database);
   const service = new IdentityService(repository, options.now, options.origin, options.mail);
   const controller = new IdentityController(service, options);
-  return identityRoutes(controller);
+  return identityRoutes(
+    controller,
+    new AccountController(new AccountService(service, options.now)),
+  );
 }
 
 // Separate operator entry point: not reachable through the HTTP router.
