@@ -18,10 +18,44 @@ model Session {
 }
 
 model Clinic {
-  id       String    @id @default(uuid()) @db.Uuid
-  code     String    @unique
-  name     String
-  accounts Account[]
+  id                String    @id @default(uuid()) @db.Uuid
+  code              String    @unique
+  name              String
+  accounts          Account[]
+  nextPatientNumber Int       @default(0)
+}
+
+model Patient {
+  id               String  @id @default(uuid()) @db.Uuid
+  clinicId         String  @db.Uuid
+  patientNumber    Int
+  commandId        String  @db.Uuid
+  registrationHash String
+  name             String
+  phone            String
+  contactKind      String
+  contactName      String
+  archived         Boolean @default(false)
+  revision         Int     @default(0)
+
+  @@unique([clinicId, patientNumber])
+  @@unique([clinicId, commandId])
+  @@unique([clinicId, id])
+}
+
+model PatientHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  clinicId    String   @db.Uuid
+  patientId   String   @db.Uuid
+  actorId     String   @db.Uuid
+  commandId   String   @db.Uuid
+  payloadHash String
+  action      String
+  at          DateTime @db.Timestamptz(6)
+  patient     Json
+
+  @@unique([clinicId, commandId])
+  @@index([clinicId, patientId])
 }
 
 model Account {
@@ -44,7 +78,7 @@ model Account {
   isManager                 Boolean        @default(false)
   passwordHash              String
   temporaryExpiresAt        DateTime?      @db.Timestamptz(6)
-  revision Int @default(0)
+  revision                  Int            @default(0)
   credentialVersion         Int            @default(0)
   disabled                  Boolean        @default(false)
   recoveryEmail             String?
