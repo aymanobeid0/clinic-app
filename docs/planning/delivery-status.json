@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-13",
+  "asOf": "2026-10-14",
   "timezone": "Africa/Bamako",
   "planningIssues": {
     "closedWithOwnerApproval": [
@@ -15,34 +15,42 @@
     "31": "merged",
     "32": "merged",
     "35": "merged",
-    "36": "open; human approval required"
+    "36": "merged",
+    "37": "merged"
   },
   "implementation": {
-    "issue": 8,
-    "state": "published-for-human-review",
-    "branch": "codex/issue-8-accounts",
-    "base": "b8dc3b51f13e01be085bf815e0f9bba7da65f4cd",
-    "scope": "individual identities, permission configuration, manager promotion, username/password workflows and manager recovery",
-    "evidence": "issue-8-implementation.md",
-    "review": "issue-8-review.md",
-    "publication": "https://github.com/aymanobeid0/clinic-app/pull/36 (open; not merged)",
+    "issue": 9,
+    "state": "reviewed-awaiting-publication",
+    "branch": "codex/issue-9-patients",
+    "base": "1201dde9e23bbefc9a2075cd2cfa9c6e5d577c44",
+    "reviewedCommit": "d25baa39bbb52d7bff9384f4dd93d832032fde91",
+    "scope": "patient registration, contact search, edit, archive/reactivation and personal history",
+    "evidence": "issue-9-implementation.md",
+    "review": "issue-9-review.md",
     "checks": {
-      "httpTestsPassed": 26,
-      "browserJourneysPassed": 6,
-      "typecheck": "pass",
-      "lint": "pass",
-      "apiContractsWebBuild": "pass",
-      "auditFindings": 0,
-      "auditNote": "pinned npm ci audit: zero vulnerabilities; dependencies unchanged"
+      "reviewerIndependent": {
+        "patientHttpTestsPassed": 11,
+        "pinnedDiffWhitespace": "pass"
+      },
+      "builderReported": {
+        "browserJourneysPassed": 9,
+        "typecheck": "pass",
+        "apiContractsWebBuild": "pass",
+        "lint": "pass",
+        "httpTestsPassed": 37
+      }
     },
-    "reviewStatus": "independent standards/spec pass; reviewer reran 10 account HTTP tests",
-    "loginPolicy": "primary manager email; employees/promoted doctors retain clinic code/username; authority independent",
-    "organization": "feature folders: routes, controller, service, repository"
+    "reviewStatus": "standards/specification: zero residual material findings; supplemental Chrome manual journey incomplete due to request Origin mismatch",
+    "publication": "PR pending; human merge required",
+    "limitations": [
+      "future finalized clinical/financial record retention integrations",
+      "production and operational gates"
+    ]
   },
   "prismaMcp": {
     "ownerRequestedUse": true,
-    "usedForImplementation": true,
-    "use": "documentation lookup only; no cloud mutations"
+    "usedForImplementation": false,
+    "use": "Historical #7 documentation lookup only; no Prisma MCP execution claimed for #9"
   },
   "liveDataDeploymentAuthorized": false,
   "publicationPayload": "ticket-publication.json"
