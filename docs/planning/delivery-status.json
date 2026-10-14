@@ -17,34 +17,37 @@
     "35": "merged",
     "36": "merged",
     "37": "merged",
-    "38": "open"
+    "38": "merged"
   },
   "implementation": {
-    "issue": 9,
-    "state": "review",
-    "branch": "codex/issue-9-patients",
-    "base": "1201dde9e23bbefc9a2075cd2cfa9c6e5d577c44",
-    "reviewedCommit": "d25baa39bbb52d7bff9384f4dd93d832032fde91",
-    "scope": "patient registration, contact search, edit, archive/reactivation and personal history",
-    "evidence": "issue-9-implementation.md",
-    "review": "issue-9-review.md",
+    "issue": 10,
+    "state": "reviewed-awaiting-publication",
+    "branch": "codex/issue-10-patient-access",
+    "base": "09fa41c531193c7f8e00e2756da3819c2ce48c8f",
+    "reviewedCommit": "1d7dd68007ac2f8dcc55c8eea553312e2a0a7b80",
+    "scope": "assignment/sharing/removal and public clinical authorization transaction interface",
+    "evidence": "issue-10-implementation.md",
+    "review": "issue-10-review.md",
     "checks": {
       "reviewerIndependent": {
-        "patientHttpTestsPassed": 11,
-        "pinnedDiffWhitespace": "pass"
+        "pinnedDiffWhitespace": "pass",
+        "finalApplicationTestsPassed": 8
       },
       "builderReported": {
-        "browserJourneysPassed": 9,
-        "typecheck": "pass",
         "apiContractsWebBuild": "pass",
         "lint": "pass",
-        "httpTestsPassed": 37
+        "fullHttpCommit": "40c76b8",
+        "typecheck": "pass",
+        "fullHttpTestsPassed": 45,
+        "finalAffectedApiTestsPassed": 8,
+        "finalBrowserJourneysPassed": 13
       }
     },
-    "reviewStatus": "standards/specification: zero residual material findings; supplemental Chrome manual journey incomplete due to request Origin mismatch",
-    "publication": "Open PR38 https://github.com/aymanobeid0/clinic-app/pull/38; manual human merge required",
+    "reviewStatus": "standards/specification: zero residual material findings for recorded scope",
+    "publication": "PR pending; manual human merge required",
     "limitations": [
-      "future finalized clinical/financial record retention integrations",
+      "actual future clinical-content HTTP and stream integrations",
+      "historical cutoff/version selection",
       "production and operational gates"
     ]
   },
