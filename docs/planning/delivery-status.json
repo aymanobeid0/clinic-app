@@ -17,11 +17,12 @@
     "35": "merged",
     "36": "merged",
     "37": "merged",
-    "38": "merged"
+    "38": "merged",
+    "39": "open"
   },
   "implementation": {
     "issue": 10,
-    "state": "reviewed-awaiting-publication",
+    "state": "review",
     "branch": "codex/issue-10-patient-access",
     "base": "09fa41c531193c7f8e00e2756da3819c2ce48c8f",
     "reviewedCommit": "1d7dd68007ac2f8dcc55c8eea553312e2a0a7b80",
@@ -44,7 +45,7 @@
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings for recorded scope",
-    "publication": "PR pending; manual human merge required",
+    "publication": "Open PR39 https://github.com/aymanobeid0/clinic-app/pull/39; manual human merge required",
     "limitations": [
       "actual future clinical-content HTTP and stream integrations",
       "historical cutoff/version selection",
