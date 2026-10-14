@@ -16,11 +16,12 @@
     "32": "merged",
     "35": "merged",
     "36": "merged",
-    "37": "merged"
+    "37": "merged",
+    "38": "open"
   },
   "implementation": {
     "issue": 9,
-    "state": "reviewed-awaiting-publication",
+    "state": "review",
     "branch": "codex/issue-9-patients",
     "base": "1201dde9e23bbefc9a2075cd2cfa9c6e5d577c44",
     "reviewedCommit": "d25baa39bbb52d7bff9384f4dd93d832032fde91",
@@ -41,7 +42,7 @@
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings; supplemental Chrome manual journey incomplete due to request Origin mismatch",
-    "publication": "PR pending; human merge required",
+    "publication": "Open PR38 https://github.com/aymanobeid0/clinic-app/pull/38; manual human merge required",
     "limitations": [
       "future finalized clinical/financial record retention integrations",
       "production and operational gates"
