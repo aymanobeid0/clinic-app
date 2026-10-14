@@ -4,22 +4,26 @@ import type { createAccountSchema } from '@clinic/contracts';
 import { summarizeAccount, AccountTransaction } from './account.repository.js';
 import { IdentityError, type Actor, type IdentityService } from './identity.service.js';
 import type { ManagerAccount } from './identity.repository.js';
+import type { ClinicUpdates } from '../../clinic-updates.js';
 export class AccountService {
   constructor(
     private readonly identity: IdentityService,
     private readonly now: () => number,
+    private readonly updates: ClinicUpdates,
   ) {}
-  private run<T>(
+  private async run<T>(
     actor: Actor | undefined,
     password: string | undefined,
     action: (account: ManagerAccount, tx: AccountTransaction) => Promise<T>,
   ) {
-    return this.identity.withReadyAccount(actor, async (account, transaction) => {
+    const result = await this.identity.withReadyAccount(actor, async (account, transaction) => {
       if (!account.isManager) throw new IdentityError(403, 'Autorité responsable requise.');
       if (password !== undefined && !(await verify(account.passwordHash, password)))
         throw new IdentityError(401, 'Mot de passe incorrect.');
       return action(account, transaction.accounts(account.clinicId));
     });
+    if (password !== undefined) this.updates.publish(actor!.clinicId);
+    return result;
   }
   list(actor: Actor | undefined) {
     return this.run(actor, undefined, (_a, tx) => tx.list());

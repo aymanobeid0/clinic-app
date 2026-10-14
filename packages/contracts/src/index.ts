@@ -234,3 +234,36 @@ export type PatientHistory = {
   actorId: string;
   patient: Patient;
 };
+
+export const sharePatientSchema = z
+  .object({
+    commandId: z.uuid(),
+    revision: z.int().nonnegative(),
+    accountId: z.uuid(),
+    kind: z.enum(['assigned', 'shared']),
+  })
+  .strict();
+export const removePatientAccessSchema = sharePatientSchema.omit({
+  kind: true,
+});
+export type PatientAccess = {
+  patientId: string;
+  revision: number;
+  grants: {
+    accountId: string;
+    displayName: string;
+    kind: 'assigned' | 'shared';
+  }[];
+};
+export type AssignmentCandidate = {
+  id: string;
+  displayName: string;
+  kind: 'doctor' | 'staff';
+};
+export type PatientAccessEvent = {
+  actorId: string;
+  accountId: string;
+  action: string;
+  at: string;
+  snapshot: PatientAccess;
+};

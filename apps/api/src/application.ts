@@ -7,6 +7,7 @@ import { browserSession, enforceSessionAge } from './middleware/session.js';
 import { requireBrowserWrite } from './middleware/csrf.js';
 import { handleErrors } from './middleware/errors.js';
 import type { Database } from './database.js';
+import { ClinicUpdates } from './clinic-updates.js';
 
 type Options = {
   database: Database;
@@ -24,6 +25,7 @@ export function createApplication(options: Options) {
     ...options,
     origin: new URL(options.origin).origin,
     now: options.now ?? Date.now,
+    updates: new ClinicUpdates(),
   };
   const app = express();
   app.disable('x-powered-by');
@@ -48,7 +50,11 @@ export function createApplication(options: Options) {
   app.use('/api', createIdentityRoutes(config));
   app.use(
     '/api',
-    createPatientRoutes(createIdentityAccess(config.database, config.now), config.now),
+    createPatientRoutes(
+      createIdentityAccess(config.database, config.now),
+      config.now,
+      config.updates,
+    ),
   );
   app.use(handleErrors);
   return app;

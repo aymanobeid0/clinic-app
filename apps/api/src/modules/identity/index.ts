@@ -1,4 +1,7 @@
 import { AccountService } from './account.service.js';
+import { PatientAccessService } from './patient-access.service.js';
+import { PatientAccessController } from './patient-access.controller.js';
+import { ClinicUpdates } from '../../clinic-updates.js';
 import { AccountController } from './account.controller.js';
 import type { z } from 'zod';
 import type { provisionClinicSchema } from '@clinic/contracts';
@@ -13,7 +16,11 @@ export type { Actor } from './identity.service.js';
 // Permission checks and consuming-module writes share the identity transaction.
 export function createIdentityAccess(database: Database, now: () => number) {
   const service = new IdentityService(new IdentityRepository(database), now, '');
-  return { withPermission: service.withPermission.bind(service) };
+  return {
+    withPermission: service.withPermission.bind(service),
+    withAssigner: service.withAssigner.bind(service),
+    withClinicalPermission: service.withClinicalPermission.bind(service),
+  };
 }
 export type IdentityAccess = ReturnType<typeof createIdentityAccess>;
 
@@ -23,14 +30,27 @@ type Options = {
   origin: string;
   secureCookies: boolean;
   mail?: Mail;
+  updates: ClinicUpdates;
 };
 export function createIdentityRoutes(options: Options) {
   const repository = new IdentityRepository(options.database);
-  const service = new IdentityService(repository, options.now, options.origin, options.mail);
+  const service = new IdentityService(
+    repository,
+    options.now,
+    options.origin,
+    options.mail,
+    options.updates,
+  );
   const controller = new IdentityController(service, options);
+  const updates = options.updates;
   return identityRoutes(
     controller,
-    new AccountController(new AccountService(service, options.now)),
+    new AccountController(new AccountService(service, options.now, updates)),
+    new PatientAccessController(
+      new PatientAccessService(service, options.now, updates),
+      updates,
+      options.now,
+    ),
   );
 }
 

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { PatientController } from './patient.controller.js';
 export function patientRoutes(controller: PatientController) {
   const router = Router();
+  router.get('/assignment-patients', controller.assignmentSearch);
   router.post('/patients', controller.register);
   router.get('/patients', controller.search);
   router.get('/patients/events', controller.events);

@@ -58,6 +58,37 @@ model PatientHistory {
   @@index([clinicId, patientId])
 }
 
+model PatientAccessState {
+  clinicId String @db.Uuid
+  patientId String @db.Uuid
+  revision Int @default(0)
+  @@id([clinicId, patientId])
+}
+
+model PatientGrant {
+  clinicId String @db.Uuid
+  patientId String @db.Uuid
+  accountId String @db.Uuid
+  kind String
+  active Boolean @default(true)
+  @@id([clinicId, patientId, accountId])
+}
+
+model PatientAccessHistory {
+  id String @id @default(uuid()) @db.Uuid
+  clinicId String @db.Uuid
+  patientId String @db.Uuid
+  actorId String @db.Uuid
+  accountId String @db.Uuid
+  commandId String @db.Uuid
+  payloadHash String
+  action String
+  at DateTime @db.Timestamptz(6)
+  snapshot Json
+  @@unique([clinicId, commandId])
+  @@index([clinicId, patientId])
+}
+
 model Account {
   id                        String         @id @default(uuid()) @db.Uuid
   clinicId                  String         @db.Uuid

@@ -1,3 +1,12 @@
+import { PatientAccessRepository } from './patient-access.repository.js';
+import {
+  clinicalEligible,
+  clinicalPermissions,
+  type ClinicalPermission,
+} from './clinical-access.policy.js';
+
+import { onboardingStage } from './account-readiness.policy.js';
+import type { ClinicUpdates } from '../../clinic-updates.js';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { hash, verify } from 'argon2';
 import type { Identity, SignIn, recoveryIdentitySchema } from '@clinic/contracts';
@@ -27,14 +36,6 @@ export class IdentityError extends Error {
 const DAY = 24 * 60 * 60 * 1000;
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 
-function onboardingStage(account: ManagerAccount): Identity['stage'] {
-  if (account.temporaryExpiresAt) return 'password';
-  if (!account.verifiedEmail && (account.isManager || account.loginMethod === 'email'))
-    return 'email';
-  if (account.isManager && !account.codesSaved) return 'codes';
-  return 'ready';
-}
-
 export class IdentityService {
   private readonly dummyHash = hash(randomBytes(32).toString('hex'));
 
@@ -43,6 +44,7 @@ export class IdentityService {
     private readonly now: () => number,
     private readonly origin: string,
     private readonly mail?: Mail,
+    private readonly updates?: ClinicUpdates,
   ) {}
 
   async provisionClinic(input: z.input<typeof provisionClinicSchema>) {
@@ -249,6 +251,44 @@ export class IdentityService {
     });
   }
 
+  withAssigner<T>(
+    actor: Actor | undefined,
+    action: (
+      context: { clinicId: string; accountId: string },
+      tx: import('../../database.js').ClinicTransaction,
+    ) => Promise<T>,
+  ) {
+    return this.withReadyAccount(actor, (account, transaction) => {
+      if (!account.isManager && !account.permissions.includes('patients.assign'))
+        throw new IdentityError(403, 'Autorisation d’attribution requise.');
+      return transaction.databaseTransaction((tx) =>
+        action({ clinicId: account.clinicId, accountId: account.id }, tx),
+      );
+    });
+  }
+
+  withClinicalPermission<T>(
+    actor: Actor | undefined,
+    patientId: string,
+    permission: ClinicalPermission,
+    action: (
+      context: { clinicId: string; accountId: string; patientId: string },
+      tx: import('../../database.js').ClinicTransaction,
+    ) => Promise<T>,
+  ) {
+    return this.withReadyAccount(actor, (account, transaction) =>
+      transaction.databaseTransaction(async (tx) => {
+        if (
+          !clinicalPermissions.includes(permission) ||
+          !clinicalEligible(account, permission) ||
+          !(await new PatientAccessRepository(tx, account.clinicId).active(patientId, account.id))
+        )
+          throw new IdentityError(403, 'Accès clinique non autorisé.');
+        return action({ clinicId: account.clinicId, accountId: account.id, patientId }, tx);
+      }),
+    );
+  }
+
   withPermission<T>(
     actor: Actor | undefined,
     permission: string,
@@ -262,6 +302,8 @@ export class IdentityService {
     ) => Promise<T>,
   ) {
     return this.withReadyAccount(actor, (account, transaction) => {
+      if ((clinicalPermissions as readonly string[]).includes(permission))
+        throw new IdentityError(403, 'Une autorisation clinique par patient est requise.');
       if (!account.permissions.includes(permission))
         throw new IdentityError(403, 'Autorisation requise.');
       return transaction.databaseTransaction((tx) =>
@@ -291,6 +333,7 @@ export class IdentityService {
       }
       await transaction.replacePassword(account.id, passwordHash);
     });
+    this.updates?.publish(actor!.clinicId);
   }
 
   async sendEmailVerification(actor: Actor | undefined, email: string) {
@@ -327,8 +370,8 @@ export class IdentityService {
     }
   }
 
-  verifyEmail(actor: Actor | undefined, token: string) {
-    return this.withAuthenticatedAccount(actor, async (account, transaction) => {
+  async verifyEmail(actor: Actor | undefined, token: string) {
+    const result = await this.withAuthenticatedAccount(actor, async (account, transaction) => {
       const valid =
         (onboardingStage(account) === 'email' || onboardingStage(account) === 'ready') &&
         account.recoveryEmail &&
@@ -357,6 +400,8 @@ export class IdentityService {
       }
       return account.isManager ? this.issueCodes(account, transaction) : null;
     });
+    this.updates?.publish(actor!.clinicId);
+    return result;
   }
 
   regenerateCodes(actor: Actor | undefined, password: string) {
@@ -376,8 +421,8 @@ export class IdentityService {
     });
   }
 
-  confirmSavedCodes(actor: Actor | undefined, batchId: string) {
-    return this.withAuthenticatedAccount(actor, async (account, transaction) => {
+  async confirmSavedCodes(actor: Actor | undefined, batchId: string) {
+    await this.withAuthenticatedAccount(actor, async (account, transaction) => {
       if (
         !account.isManager ||
         account.historicalOnly ||
@@ -389,6 +434,7 @@ export class IdentityService {
       }
       await transaction.confirmSavedCodes(account.id);
     });
+    this.updates?.publish(actor!.clinicId);
   }
 
   private isUnavailable(account: ManagerAccount) {

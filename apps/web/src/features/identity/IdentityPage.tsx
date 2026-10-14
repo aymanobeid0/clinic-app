@@ -7,6 +7,7 @@ import { PasswordForm } from './components/PasswordForm.js';
 import { EmailVerificationForm } from './components/EmailVerificationForm.js';
 import { RecoveryCodesForm } from './components/RecoveryCodesForm.js';
 import { PatientsPanel } from '../patients/PatientsPanel.js';
+import { PatientAccessPanel } from '../patient-access/PatientAccessPanel.js';
 
 export function IdentityPage() {
   const session = useIdentitySession();
@@ -56,6 +57,12 @@ export function IdentityPage() {
               Bonjour {session.identity?.displayName}. Votre compte est prêt.
             </p>
             {session.identity && <AccountsPanel identity={session.identity} />}
+            {session.identity && (
+              <PatientAccessPanel
+                key={`access:${session.identity.clinicId}:${session.identity.accountId}`}
+                identity={session.identity}
+              />
+            )}
             {session.identity && (
               <PatientsPanel
                 key={`${session.identity.clinicId}:${session.identity.accountId}`}
