@@ -29,6 +29,16 @@ export class PatientService {
     this.updates.publish(result.clinicId);
     return result.receipt;
   }
+  assignmentSearch(actor: Actor | undefined, q: string, archived: boolean, offset: number) {
+    return this.identity.withAssigner(actor, async (context, tx) => ({
+      patients: await new PatientRepository(
+        tx,
+        context.clinicId,
+        context.accountId,
+        this.now,
+      ).search(q, archived, offset),
+    }));
+  }
   search(actor: Actor | undefined, q: string, archived: boolean, offset: number) {
     return this.identity.withPermission(actor, 'patients.read', async (context, tx) => ({
       patients: await new PatientRepository(
