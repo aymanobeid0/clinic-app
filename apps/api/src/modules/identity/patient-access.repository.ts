@@ -68,9 +68,19 @@ export class PatientAccessRepository {
         (a.snapshot as unknown as PatientAccess).revision -
         (b.snapshot as unknown as PatientAccess).revision,
     );
+    const accounts = await this.tx.account.findMany({
+      where: {
+        clinicId: this.clinicId,
+        id: { in: [...new Set(rows.flatMap((row) => [row.actorId, row.accountId]))] },
+      },
+      select: { id: true, displayName: true },
+    });
+    const names = new Map(accounts.map((account) => [account.id, account.displayName]));
     return rows.map((r) => ({
       actorId: r.actorId,
       accountId: r.accountId,
+      actorDisplayName: names.get(r.actorId)!,
+      accountDisplayName: names.get(r.accountId)!,
       action: r.action,
       at: r.at.toISOString(),
       snapshot: r.snapshot as unknown as PatientAccess,

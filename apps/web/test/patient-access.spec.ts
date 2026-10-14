@@ -177,6 +177,10 @@ test('French manager shares without operational read permission and removes an e
   await expect(page.getByRole('list', { name: 'Accès actifs' })).toContainText(
     'Dentiste fictif — Accès attribué',
   );
+  await expect(
+    page.getByText('Partage — Dentiste fictif — par Accueil', { exact: false }),
+  ).toBeVisible();
+  await expect(page.getByText(doctorId, { exact: false })).toHaveCount(0);
   await page.getByRole('region', { name: 'Attribution et partage' }).screenshot({
     path: join(tmpdir(), 'clinic-access-desktop.png'),
   });

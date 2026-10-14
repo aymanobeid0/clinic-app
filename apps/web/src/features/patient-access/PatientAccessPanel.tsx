@@ -282,8 +282,8 @@ function AccessEditor({
           {history.data?.map((h) => (
             <li key={h.snapshot.revision}>
               {new Date(h.at).toLocaleString('fr-FR')} —{' '}
-              {h.action === 'share' ? t.shareAction : t.removeAction} — {h.accountId} —{t.by}{' '}
-              {h.actorId}
+              {h.action === 'share' ? t.shareAction : t.removeAction} — {h.accountDisplayName} —{' '}
+              {t.by} {h.actorDisplayName}
             </li>
           ))}
         </ol>

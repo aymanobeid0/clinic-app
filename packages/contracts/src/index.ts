@@ -263,6 +263,8 @@ export type AssignmentCandidate = {
 export type PatientAccessEvent = {
   actorId: string;
   accountId: string;
+  actorDisplayName: string;
+  accountDisplayName: string;
   action: string;
   at: string;
   snapshot: PatientAccess;

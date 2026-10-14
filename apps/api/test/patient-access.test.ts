@@ -219,6 +219,20 @@ it('explicit multi-doctor sharing, staff grants, lost responses and removals pre
   );
   expect((await m.post(`/patient-access/${patient.id}/remove`, removal)).body.revision).toBe(4);
   const history = (await m.browser.get(`/api/patient-access/${patient.id}/history`)).body;
+  expect(history[0]).toMatchObject({
+    actorDisplayName: 'Responsable',
+    accountDisplayName: 'doctor-a',
+    accountId: a.id,
+  });
+  expect(Object.keys(history[0]).sort()).toEqual([
+    'accountDisplayName',
+    'accountId',
+    'action',
+    'actorDisplayName',
+    'actorId',
+    'at',
+    'snapshot',
+  ]);
   expect(history.map((h: { action: string }) => h.action)).toEqual([
     'share',
     'share',
