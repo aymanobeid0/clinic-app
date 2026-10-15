@@ -140,3 +140,8 @@ Owner requested push then pull to localfolder. git push origin codex/issue-10-pa
 ### Documentation sync review — 2026-10-15
 
 Root directly ran git diff --check c4118d4...HEAD (PASS) and verified the diff contains only AGENTS.md and HANDOFF.md at 0fb22af. Separate sync_docs_reviewer reported independently reading the full two-file diff, skills and workflow, verifying refs/scope/whitespace and checking for apparent credentials: standards 0 material findings; specification 0 material findings. These are attributed reviewer observations, not root-observed execution of every reviewer check. Application tests were not run because this changes only documentation. No unresolved connection blocker. PR publication is next; manual owner merge remains required. The reviewed results supersede the earlier pending-review sentence.
+
+### Documentation sync publication — 2026-10-15
+
+Published PR #40: https://github.com/aymanobeid0/clinic-app/pull/40 . It is OPEN for human review and manual merge. Final independent review of b304bfe against c4118d4 reported standards 0/specification 0 material findings; scope and whitespace independently rechecked. PR added to Clinic MVP in Review through authenticated CLI. Repository opened in browser; private project unavailable in the signed-out browser, while authenticated CLI access succeeded. This publication entry changes status only. Design edits remain local and excluded. No next ticket authorized.
+
