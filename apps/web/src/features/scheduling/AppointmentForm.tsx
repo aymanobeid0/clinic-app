@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Appointment, SchedulingChoices, SchedulingSettings } from '@clinic/contracts';
 type Fields = {
@@ -27,6 +27,9 @@ export function AppointmentForm({
   onSubmit: (path: string, body: object) => void;
   onDirty?: (dirty: boolean) => void;
 }) {
+  const [chosenPatient, setChosenPatient] = useState<
+    SchedulingChoices['patients'][number] | undefined
+  >();
   const form = useForm<Fields>({
     defaultValues: {
       patientId: appointment?.patientId ?? '',
@@ -63,9 +66,19 @@ export function AppointmentForm({
         ) : (
           <label>
             Patient
-            <select aria-label="Patient" required {...form.register('patientId')}>
+            <select
+              aria-label="Patient"
+              required
+              {...form.register('patientId', {
+                onChange: (e) =>
+                  setChosenPatient(choices.patients.find((p) => p.id === e.target.value)),
+              })}
+            >
               <option value="">Choisir un patient</option>
-              {choices.patients.map((p) => (
+              {(chosenPatient && !choices.patients.some((p) => p.id === chosenPatient.id)
+                ? [chosenPatient, ...choices.patients]
+                : choices.patients
+              ).map((p) => (
                 <option key={p.id} value={p.id}>
                   n°{p.patientNumber} · {p.name}
                 </option>

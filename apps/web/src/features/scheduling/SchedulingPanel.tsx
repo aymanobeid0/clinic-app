@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Appointment, AppointmentStatus, Identity } from '@clinic/contracts';
+import type {
+  Appointment,
+  AppointmentStatus,
+  Identity,
+  SchedulingChoices,
+} from '@clinic/contracts';
 import { HttpError } from '../identity/identity.api.js';
 import { schedulingApi, statusLabels } from './scheduling.api.js';
 import { AppointmentForm, SchedulingSettingsForm } from './AppointmentForm.js';
@@ -15,12 +20,15 @@ function Agenda({ identity }: { identity: Identity }) {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [dentist, setDentist] = useState('');
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [lastChoices, setLastChoices] = useState<SchedulingChoices | undefined>();
   const [selected, setSelected] = useState<Appointment | null>(null);
   const [reason, setReason] = useState('');
   const [override, setOverride] = useState(false);
   const [notice, setNotice] = useState('');
   const [dirty, setDirty] = useState(false);
   const [formEpoch, setFormEpoch] = useState(0);
+  const [settingsEpoch, setSettingsEpoch] = useState(0);
   const [pending, setPending] = useState<{ path: string; body: object } | null>(null);
   const agenda = useQuery({
     queryKey: [...scope, 'agenda', date, dentist],
@@ -30,11 +38,15 @@ function Agenda({ identity }: { identity: Identity }) {
     enabled: !!date,
   });
   const choices = useQuery({
-    queryKey: [...scope, 'choices'],
-    queryFn: ({ signal }) => schedulingApi.choices(search, signal),
+    queryKey: [...scope, 'choices', appliedSearch],
+    queryFn: ({ signal }) => schedulingApi.choices(appliedSearch, signal),
     retry: false,
     gcTime: 0,
   });
+  useEffect(() => {
+    if (choices.data) setLastChoices(choices.data);
+  }, [choices.data]);
+  const displayedChoices = choices.data ?? lastChoices;
   const settings = useQuery({
     queryKey: [...scope, 'settings'],
     queryFn: ({ signal }) => schedulingApi.settings(signal),
@@ -72,12 +84,15 @@ function Agenda({ identity }: { identity: Identity }) {
   }, [client, identity.clinicId, identity.accountId]);
   const mutation = useMutation({
     mutationFn: (c: { path: string; body: object }) => schedulingApi.command(c.path, c.body),
-    onSuccess: async () => {
+    onSuccess: async (_result, command) => {
       await client.invalidateQueries({ queryKey: scope });
       setPending(null);
-      setSelected(null);
       setNotice('Modification enregistrée.');
-      setFormEpoch((v) => v + 1);
+      if (command.path === '/settings') setSettingsEpoch((v) => v + 1);
+      else {
+        setSelected(null);
+        setFormEpoch((v) => v + 1);
+      }
     },
     onError: (e) => {
       setNotice('');
@@ -119,6 +134,7 @@ function Agenda({ identity }: { identity: Identity }) {
       return;
     }
     setFormEpoch((v) => v + 1);
+    setSettingsEpoch((v) => v + 1);
     if (selected)
       setSelected(result.data?.appointments.find((a) => a.id === selected.id) ?? null);
     mutation.reset();
@@ -326,7 +342,14 @@ function Agenda({ identity }: { identity: Identity }) {
         Rechercher un patient par nom ou numéro
         <input disabled={locked} value={search} onChange={(e) => setSearch(e.target.value)} />
       </label>
-      <button className="secondary" disabled={locked} onClick={() => void choices.refetch()}>
+      <button
+        className="secondary"
+        disabled={locked}
+        onClick={() => {
+          setAppliedSearch(search);
+          if (search === appliedSearch) void choices.refetch();
+        }}
+      >
         Rechercher dans les patients
       </button>
       <p className="hint">
@@ -334,12 +357,12 @@ function Agenda({ identity }: { identity: Identity }) {
         autre patient.
       </p>
       {settings.data &&
-        choices.data &&
+        displayedChoices &&
         (!selected || ['booked', 'confirmed', 'arrived'].includes(selected.status)) && (
           <AppointmentForm
             key={`${selected?.id ?? 'new'}:${selected?.revision ?? 'new'}:${formEpoch}`}
             appointment={selected}
-            choices={choices.data}
+            choices={displayedChoices}
             settings={settings.data}
             busy={locked}
             canOverride={identity.permissions.includes('appointments.override')}
@@ -349,7 +372,7 @@ function Agenda({ identity }: { identity: Identity }) {
         )}
       {settings.data && identity.isManager && (
         <SchedulingSettingsForm
-          key={`settings:${formEpoch}`}
+          key={`settings:${settingsEpoch}`}
           settings={settings.data}
           busy={locked}
           onSubmit={submit}
@@ -419,7 +442,9 @@ function ManagerSettings({ identity }: { identity: Identity }) {
         disabled={!!pending || mutation.isPending}
         onClick={() => {
           mutation.reset();
-          void settings.refetch().then(() => setEpoch((v) => v + 1));
+          void settings.refetch().then((result) => {
+            if (!result.isError) setEpoch((v) => v + 1);
+          });
         }}
       >
         Recharger les paramètres

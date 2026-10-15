@@ -210,3 +210,67 @@ test('French appointment booking, status, reschedule and cancellation journey wi
   expect(await page.title()).toContain('Dentara');
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
 });
+test('lost booking responses retry the same command, stale edits reconcile, and settings preserve the appointment draft', async ({
+  page,
+}) => {
+  const p = await patient();
+  await login(page);
+  const panel = page.getByRole('region', { name: 'Agenda des rendez-vous', exact: true });
+  await panel.getByLabel('Jour', { exact: true }).fill('2026-12-01');
+  await panel.getByLabel('Patient', { exact: true }).selectOption(p.id);
+  await panel.getByLabel('Dentiste', { exact: true }).selectOption(doctorId);
+  await panel.getByLabel('Début · heure de Nouakchott (UTC)').fill('2026-12-01T09:00');
+  const commands: string[] = [];
+  let lost = false;
+  await page.route('**/api/appointments', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+    commands.push(route.request().postData() ?? '');
+    if (!lost) {
+      lost = true;
+      await route.fetch();
+      await route.abort('failed');
+    } else await route.continue();
+  });
+  await panel.getByRole('button', { name: 'Enregistrer le rendez-vous', exact: true }).click();
+  await expect(panel.getByText(/Réponse incertaine/)).toBeVisible();
+  await expect(panel.getByLabel('Patient', { exact: true })).toBeDisabled();
+  await panel.getByRole('button', { name: 'Réessayer la même demande' }).click();
+  await expect(panel.getByText('Modification enregistrée.', { exact: true })).toBeVisible();
+  expect(commands).toHaveLength(2);
+  expect(commands[0]).toBe(commands[1]);
+  await page.unroute('**/api/appointments');
+  const a = (await manager.get('/api/appointments?date=2026-12-01')).body.appointments.find(
+    (v: { patientId: string }) => v.patientId === p.id,
+  );
+  await panel.getByRole('button', { name: `Gérer le rendez-vous de ${p.name}` }).click();
+  await panel.getByLabel('Durée (minutes)', { exact: true }).fill('77');
+  await post(`appointments/${a.id}/status`, {
+    commandId: randomUUID(),
+    revision: 0,
+    status: 'confirmed',
+  });
+  await panel.getByRole('button', { name: 'Enregistrer le déplacement' }).click();
+  await expect(panel.getByRole('alert')).toContainText('a changé');
+  await expect(panel.getByLabel('Durée (minutes)', { exact: true })).toHaveValue('77');
+  page.once('dialog', (dialog) => dialog.accept());
+  await panel.getByRole('button', { name: 'Recharger et réconcilier' }).click();
+  await expect(panel.getByText('État : Confirmé')).toBeVisible();
+  await expect(panel.getByLabel('Durée (minutes)', { exact: true })).toHaveValue('30');
+  await panel.getByLabel('Durée (minutes)', { exact: true }).fill('77');
+  await panel.getByText('Paramètres de l’agenda', { exact: true }).click();
+  await panel.getByLabel('Durée par défaut (minutes)', { exact: true }).fill('41');
+  await panel.getByRole('button', { name: 'Enregistrer les paramètres' }).click();
+  await expect(panel.getByText('Modification enregistrée.', { exact: true })).toBeVisible();
+  await expect(panel.getByLabel('Durée (minutes)', { exact: true })).toHaveValue('77');
+  await expect(panel.getByText('État : Confirmé')).toBeVisible();
+  await panel.getByText('Paramètres de l’agenda', { exact: true }).click();
+  await panel.getByLabel('Durée par défaut (minutes)', { exact: true }).fill('42');
+  await panel.getByRole('button', { name: 'Enregistrer le déplacement' }).click();
+  await expect(panel.getByText('Modification enregistrée.', { exact: true })).toBeVisible();
+  await expect(panel.getByLabel('Durée par défaut (minutes)', { exact: true })).toHaveValue(
+    '42',
+  );
+});
