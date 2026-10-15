@@ -136,12 +136,10 @@ export function SchedulingSettingsForm({
   settings,
   busy,
   onSubmit,
-  onDirty,
 }: {
   settings: SchedulingSettings;
   busy: boolean;
   onSubmit: (path: string, body: object) => void;
-  onDirty?: (dirty: boolean) => void;
 }) {
   const f = useForm({
     defaultValues: {

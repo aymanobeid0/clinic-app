@@ -364,4 +364,3 @@ export type ProcedureDurationSuggestion = {
   durationMinutes: number;
   label: string;
 };
-

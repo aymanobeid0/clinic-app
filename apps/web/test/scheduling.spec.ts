@@ -148,12 +148,6 @@ async function patient() {
     })
   ).body.patient;
 }
-async function openPatient(page: Page, id: number) {
-  await page.getByRole('button', { name: `Choisir ce patient n°${id}`, exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Accès du patient' })).toBeVisible();
-  await page.getByLabel('Médecin ou personnel autorisé').selectOption(doctorId);
-}
-
 test('French appointment booking, status, reschedule and cancellation journey with responsive evidence', async ({
   page,
 }) => {
