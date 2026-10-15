@@ -289,6 +289,42 @@ export class IdentityService {
     );
   }
 
+  withManager<T>(
+    actor: Actor | undefined,
+    action: (
+      context: { clinicId: string; accountId: string },
+      tx: import("../../database.js").ClinicTransaction,
+    ) => Promise<T>,
+  ) {
+    return this.withReadyAccount(actor, (account, transaction) => {
+      if (!account.isManager)
+        throw new IdentityError(403, "Autorité de responsable requise.");
+      return transaction.databaseTransaction((tx) =>
+        action({ clinicId: account.clinicId, accountId: account.id }, tx),
+      );
+    });
+  }
+  withPermissionOrManager<T>(
+    actor: Actor | undefined,
+    permission: string,
+    action: (
+      context: { clinicId: string; accountId: string },
+      tx: import("../../database.js").ClinicTransaction,
+    ) => Promise<T>,
+  ) {
+    return this.withReadyAccount(actor, (account, transaction) => {
+      if (!account.isManager && !account.permissions.includes(permission))
+        throw new IdentityError(403, "Autorisation requise.");
+      if ((clinicalPermissions as readonly string[]).includes(permission))
+        throw new IdentityError(
+          403,
+          "Une autorisation clinique par patient est requise.",
+        );
+      return transaction.databaseTransaction((tx) =>
+        action({ clinicId: account.clinicId, accountId: account.id }, tx),
+      );
+    });
+  }
   withPermission<T>(
     actor: Actor | undefined,
     permission: string,

@@ -390,3 +390,84 @@ summary {
   white-space: normal;
   overflow-wrap: anywhere;
 }
+.scheduling-panel {
+  margin-block: 24px;
+  padding-block: 24px;
+  border-block: 1px solid var(--border);
+}
+.scheduling-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.scheduling-panel fieldset {
+  min-inline-size: 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 16px;
+  margin-block: 16px;
+}
+.scheduling-panel legend {
+  font-weight: 600;
+}
+.scheduling-panel select,
+.scheduling-panel textarea {
+  font: inherit;
+  inline-size: 100%;
+  min-block-size: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: white;
+  color: inherit;
+}
+.scheduling-panel select:focus-visible,
+.scheduling-panel textarea:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 3px;
+}
+.appointment-list {
+  list-style: none;
+  padding: 0;
+}
+.appointment-list li {
+  border-block-end: 1px solid var(--border);
+  padding-block: 16px;
+}
+.appointment-list p {
+  margin-block: 4px;
+}
+.appointment-detail {
+  background: #f8f9fc;
+  border: 1px solid var(--border);
+  padding: 16px;
+  border-radius: 9px;
+  margin-block: 16px;
+}
+.appointment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.appointment-actions button {
+  inline-size: auto;
+}
+.scheduling-panel input[type="checkbox"] {
+  inline-size: 20px;
+  min-block-size: 20px;
+}
+.scheduling-panel .check {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .scheduling-grid {
+    grid-template-columns: 1fr;
+  }
+  .scheduling-panel fieldset {
+    padding: 12px;
+  }
+}
+
+.scheduling-panel fieldset { max-height: none; overflow: visible; }

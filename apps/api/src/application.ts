@@ -1,3 +1,4 @@
+import { createSchedulingRoutes } from './modules/scheduling/index.js';
 import express from 'express';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -56,6 +57,7 @@ export function createApplication(options: Options) {
       config.updates,
     ),
   );
+  app.use('/api', createSchedulingRoutes(createIdentityAccess(config.database, config.now), config.updates, config.now));
   app.use(handleErrors);
   return app;
 }

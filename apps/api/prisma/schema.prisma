@@ -143,3 +143,44 @@ model ReservedUsername {
 
   @@unique([clinicId, username])
 }
+
+model SchedulingSettings {
+  clinicId String @id @db.Uuid
+  revision Int @default(0)
+  defaultDurationMinutes Int @default(30)
+  chairs String[] @default(["Fauteuil 1", "Fauteuil 2", "Fauteuil 3", "Fauteuil 4"])
+}
+model Appointment {
+  id String @id @db.Uuid
+  clinicId String @db.Uuid
+  patientId String @db.Uuid
+  dentistId String @db.Uuid
+  chairId String?
+  startsAt DateTime @db.Timestamptz(6)
+  durationMinutes Int
+  status String
+  walkIn Boolean @default(false)
+  revision Int @default(0)
+  cancellationReason String @default("")
+  @@unique([clinicId,id])
+  @@index([clinicId,startsAt])
+}
+model SchedulingCommand {
+  clinicId String @db.Uuid
+  commandId String @db.Uuid
+  actorId String @db.Uuid
+  payloadHash String
+  receipt Json
+  @@id([clinicId,commandId])
+}
+model AppointmentHistory {
+  id String @id @db.Uuid
+  clinicId String @db.Uuid
+  appointmentId String @db.Uuid
+  actorId String @db.Uuid
+  at DateTime @db.Timestamptz(6)
+  action String
+  override Boolean
+  appointment Json
+  @@index([clinicId,appointmentId])
+}
