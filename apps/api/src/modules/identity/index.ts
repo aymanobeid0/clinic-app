@@ -18,6 +18,8 @@ export function createIdentityAccess(database: Database, now: () => number) {
   const service = new IdentityService(new IdentityRepository(database), now, '');
   return {
     withPermission: service.withPermission.bind(service),
+    withManager: service.withManager.bind(service),
+    withPermissionOrManager: service.withPermissionOrManager.bind(service),
     withAssigner: service.withAssigner.bind(service),
     withClinicalPermission: service.withClinicalPermission.bind(service),
   };
@@ -64,3 +66,4 @@ export function provisionClinic(
     input,
   );
 }
+export { onboardingStage as accountOnboardingStage } from './account-readiness.policy.js';

@@ -269,3 +269,99 @@ export type PatientAccessEvent = {
   at: string;
   snapshot: PatientAccess;
 };
+
+export const appointmentStatusSchema = z.enum([
+  "booked",
+  "confirmed",
+  "arrived",
+  "in_care",
+  "completed",
+  "cancelled",
+  "no_show",
+]);
+export type AppointmentStatus = z.infer<typeof appointmentStatusSchema>;
+const slotFields = {
+  dentistId: z.uuid(),
+  chairId: z.string().trim().min(1).max(80).nullable(),
+  startsAt: z.iso.datetime({ offset: true }),
+  durationMinutes: z.number().int().min(5).max(480),
+  override: z.boolean().default(false),
+};
+export const bookAppointmentSchema = z
+  .object({
+    commandId: z.uuid(),
+    patientId: z.uuid(),
+    ...slotFields,
+    durationMinutes: z.number().int().min(5).max(480).optional(),
+    walkIn: z.boolean().default(false),
+  })
+  .strict();
+export const rescheduleAppointmentSchema = z
+  .object({
+    commandId: z.uuid(),
+    revision: z.number().int().min(0),
+    ...slotFields,
+  })
+  .strict();
+export const changeAppointmentStatusSchema = z
+  .object({
+    commandId: z.uuid(),
+    revision: z.number().int().min(0),
+    status: appointmentStatusSchema,
+    reason: z.string().trim().max(500).default(""),
+    override: z.boolean().default(false),
+  })
+  .strict();
+export const schedulingSettingsSchema = z
+  .object({
+    commandId: z.uuid(),
+    revision: z.number().int().min(0),
+    defaultDurationMinutes: z.number().int().min(5).max(480),
+    chairs: z
+      .array(z.string().trim().min(1).max(80))
+      .max(100)
+      .refine(
+        (v) => new Set(v).size === v.length,
+        "Les noms des fauteuils doivent être distincts.",
+      ),
+  })
+  .strict();
+export type Appointment = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  patientNumber: number;
+  dentistId: string;
+  dentistName: string;
+  chairId: string | null;
+  startsAt: string;
+  durationMinutes: number;
+  status: AppointmentStatus;
+  walkIn: boolean;
+  revision: number;
+  cancellationReason: string;
+};
+export type SchedulingSettings = {
+  revision: number;
+  defaultDurationMinutes: number;
+  chairs: string[];
+};
+export type AppointmentHistory = {
+  actorId: string;
+  actorName: string;
+  at: string;
+  action: string;
+  override: boolean;
+  appointment: Appointment;
+};
+export type SchedulingChoices = {
+  patients: { id: string; name: string; patientNumber: number }[];
+  dentists: { id: string; displayName: string }[];
+};
+// A future catalog consumer may supply a suggestion; it never silently changes a saved reservation.
+export type ProcedureDurationSuggestion = {
+  procedureId: string;
+  durationMinutes: number;
+  label: string;
+};
+
