@@ -1,0 +1,36 @@
+# Issue #12 independent review
+
+Reviewed by root, independently from the sole builder. Owner-selected base: `0808cdefb350a896a811ce70e4b44f9756b9b0a7`; final application: `1608f6a6aa55f0d084afb18f46cef2c09ed8505d` (initial `375fd109312c109e587decf69a7eab485bfa245e`). Comparison: `git diff 0808cdef...1608f6a6`; commits and nonempty diff verified. Current GitHub #12 criteria, closed native blockers #5/#10 and recorded #2–#6 owner decisions were checked; current main remained the approved base on resumption. No stale local tracker substitution.
+
+## Standards
+
+Zero residual material findings after same-builder corrections. Inspected the feature Routes → Controller → Service → Repository structure, public identity access interface, clinic/patient filters and current permissions, restricted runtime/RLS migration, immutable writes, contract validation, state ownership, French message interface, error/retry behavior and focused existing-file changes. Applied the Matt review naming/duplication/deep-boundary/speculative-abstraction smell baseline as judgment rather than invented hard rules. No generic repository or new dependency introduced.
+
+Preliminary standards findings resolved: move active grant queries from identity service into its repository; include ClinicalRevision in runtime-owner safety check; remove unrelated formatting churn and normalize changed migration/source whitespace; route French UI strings through the feature message interface. Existing approved React/TanStack Query/Zustand/RHF boundaries take precedence over skill examples using alternate libraries. Clinical discovery is a scoped read projection; authoritative permission and record writes share the existing identity transaction.
+
+## Specification
+
+Zero residual material findings at the final pinned application. Medical history/allergies and manual dated FDI permanent/primary/mixed charts retain authors, finalizers, observation/recording times and previous versions. Staff draft, doctors explicitly confirm. Presence/eruption, extraction history, coexisting conditions and treatments stay independent; unknown does not become sound. Whole/surface validation and special-position explanatory notes follow the approved contract. No chart command writes treatment/plan/billing state; this last conclusion is code inspection, not a future billing integration test.
+
+Same-builder fixes rechecked: separate clinical.history projection in current reads and write/replay receipts; clinical.read required for content-bearing mutation receipts; full current server draft and explicit version confirmation alongside retained local inputs; stale revision reconciliation; visible patient identity; no silent 100-patient discovery cutoff; sharing invalidation before selection; selected-record removal and permission revocation; frozen ambiguous command/patient switch; generic lost-response retry for finalize-only doctors; retained unsupported-position Other notes; clinical-only fieldset clipping correction.
+
+A final P1 finding on initial375fd10 reproduced superseded content in old receipt.current/draft after clinical.history revocation despite events redaction. Correction1608f6a6 replays current authorized current/draft content for users without history permission while retaining the original command revision. The public HTTP regression replays both an old draft and confirmation after correction/revocation, excludes the private superseded marker anywhere in the response and verifies no new stored revision. Root inspected the exact three-file correction; same-command browser regressions still pass per builder execution.
+
+Historical grant administration and cutoff queries belong to open #18, which depends on #12. Immutable versions are retained for it; historical accounts remain denied here. No procedures/prescriptions, next ticket, production migration/deployment, live email or real patient data were added.
+
+## Verification and evidence provenance
+
+Root directly observed:
+
+- Oct15 earlier working-tree targeted clinical/access run:15/15 PASS32.48s; final initial375fd10 targeted run:18/18 PASS37.11s. Neither is claimed as final correction coverage.
+- Final full application suite on1608f6a6:65/65 PASS across8 files in86.87s (node node_modules/vitest/vitest.mjs run). This final result supersedes earlier focused-run coverage.
+- Pinned comparison whitespace check PASS; exact changed application/migration/contracts/UI/tests and final correction inspected. Root did not modify application code/tests.
+- Refreshed `%TEMP%/clinic-clinical-1440.png`, `clinic-clinical-320.png`, `clinic-chart-grid-320.png` and `clinic-history-form-1440.png` visually inspected. Original clipping was independently observed; regenerated history/allergy fields, chart grid, selected tooth and controls are visible. Native keyboard and console assertions were inspected in the passing browser test, not independently exercised by root.
+
+Builder-reported execution, not root reruns: full64/64 application tests and full20/20 Chromium journeys at375fd10; final11/11 clinical HTTP and5/5 relevant browser journeys after1608f6a6 correction, plus final typecheck/lint/build PASS. Exact commands, failures, red/green provenance, dependency installation and screenshots are in [implementation evidence](issue-12-implementation.md). Browser QA uses the existing loopback4173/3000 fictional setup, widths320/768/1024/1440, title/URL/nonblank/no Vite overlay checks, relevant happy-path warn/error assertions and exact anonymous identity401 exclusion. Negative network aborts intentionally fail requests. No automated axe/screen-reader certification or other-browser claim.
+
+Root read requested `C:/Users/ayman/.agents/skills/implement-spec/SKILL.md`; TDD plus tests/mocking references; repository code-review and handoff skills; `C:/Users/ayman/.agents/skills/pr/SKILL.md`; bundled frontend-ui-engineering and accessibility checklist, React best-practices and derived-state/event-listener rules, frontend-testing-debugging. Repository skill-integration/issue-tracker, architecture/dependencies/design/tokens, approved spec/scope/clinical/access/reference contracts and CONTEXT were consulted. The single separate root reviewer replaces code-review's parallel axes; the owner-authorized #12-only builder workflow replaces implement-spec's whole-spec/frontier/merger fanout. Existing approved seams reused. Browser plugin/skill absent; existing Playwright path used. Discovery/spec/ticket/redesign/imagegen/provisioning workflows were considered inapplicable to this approved functional scope. Builder sources/procedures are attributed in its evidence, not inferred merely from this root read.
+
+## Remaining boundaries
+
+Qualified clinical/legal validation, historical cutoff integration, production Linux/ingress/SSE, actual mail, performance and restore rehearsal remain separate gates. No unresolved external-service blocker; initial sandbox GitHub failures resolved by the supported escalated read. The existing workspace HANDOFF and OS-temp mirror must be refreshed before PR publication. Human review/manual merge remains required; no next-ticket authorization.
