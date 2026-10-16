@@ -22,7 +22,8 @@
     "40": "merged",
     "41": "merged",
     "42": "merged",
-    "43": "merged"
+    "43": "merged",
+    "44": "open"
   },
   "implementation": {
     "issue": 14,
@@ -49,7 +50,7 @@
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings",
-    "publication": "pending human-review PR",
+    "publication": "Open PR44 https://github.com/aymanobeid0/clinic-app/pull/44; human review/manual merge required",
     "limitations": [
       "signed attachments after #19",
       "procedure care/billing later tickets",
