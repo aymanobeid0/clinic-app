@@ -21,7 +21,8 @@
     "39": "merged",
     "40": "merged",
     "41": "merged",
-    "42": "merged"
+    "42": "merged",
+    "43": "open"
   },
   "implementation": {
     "issue": 13,
@@ -51,7 +52,7 @@
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings",
-    "publication": "pending human-review PR",
+    "publication": "Open PR43 https://github.com/aymanobeid0/clinic-app/pull/43; issue13 open, manual human review/merge required",
     "limitations": [
       "five verified currencies only",
       "draft proposals only; acceptance/billing and historical cutoff later",
