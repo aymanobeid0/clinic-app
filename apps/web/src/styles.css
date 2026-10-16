@@ -471,3 +471,84 @@ summary {
 }
 
 .scheduling-panel fieldset { max-height: none; overflow: visible; }
+
+.clinical {
+  margin-block-start: 32px;
+  border-block-start: 1px solid var(--border);
+  padding-block-start: 24px;
+}
+.clinical-record > section {
+  margin-block: 24px;
+  padding-block: 16px;
+  border-block-start: 1px solid var(--border);
+}
+.clinical fieldset {
+  max-height: none;
+  overflow: visible;
+  min-inline-size: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-block: 16px;
+  padding: 12px;
+}
+.clinical textarea,
+.clinical select {
+  display: block;
+  font: inherit;
+  color: inherit;
+  inline-size: 100%;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  margin-block: 8px;
+}
+.clinical textarea {
+  min-block-size: 96px;
+  resize: vertical;
+}
+.clinical :is(textarea, select):focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 4px;
+}
+.clinical .check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-block-size: 44px;
+}
+.clinical .check input {
+  inline-size: auto;
+  margin: 0;
+}
+.tooth-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  direction: ltr;
+}
+.tooth-grid button {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 4px;
+  margin: 0;
+  min-block-size: 64px;
+  border: 2px solid transparent;
+}
+.tooth-grid button[aria-pressed="true"] {
+  border-color: #18243d;
+}
+.tooth-grid small {
+  font-size: 10px;
+}
+.clinical-version {
+  border-inline-start: 3px solid var(--border);
+  padding-inline-start: 12px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+@media (min-width: 768px) {
+  .tooth-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

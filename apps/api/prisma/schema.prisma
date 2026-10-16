@@ -184,3 +184,20 @@ model AppointmentHistory {
   appointment Json
   @@index([clinicId,appointmentId])
 }
+
+model ClinicalRevision {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ kind String
+ revision Int
+ commandId String @db.Uuid
+ actorId String @db.Uuid
+ payloadHash String
+ at DateTime @db.Timestamptz(6)
+ snapshot Json
+ receipt Json
+ @@unique([clinicId,commandId])
+ @@unique([clinicId,patientId,kind,revision])
+ @@index([clinicId,patientId,at])
+}

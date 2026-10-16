@@ -267,12 +267,36 @@ export class IdentityService {
     });
   }
 
+  withClinicalPatients<T>(
+    actor: Actor | undefined,
+    action: (
+      context: { clinicId: string; accountId: string; patientIds: string[] },
+      tx: import('../../database.js').ClinicTransaction,
+    ) => Promise<T>,
+  ) {
+    return this.withReadyAccount(actor, (account, transaction) =>
+      transaction.databaseTransaction(async (tx) => {
+        if (!clinicalEligible(account, 'clinical.read'))
+          throw new IdentityError(403, 'Accès clinique non autorisé.');
+        const patientIds = await new PatientAccessRepository(tx, account.clinicId)
+          .activePatientIds(account.id);
+        return action(
+          {
+            clinicId: account.clinicId,
+            accountId: account.id,
+            patientIds,
+          },
+          tx,
+        );
+      }),
+    );
+  }
   withClinicalPermission<T>(
     actor: Actor | undefined,
     patientId: string,
     permission: ClinicalPermission,
     action: (
-      context: { clinicId: string; accountId: string; patientId: string },
+      context: { clinicId: string; accountId: string; patientId: string; permissions: readonly string[] },
       tx: import('../../database.js').ClinicTransaction,
     ) => Promise<T>,
   ) {
@@ -284,7 +308,7 @@ export class IdentityService {
           !(await new PatientAccessRepository(tx, account.clinicId).active(patientId, account.id))
         )
           throw new IdentityError(403, 'Accès clinique non autorisé.');
-        return action({ clinicId: account.clinicId, accountId: account.id, patientId }, tx);
+        return action({ clinicId: account.clinicId, accountId: account.id, patientId, permissions: account.permissions }, tx);
       }),
     );
   }

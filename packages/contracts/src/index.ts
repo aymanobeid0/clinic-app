@@ -364,3 +364,129 @@ export type ProcedureDurationSuggestion = {
   durationMinutes: number;
   label: string;
 };
+
+export const medicalHistoryContentSchema = z
+  .object({
+    medicalHistory: z.string().trim().max(8000),
+    allergies: z.string().trim().max(4000),
+  })
+  .strict();
+export const clinicalDraftSchema = z
+  .object({
+    commandId: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    observedAt: z.iso.datetime(),
+    content: medicalHistoryContentSchema,
+  })
+  .strict();
+export const clinicalConfirmSchema = z
+  .object({ commandId: z.uuid(), revision: z.number().int().positive() })
+  .strict();
+export type ClinicalVersion<T = MedicalHistoryContent> = {
+  revision: number;
+  observedAt: string;
+  recordedAt: string;
+  authorId: string;
+  authorName: string;
+  finalizerId: string | null;
+  finalizerName: string | null;
+  status: 'draft' | 'final';
+  content: T;
+};
+export type MedicalHistoryContent = z.infer<typeof medicalHistoryContentSchema>;
+export type ClinicalRecord<T = MedicalHistoryContent> = {
+  revision: number;
+  current: ClinicalVersion<T> | null;
+  draft: ClinicalVersion<T> | null;
+  events: ClinicalVersion<T>[];
+};
+
+export const chartContentSchema = z
+  .object({
+    numberingScheme: z.literal('FDI'),
+    otherNotes: z.string().trim().max(4000).optional(),
+    dentition: z.enum(['permanent', 'primary', 'mixed']),
+    teeth: z
+      .array(
+        z
+          .object({
+            tooth: z.string().regex(/^[1-4][1-8]$|^[5-8][1-5]$/),
+            presence: z.enum(['unknown', 'present', 'missing', 'unerupted']),
+            extractionHistory: z.boolean(),
+            conditions: z
+              .array(
+                z
+                  .object({
+                    finding: z.enum([
+                      'sound',
+                      'decay',
+                      'restoration',
+                      'fracture',
+                      'other',
+                    ]),
+                    surfaces: z
+                      .array(
+                        z.enum([
+                          'mesial',
+                          'distal',
+                          'outer',
+                          'inner',
+                          'incisal',
+                          'occlusal',
+                        ]),
+                      )
+                      .max(5),
+                    note: z.string().trim().max(1000).optional(),
+                  })
+                  .strict(),
+              )
+              .max(30),
+            treatments: z
+              .array(z.enum(['crown', 'root_canal', 'implant']))
+              .max(3),
+          })
+          .strict(),
+      )
+      .max(52),
+  })
+  .strict()
+  .superRefine((chart, ctx) => {
+    const teeth = new Set<string>();
+    chart.teeth.forEach((tooth, i) => {
+      const add = (message: string) =>
+        ctx.addIssue({ code: 'custom', message, path: ['teeth', i] });
+      if (teeth.has(tooth.tooth)) add('Position FDI en double.');
+      teeth.add(tooth.tooth);
+      const primary = Number(tooth.tooth[0]) >= 5;
+      if (
+        (chart.dentition === 'primary' && !primary) ||
+        (chart.dentition === 'permanent' && primary)
+      )
+        add('Dentition incompatible.');
+      if (new Set(tooth.treatments).size !== tooth.treatments.length)
+        add('Traitement en double.');
+      tooth.conditions.forEach((c) => {
+        if (c.finding === 'other' && !c.note?.trim())
+          add('Une note est requise pour Autre.');
+        if (c.finding === 'sound' && c.surfaces.length)
+          add('Sain concerne la dent entière.');
+        if (new Set(c.surfaces).size !== c.surfaces.length)
+          add('Surface en double.');
+        if (
+          c.surfaces.includes(
+            Number(tooth.tooth[1]) <= 3 ? 'occlusal' : 'incisal',
+          )
+        )
+          add('Surface incompatible avec la dent.');
+      });
+    });
+  });
+export const chartDraftSchema = clinicalDraftSchema.extend({
+  content: chartContentSchema,
+});
+export type ChartContent = z.infer<typeof chartContentSchema>;
+export type ClinicalContent = MedicalHistoryContent | ChartContent;
+export type ClinicalWorkspace = {
+  history: ClinicalRecord<ClinicalContent>;
+  chart: ClinicalRecord<ClinicalContent>;
+};
