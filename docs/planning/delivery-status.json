@@ -20,7 +20,8 @@
     "38": "merged",
     "39": "merged",
     "40": "merged",
-    "41": "merged"
+    "41": "merged",
+    "42": "open"
   },
   "implementation": {
     "issue": 12,
@@ -51,7 +52,7 @@
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings",
-    "publication": "Pending PR publication; manual human review/merge required",
+    "publication": "Open PR42 https://github.com/aymanobeid0/clinic-app/pull/42; issue12 open, manual human review/merge required",
     "limitations": [
       "historical grant and cutoff selection in #18",
       "qualified clinical/legal validation",
