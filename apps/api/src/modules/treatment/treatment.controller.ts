@@ -2,6 +2,7 @@ import type { RequestHandler } from 'express';
 import { z } from 'zod';
 import {
   treatmentPlanSchema,
+  planLifecycleSchema,
   catalogCommandSchema,
   enableCurrencySchema,
 } from '@clinic/contracts';
@@ -28,6 +29,25 @@ export class TreatmentController {
         req.session.actor,
         z.uuid().parse(req.params.id),
         treatmentPlanSchema.parse(req.body),
+      ),
+    );
+  };
+  print: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.printable(
+        req.session.actor,
+        z.uuid().parse(req.params.id),
+        z.uuid().parse(req.params.planId),
+        z.coerce.number().int().positive().parse(req.params.revision),
+      ),
+    );
+  };
+  lifecycle: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.lifecycle(
+        req.session.actor,
+        z.uuid().parse(req.params.id),
+        planLifecycleSchema.parse(req.body),
       ),
     );
   };

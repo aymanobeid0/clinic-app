@@ -10,6 +10,9 @@ import { HttpError } from '../identity/identity.api.js';
 import { treatmentApi, formatMinor } from './treatment.api.js';
 import { treatmentMessages as t } from './treatment.messages.js';
 import { PlanForm } from './PlanForm.js';
+import { PlanLifecycle } from './PlanLifecycle.js';
+import { PlanVersionDetails } from './PlanVersionDetails.js';
+import { planStatus } from './treatment.messages.js';
 export function TreatmentPanel({
   id,
   identity,
@@ -36,6 +39,7 @@ export function TreatmentPanel({
   const [selected, setSelected] = useState(''),
     [epoch, setEpoch] = useState(0),
     [locked, setLocked] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [connected, setConnected] = useState(true);
   useEffect(() => {
     const stream = new EventSource(`/api/treatment/${id}/events`);
@@ -109,30 +113,52 @@ export function TreatmentPanel({
           </li>
         ))}
       </ul>
-      {identity.permissions.includes('plans.draft') && catalog.data && (
-        <>
-          <button
-            disabled={locked}
-            onClick={() => {
-              if (confirm(t.patientSwitch)) {
-                setSelected('');
-                setEpoch((x) => x + 1);
-              }
-            }}
-          >
-            {t.newPlan}
-          </button>
-          <PlanForm
-            key={`${selected}:${epoch}`}
-            patientId={id}
-            plan={plan}
-            catalog={catalog.data as Catalog}
-            identity={identity}
-            cacheKey={key}
-            onLock={lock}
-          />
-        </>
+      {plan && (
+        <PlanLifecycle
+          key={`${selected}:${epoch}`}
+          plan={plan}
+          patientId={id}
+          identity={identity}
+          cacheKey={key}
+          onLock={lock}
+          dirty={dirty || locked}
+          onDone={(value) => {
+            cache.setQueryData<TreatmentPlan[]>(key, (rows) =>
+              rows?.map((p) => (p.id === value.id ? value : p)),
+            );
+            setEpoch((x) => x + 1);
+          }}
+        />
       )}
+      {identity.permissions.includes('plans.draft') &&
+        catalog.data &&
+        !['cancelled', 'completed', 'in_progress'].includes(
+          plan?.status ?? '',
+        ) && (
+          <>
+            <button
+              disabled={locked}
+              onClick={() => {
+                if (confirm(t.patientSwitch)) {
+                  setSelected('');
+                  setEpoch((x) => x + 1);
+                }
+              }}
+            >
+              {t.newPlan}
+            </button>
+            <PlanForm
+              key={`${selected}:${epoch}`}
+              patientId={id}
+              plan={plan}
+              catalog={catalog.data as Catalog}
+              identity={identity}
+              cacheKey={key}
+              onLock={lock}
+              onDirty={setDirty}
+            />
+          </>
+        )}
     </section>
   );
 }
@@ -140,43 +166,16 @@ export function PlanSummary({ plan }: { plan: TreatmentPlan }) {
   return (
     <details>
       <summary>
-        Proposition {plan.id} · brouillon · total{' '}
+        Proposition {plan.id} · {planStatus[plan.status]} · total{' '}
         {formatMinor(plan.totalMinor, verifiedCurrencies[plan.currency])}{' '}
         {plan.currency}
       </summary>
-      <p>
-        {plan.title} · version {plan.revision} · {plan.authorName} ·{' '}
-        {new Date(plan.recordedAt).toLocaleString('fr')}
-      </p>
-      <ul>
-        {plan.items.map((i) => (
-          <li key={i.id}>
-            {i.name} ·{' '}
-            {i.scope === 'whole_mouth' ? t.whole : `FDI ${i.teeth.join(', ')}`}{' '}
-            · prix{' '}
-            {formatMinor(i.priceMinor, verifiedCurrencies[plan.currency])} ·
-            remise{' '}
-            {formatMinor(i.discountMinor, verifiedCurrencies[plan.currency])}{' '}
-            {plan.currency}
-            {i.discountReason && ` · motif : ${i.discountReason}`}
-          </li>
-        ))}
-      </ul>
+      <PlanVersionDetails version={plan} />
       {plan.events.length > 0 && (
         <details>
           <summary>Historique essentiel de la proposition</summary>
-          {plan.events.map((e) => (
-            <p key={e.revision}>
-              Version {e.revision} · {e.title} · {e.authorName} · total{' '}
-              {formatMinor(e.totalMinor, verifiedCurrencies[e.currency])}{' '}
-              {e.currency} ·{' '}
-              {e.items
-                .map(
-                  (i) =>
-                    `${i.name} (${i.teeth.join(',') || t.whole}), ${formatMinor(i.priceMinor, verifiedCurrencies[e.currency])} − ${formatMinor(i.discountMinor, verifiedCurrencies[e.currency])}${i.discountReason ? ' · ' + i.discountReason : ''}`,
-                )
-                .join('; ')}
-            </p>
+          {plan.events.map((v) => (
+            <PlanVersionDetails key={v.revision} version={v} />
           ))}
         </details>
       )}

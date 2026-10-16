@@ -98,6 +98,10 @@ test.beforeAll(async () => {
       'chart.draft',
       'chart.finalize',
       'plans.draft',
+      'plans.finalize',
+      'plans.accept',
+      'acceptance.draft',
+      'clinical.print',
       'prices.override',
       'discounts',
       'appointments.manage',
@@ -143,6 +147,11 @@ test.beforeEach(async ({ page }) => {
   await new Promise<void>((resolve) => server.once('listening', resolve));
 });
 test.afterEach(async ({ page }) => {
+  const logout = page.getByRole('button', {name: 'Se déconnecter', exact: true});
+  if (await logout.isVisible()) {
+    await logout.click();
+    await expect(page.getByRole('button', {name: 'Se connecter', exact: true})).toBeVisible();
+  }
   await page.goto('about:blank');
   // Complete an authenticated DB round trip after the page closes its SSE stream.
   await manager.get('/api/clinic');
@@ -528,4 +537,192 @@ test('sharing before selection appears through discovery and removing scope clea
   ).toBe(200);
   await expect(panel).toHaveCount(0);
   await expect(open).toHaveCount(0);
+});
+
+test('French presentation acceptance revision and retained-version print journey', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  const logs: string[] = [];
+  page.on('console', (m) => {
+    if (
+      ['error', 'warning'].includes(m.type()) &&
+      !(
+        m.text().includes('status of 401') &&
+        new URL(m.location().url || 'http://localhost').pathname ===
+          '/api/identity'
+      )
+    )
+      logs.push(m.text());
+  });
+  const { panel } = await openProposals(page);
+  await fillProposal(panel);
+  await panel
+    .getByRole('button', { name: 'Enregistrer le brouillon', exact: true })
+    .click();
+  await expect(
+    panel.getByText('Brouillon enregistré', { exact: true }).first(),
+  ).toBeVisible();
+  await panel
+    .getByRole('button', { name: /Soins proposés fictifs · MRU/ })
+    .click();
+  await panel
+    .getByRole('button', { name: 'Présenter cette version', exact: true })
+    .click();
+  await expect(
+    panel.getByText('État : Présentée', { exact: true }),
+  ).toBeVisible();
+  await panel
+    .getByLabel('Identité de la personne ayant accepté')
+    .fill('Aminata, patiente fictive');
+  await panel.getByLabel('Date et heure de l’accord').fill('2026-10-16T12:00');
+  await panel.getByLabel('Méthode de l’accord').fill('Accord oral expliqué');
+  await panel
+    .getByRole('button', { name: 'Consigner l’accord', exact: true })
+    .click();
+  await expect(
+    panel.getByText(/Accord consigné : Aminata/).first(),
+  ).toBeVisible();
+  await panel
+    .getByRole('button', { name: 'Confirmer l’acceptation', exact: true })
+    .click();
+  await expect(
+    panel.getByText('État : Acceptée', { exact: true }),
+  ).toBeVisible();
+  await panel
+    .getByRole('button', { name: 'Aperçu imprimable', exact: true })
+    .click();
+  const preview = page.getByRole('dialog', { name: 'Proposition imprimable' });
+  await expect(preview).toBeVisible();
+  await expect(
+    preview.getByText('Aminata, patiente fictive', { exact: false }),
+  ).toBeVisible();
+  await expect(preview.getByText(/85.00 MRU/).first()).toBeVisible();
+  await page.emulateMedia({ media: 'print' });
+  await expect(
+    preview.getByRole('heading', { name: 'Proposition de traitement' }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: join(tmpdir(), 'clinic-14-print.png'),
+    fullPage: true,
+  });
+  await page.emulateMedia({ media: 'screen' });
+  await preview.getByRole('button', { name: 'Fermer l’aperçu' }).click();
+  await panel
+    .getByLabel('Notes de la proposition')
+    .fill('Préférence de rendez-vous');
+  await panel
+    .getByRole('button', { name: 'Enregistrer le brouillon', exact: true })
+    .click();
+  await expect(
+    panel.getByText('État : Acceptée', { exact: true }),
+  ).toBeVisible();
+  await panel
+    .getByLabel('Libellé des frais supplémentaires · acte 1')
+    .fill('Travail complémentaire');
+  await panel
+    .getByLabel('Montant des frais supplémentaires · acte 1')
+    .fill('12.25');
+  await panel
+    .getByRole('button', { name: 'Ajouter les frais · acte 1' })
+    .click();
+  await panel
+    .getByRole('button', { name: 'Enregistrer le brouillon', exact: true })
+    .click();
+  await expect(
+    panel.getByText('État : Brouillon', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    panel.getByText(
+      'Nouvelle acceptation requise après modification de la portée ou du prix.',
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await panel.getByLabel('Version à imprimer').selectOption('4');
+  await panel
+    .getByRole('button', { name: 'Aperçu imprimable', exact: true })
+    .click();
+  await expect(preview.getByText(/version 4 · Acceptée/)).toBeVisible();
+  await expect(
+    preview.getByText('Total proposé : 85.00 MRU', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    preview.getByText('Travail complémentaire', { exact: false }),
+  ).toHaveCount(0);
+  await preview.getByRole('button', { name: 'Fermer l’aperçu' }).click();
+  for (const width of [320, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await panel.scrollIntoViewIfNeeded();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await panel.screenshot({ path: join(tmpdir(), `clinic-14-${width}.png`) });
+  }
+  await expect(page).toHaveTitle('Dentara · Connexion');
+  expect(page.url()).toBe('http://127.0.0.1:4173/');
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0);
+  expect(errors).toEqual([]);
+  expect(logs).toEqual([]);
+});
+
+test('lost lifecycle response retains agreement input and freezes actions until an idempotent retry succeeds', async ({
+  page,
+}) => {
+  const { panel, p } = await openProposals(page);
+  await fillProposal(panel);
+  await panel
+    .getByRole('button', { name: 'Enregistrer le brouillon', exact: true })
+    .click();
+  await expect(
+    panel.getByText('Brouillon enregistré', { exact: true }).first(),
+  ).toBeVisible();
+  await panel
+    .getByRole('button', { name: /Soins proposés fictifs · MRU/ })
+    .click();
+  await panel
+    .getByRole('button', { name: 'Présenter cette version', exact: true })
+    .click();
+  await expect(
+    panel.getByText('État : Présentée', { exact: true }),
+  ).toBeVisible();
+  await panel
+    .getByLabel('Identité de la personne ayant accepté')
+    .fill('Accord conservé fictif');
+  await panel.getByLabel('Date et heure de l’accord').fill('2026-10-16T12:00');
+  await panel.getByLabel('Méthode de l’accord').fill('Oral');
+  let intercepted = false;
+  await page.route(
+    `**/api/treatment/${p.id}/plans/lifecycle`,
+    async (route) => {
+      if (!intercepted) {
+        intercepted = true;
+        await route.fetch();
+        await route.abort('failed');
+      } else await route.continue();
+    },
+  );
+  await panel
+    .getByRole('button', { name: 'Consigner l’accord', exact: true })
+    .click();
+  await expect(
+    panel.getByText('Réponse incertaine.', { exact: false }),
+  ).toBeVisible();
+  await expect(
+    panel.getByLabel('Identité de la personne ayant accepté'),
+  ).toHaveValue('Accord conservé fictif');
+  await expect(
+    panel.getByRole('button', { name: 'Consigner l’accord', exact: true }),
+  ).toBeDisabled();
+  await panel
+    .getByRole('button', { name: 'Réessayer la même commande', exact: true })
+    .click();
+  await expect(
+    panel.getByText(/Accord consigné : Accord conservé fictif/),
+  ).toBeVisible();
+  await expect(
+    panel.getByText('Actions sur la version 3', { exact: true }),
+  ).toBeVisible();
 });

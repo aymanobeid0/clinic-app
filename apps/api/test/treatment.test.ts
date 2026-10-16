@@ -845,3 +845,407 @@ it('doctor-managers retain intrinsic price authority but still require patient s
   expect((await doctor.post(path, priced)).status).toBe(403);
   expect((await doctor.browser.get(`/api${path}`)).status).toBe(403);
 });
+
+it('a doctor presents the exact retained proposal before acceptance', async () => {
+  const { m, doctor, command, path } = await treatmentScenario();
+  await m.post(`/accounts/${doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: [
+      'clinical.read',
+      'clinical.history',
+      'plans.draft',
+      'plans.finalize',
+    ],
+  });
+  expect((await doctor.post(path, command)).status).toBe(200);
+  const presented = await doctor.post(`${path}/lifecycle`, {
+    commandId: randomUUID(),
+    id: command.id,
+    revision: 1,
+    action: 'present',
+  });
+  expect(presented.status).toBe(200);
+  expect(presented.body.status).toBe('presented');
+  expect(
+    presented.body.events.map((v: { status: string }) => v.status),
+  ).toEqual(['draft', 'presented']);
+});
+
+async function lifecycleScenario() {
+  const s = await treatmentScenario();
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: [
+      'clinical.read',
+      'clinical.history',
+      'plans.draft',
+      'plans.finalize',
+      'plans.accept',
+      'acceptance.draft',
+      'clinical.print',
+      'prices.override',
+    ],
+  });
+  await s.doctor.post(s.path, s.command);
+  const change = (action: string, revision: number, extra: object = {}) =>
+    s.doctor.post(`${s.path}/lifecycle`, {
+      commandId: randomUUID(),
+      id: s.command.id,
+      revision,
+      action,
+      ...extra,
+    });
+  await change('present', 1);
+  return { ...s, change };
+}
+it('staff records version-bound acceptance evidence and only a doctor confirms it with retained attribution', async () => {
+  const { m, create, patient, doctor, command, path, change } =
+    await lifecycleScenario();
+  const staff = await create('evidence', 'staff', [
+    'clinical.read',
+    'clinical.history',
+    'acceptance.draft',
+    'plans.accept',
+  ]);
+  await m.post(`/patient-access/${patient.id}/share`, {
+    commandId: randomUUID(),
+    revision: 1,
+    accountId: staff.id,
+    kind: 'shared',
+  });
+  const evidence = {
+    commandId: randomUUID(),
+    id: command.id,
+    revision: 2,
+    action: 'evidence',
+    acceptedBy: 'Aminata, patiente fictive',
+    acceptedAt: '2026-10-16T12:00:00.000Z',
+    method: 'Accord oral consigné',
+  };
+  const drafted = await staff.post(`${path}/lifecycle`, evidence);
+  expect(drafted.status).toBe(200);
+  expect(drafted.body.status).toBe('presented');
+  expect(drafted.body.evidence).toMatchObject({
+    acceptedBy: evidence.acceptedBy,
+    recordedBy: staff.id,
+    proposalRevision: 2,
+  });
+  expect(
+    (
+      await staff.post(`${path}/lifecycle`, {
+        commandId: randomUUID(),
+        id: command.id,
+        revision: 3,
+        action: 'accept',
+      })
+    ).status,
+  ).toBe(403);
+  const accepted = await change('accept', 3);
+  expect(accepted.status).toBe(200);
+  expect(accepted.body.status).toBe('accepted');
+  expect(accepted.body.acceptance).toMatchObject({
+    acceptedBy: evidence.acceptedBy,
+    acceptedAt: evidence.acceptedAt,
+    method: evidence.method,
+    recordedBy: staff.id,
+    confirmedBy: doctor.id,
+    proposalRevision: 2,
+  });
+  expect((await change('accept', 4)).status).toBe(409);
+});
+
+it('notes preserve agreement while itemized extras and changed scope or price require renewed acceptance', async () => {
+  const { doctor, command, path, change } = await lifecycleScenario();
+  await change('evidence', 2, {
+    acceptedBy: 'Patiente fictive',
+    acceptedAt: '2026-10-16T12:00:00.000Z',
+    method: 'Oral',
+  });
+  const accepted = await change('accept', 3);
+  expect(accepted.body.status).toBe('accepted');
+  const notes = await doctor.post(path, {
+    ...command,
+    commandId: randomUUID(),
+    revision: 4,
+    notes: 'Simple précision de rendez-vous',
+  });
+  expect(notes.status).toBe(200);
+  expect(notes.body.status).toBe('accepted');
+  expect(notes.body.acceptance).toEqual(accepted.body.acceptance);
+  const extras = await doctor.post(path, {
+    ...command,
+    commandId: randomUUID(),
+    revision: 5,
+    notes: 'Simple précision de rendez-vous',
+    items: [
+      {
+        ...command.items[0],
+        extras: [
+          {
+            id: randomUUID(),
+            label: 'Travail complémentaire expliqué',
+            amount: '12.25',
+          },
+        ],
+      },
+    ],
+  });
+  expect(extras.status).toBe(200);
+  expect(extras.body.status).toBe('draft');
+  expect(extras.body.totalMinor).toBe('11225');
+  expect(extras.body.acceptance).toBeUndefined();
+  expect(
+    extras.body.events.find((v: { revision: number }) => v.revision === 4)
+      .totalMinor,
+  ).toBe('10000');
+  expect((await change('accept', 6)).status).toBe(409);
+  await change('present', 6);
+  await change('evidence', 7, {
+    acceptedBy: 'Patiente fictive',
+    acceptedAt: '2026-10-16T12:01:00.000Z',
+    method: 'Nouvel accord oral',
+  });
+  const renewed = await change('accept', 8);
+  expect(renewed.body.acceptance.proposalRevision).toBe(7);
+  expect(renewed.body.items[0].extras[0]).toMatchObject({
+    label: 'Travail complémentaire expliqué',
+    amountMinor: '1225',
+  });
+});
+
+it('printing requires current document permission and selects the retained version; cancellation is reasoned and terminal', async () => {
+  const { m, doctor, command, path, change } = await lifecycleScenario();
+  const url = `/api${path}/${command.id}/versions/1/print`;
+  const printed = await doctor.browser.get(url);
+  expect(printed.status).toBe(200);
+  expect(printed.body).toMatchObject({
+    revision: 1,
+    status: 'draft',
+    totalMinor: '10000',
+  });
+  expect((await m.browser.get(url)).status).toBe(403);
+  expect((await doctor.browser.get(url.replace('/1/', '/99/'))).status).toBe(
+    404,
+  );
+  expect((await change('cancel', 2)).status).toBe(400);
+  const cancelled = await change('cancel', 2, {
+    reason: 'Choix de la patiente fictive',
+  });
+  expect(cancelled.status).toBe(200);
+  expect(cancelled.body).toMatchObject({
+    status: 'cancelled',
+    cancellation: {
+      reason: 'Choix de la patiente fictive',
+      actorId: doctor.id,
+    },
+  });
+  expect(
+    (
+      await doctor.post(path, {
+        ...command,
+        commandId: randomUUID(),
+        revision: 3,
+      })
+    ).status,
+  ).toBe(409);
+  expect((await change('present', 3)).status).toBe(409);
+  await m.post(`/accounts/${doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: ['clinical.read', 'clinical.history', 'plans.draft'],
+  });
+  expect((await doctor.browser.get(url)).status).toBe(403);
+});
+
+it.each(['price', 'scope'])(
+  '%s changes invalidate an accepted agreement',
+  async (kind) => {
+    const { doctor, command, path, change } = await lifecycleScenario();
+    await change('evidence', 2, {
+      acceptedBy: 'Patient fictif',
+      acceptedAt: '2026-10-16T12:00:00.000Z',
+      method: 'Accord oral',
+    });
+    await change('accept', 3);
+    const item =
+      kind === 'price'
+        ? { ...command.items[0], price: '101' }
+        : { ...command.items[0], scope: 'tooth', teeth: ['11'] };
+    const changed = await doctor.post(path, {
+      ...command,
+      commandId: randomUUID(),
+      revision: 4,
+      items: [item],
+    });
+    expect(changed.status).toBe(200);
+    expect(changed.body.status).toBe('draft');
+    expect(changed.body.acceptance).toBeUndefined();
+    expect(changed.body.evidence).toBeUndefined();
+  },
+);
+it('acceptance rejects invalid evidence, stale confirmations and command reuse; retries recheck current grants and redact old snapshots', async () => {
+  const { m, doctor, command, path, change } = await lifecycleScenario();
+  expect((await change('accept', 2)).status).toBe(409);
+  for (const extra of [
+    {},
+    {
+      acceptedBy: 'Patient fictif',
+      acceptedAt: '2099-01-01T00:00:00.000Z',
+      method: 'Oral',
+    },
+    { acceptedBy: '', acceptedAt: '2026-10-16T12:00:00.000Z', method: 'Oral' },
+    {
+      acceptedBy: 'Patient fictif',
+      acceptedAt: 'pas-une-date',
+      method: 'Oral',
+    },
+  ])
+    expect((await change('evidence', 2, extra)).status).toBe(400);
+  const evidence = {
+    commandId: randomUUID(),
+    id: command.id,
+    revision: 2,
+    action: 'evidence',
+    acceptedBy: 'ANCIEN_ACCORD_SECRET',
+    acceptedAt: '2026-10-16T12:00:00.000Z',
+    method: 'Oral',
+  };
+  const concurrent = await Promise.all([
+    doctor.post(`${path}/lifecycle`, evidence),
+    doctor.post(`${path}/lifecycle`, evidence),
+  ]);
+  expect(concurrent.map((r) => r.status)).toEqual([200, 200]);
+  expect(concurrent.map((r) => r.body.revision)).toEqual([3, 3]);
+  expect((await change('accept', 2)).status).toBe(409);
+  const confirms = await Promise.all([
+    change('accept', 3),
+    change('accept', 3),
+  ]);
+  expect(confirms.map((r) => r.status).sort()).toEqual([200, 409]);
+  expect(
+    (
+      await doctor.post(`${path}/lifecycle`, {
+        ...evidence,
+        method: 'Commande changée',
+      })
+    ).status,
+  ).toBe(409);
+  await doctor.post(path, {
+    ...command,
+    commandId: randomUUID(),
+    revision: 4,
+    title: 'Nouvelle portée',
+    items: [{ ...command.items[0], scope: 'tooth', teeth: ['11'] }],
+  });
+  await m.post(`/accounts/${doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: ['clinical.read', 'acceptance.draft', 'clinical.print'],
+  });
+  const retry = await doctor.post(`${path}/lifecycle`, evidence);
+  expect(retry.status).toBe(200);
+  expect(retry.body.revision).toBe(5);
+  expect(retry.body.events).toEqual([]);
+  expect(JSON.stringify(retry.body)).not.toContain('ANCIEN_ACCORD_SECRET');
+  expect(
+    (await doctor.browser.get(`/api${path}/${command.id}/versions/3/print`))
+      .status,
+  ).toBe(403);
+  expect(
+    (await doctor.browser.get(`/api${path}/${command.id}/versions/5/print`))
+      .status,
+  ).toBe(200);
+  await m.post(`/accounts/${doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: ['clinical.read'],
+  });
+  expect((await doctor.post(`${path}/lifecycle`, evidence)).status).toBe(403);
+});
+it('lifecycle and print commands enforce patient and clinic scope even on replay', async () => {
+  const { m, patient, doctor, command, path } = await lifecycleScenario();
+  const evidence = {
+    commandId: randomUUID(),
+    id: command.id,
+    revision: 2,
+    action: 'evidence',
+    acceptedBy: 'Patient fictif',
+    acceptedAt: '2026-10-16T12:00:00.000Z',
+    method: 'Oral',
+  };
+  const other = await lifecycleScenario();
+  expect((await other.doctor.post(`${path}/lifecycle`, evidence)).status).toBe(
+    403,
+  );
+  expect(
+    (
+      await other.doctor.browser.get(
+        `/api${path}/${command.id}/versions/2/print`,
+      )
+    ).status,
+  ).toBe(403);
+  expect((await doctor.post(`${path}/lifecycle`, evidence)).status).toBe(200);
+  await m.post(`/patient-access/${patient.id}/remove`, {
+    commandId: randomUUID(),
+    revision: 1,
+    accountId: doctor.id,
+  });
+  expect((await doctor.post(`${path}/lifecycle`, evidence)).status).toBe(403);
+  expect(
+    (await doctor.browser.get(`/api${path}/${command.id}/versions/2/print`))
+      .status,
+  ).toBe(403);
+});
+
+it('extras preserve exact precision and require price authority with replay reauthorization', async () => {
+  const { m, doctor, command, path } = await lifecycleScenario();
+  const invalid = {
+    ...command,
+    commandId: randomUUID(),
+    revision: 2,
+    items: [
+      {
+        ...command.items[0],
+        extras: [
+          { id: randomUUID(), label: 'Frais fictifs', amount: '10.005' },
+        ],
+      },
+    ],
+  };
+  expect((await doctor.post(path, invalid)).status).toBe(400);
+  const extra = { id: randomUUID(), label: 'Frais fictifs', amount: '10.05' };
+  expect(
+    (
+      await doctor.post(path, {
+        ...invalid,
+        commandId: randomUUID(),
+        items: [{ ...command.items[0], extras: [extra, extra] }],
+      })
+    ).status,
+  ).toBe(400);
+  const valid = {
+    ...invalid,
+    commandId: randomUUID(),
+    items: [{ ...command.items[0], extras: [extra] }],
+  };
+  expect((await doctor.post(path, valid)).body.totalMinor).toBe('11005');
+  await m.post(`/accounts/${doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: ['clinical.read', 'plans.draft'],
+  });
+  expect((await doctor.post(path, valid)).status).toBe(403);
+  const same = {
+    ...valid,
+    commandId: randomUUID(),
+    revision: 3,
+    notes: 'Note courante',
+  };
+  expect((await doctor.post(path, same)).status).toBe(200);
+  expect(
+    (
+      await doctor.post(path, {
+        ...same,
+        commandId: randomUUID(),
+        revision: 4,
+        items: command.items,
+      })
+    ).status,
+  ).toBe(403);
+});

@@ -13,8 +13,7 @@ export const treatmentMessages = {
     'Version distante relue. Vérifiez les différences puis enregistrez votre saisie conservée.',
   uncertain:
     'Réponse incertaine. Réessayez la même commande avant de poursuivre.',
-  noDebt:
-    'Proposition brouillon uniquement · aucun soin démarré, aucune dette créée.',
+  noDebt: 'Proposition de soins · aucun soin démarré, aucune dette créée.',
   name: 'Nom de l’acte',
   price: 'Prix',
   discount: 'Remise',
@@ -43,4 +42,27 @@ export const treatmentMessages = {
   newEntry: 'Nouvel acte',
   patientSwitch:
     'Changer de proposition et abandonner la saisie non enregistrée ?',
+};
+
+export const planStatus = {
+  draft: 'Brouillon',
+  presented: 'Présentée',
+  accepted: 'Acceptée',
+  in_progress: 'En cours',
+  completed: 'Terminée',
+  cancelled: 'Annulée',
+};
+export const planLifecycleMessages = {
+  present: 'Présenter cette version',
+  accept: 'Confirmer l’acceptation',
+  evidence: 'Consigner l’accord',
+  cancel: 'Annuler la proposition',
+  confirm: 'Confirmer cette action sur la version affichée ?',
+  saved: 'Action enregistrée',
+  print: 'Aperçu imprimable',
+  acceptedBy: 'Identité de la personne ayant accepté',
+  acceptedAt: 'Date et heure de l’accord',
+  method: 'Méthode de l’accord',
+  renewal:
+    'Nouvelle acceptation requise après modification de la portée ou du prix.',
 };

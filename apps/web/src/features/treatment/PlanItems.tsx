@@ -1,5 +1,10 @@
+import { PlanExtras } from './PlanExtras.js';
 import { useState } from 'react';
-import type { UseFormRegister, FieldArrayWithId } from 'react-hook-form';
+import type {
+  UseFormRegister,
+  FieldArrayWithId,
+  Control,
+} from 'react-hook-form';
 import {
   verifiedCurrencies,
   type Catalog,
@@ -18,6 +23,7 @@ export function PlanItems({
   remove,
   canOverride,
   canDiscount,
+  control,
 }: {
   catalog: Catalog;
   currency: keyof typeof verifiedCurrencies;
@@ -28,6 +34,7 @@ export function PlanItems({
   remove: (index: number) => void;
   canOverride: boolean;
   canDiscount: boolean;
+  control: Control<PlanFields>;
 }) {
   const [procedure, setProcedure] = useState('');
   return (
@@ -67,6 +74,7 @@ export function PlanItems({
               price: formatMinor(e.priceMinor, verifiedCurrencies[e.currency]),
               discount: '0',
               discountReason: '',
+              extras: [],
             });
         }}
       >
@@ -117,6 +125,11 @@ export function PlanItems({
               {...register(`items.${index}.discountReason`)}
             />
           </label>
+          <PlanExtras
+            control={control}
+            index={index}
+            canOverride={canOverride}
+          />
           <button type="button" onClick={() => remove(index)}>
             {t.remove} {index + 1}
           </button>

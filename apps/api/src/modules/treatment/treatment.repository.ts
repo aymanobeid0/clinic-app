@@ -93,6 +93,23 @@ export class TreatmentRepository {
       })
     ).displayName;
   }
+  async printIdentity(patientId: string) {
+    const [clinic, patient] = await Promise.all([
+      this.tx.clinic.findUniqueOrThrow({
+        where: { id: this.clinicId },
+        select: { name: true },
+      }),
+      this.tx.patient.findUniqueOrThrow({
+        where: { clinicId_id: { clinicId: this.clinicId, id: patientId } },
+        select: { name: true, patientNumber: true },
+      }),
+    ]);
+    return {
+      clinicName: clinic.name,
+      patientName: patient.name,
+      patientNumber: patient.patientNumber,
+    };
+  }
   async currencies() {
     return this.tx.clinicCurrency.findMany({
       where: { clinicId: this.clinicId },

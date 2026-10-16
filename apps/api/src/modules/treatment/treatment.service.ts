@@ -1,6 +1,7 @@
 import {
   verifiedCurrencies,
   type catalogCommandSchema,
+  type planLifecycleSchema,
   type TreatmentPlan,
   type TreatmentVersion,
   type TreatmentItem,
@@ -69,6 +70,158 @@ export class TreatmentService {
       async (c) => c.clinicId,
     );
   }
+  async lifecycle(
+    actor: Actor | undefined,
+    patientId: string,
+    data: z.infer<typeof planLifecycleSchema>,
+  ) {
+    const result = await this.identity.withClinicalPermission(
+      actor,
+      patientId,
+      data.action === 'evidence'
+        ? 'acceptance.draft'
+        : data.action === 'accept'
+          ? 'plans.accept'
+          : 'plans.finalize',
+      async (c, tx) => {
+        if (!c.permissions.includes('clinical.read'))
+          throw new IdentityError(403, 'Accès en lecture clinique requis.');
+        const r = new TreatmentRepository(tx, c.clinicId);
+        await r.lock();
+        const replay = await r.replay(
+          data.commandId,
+          ['lifecycle', patientId, data],
+          c.accountId,
+        );
+        const versions = await r.versions(patientId, data.id);
+        if (replay.receipt)
+          return {
+            clinicId: c.clinicId,
+            value: this.visible(versions, c.permissions),
+          };
+        const old = versions.at(-1);
+        if (!old) throw new IdentityError(404, 'Proposition introuvable.');
+        if (old.revision !== data.revision)
+          throw new IdentityError(
+            409,
+            'La proposition a changé. Rechargez et réconciliez votre saisie conservée.',
+          );
+        const at = new Date(this.now()).toISOString(),
+          name = await r.name(c.accountId);
+        const version: TreatmentVersion = {
+          ...old,
+          revision: old.revision + 1,
+          authorId: c.accountId,
+          authorName: name,
+          recordedAt: at,
+        };
+        if (data.action === 'cancel') {
+          if (!data.reason)
+            throw new IdentityError(400, 'Motif d’annulation requis.');
+          if (!['draft', 'presented', 'accepted'].includes(old.status))
+            throw new IdentityError(
+              409,
+              'Cette proposition ne peut plus être annulée ici.',
+            );
+          version.status = 'cancelled';
+          version.cancellation = {
+            reason: data.reason,
+            actorId: c.accountId,
+            actorName: name,
+            at,
+          };
+        } else if (data.action === 'present') {
+          if (old.status !== 'draft')
+            throw new IdentityError(
+              409,
+              'Seul un brouillon peut être présenté.',
+            );
+          version.status = 'presented';
+        } else {
+          if (old.status !== 'presented')
+            throw new IdentityError(
+              409,
+              'Présentez la version actuelle avant son acceptation.',
+            );
+          if (data.action === 'evidence') {
+            if (
+              !data.acceptedBy ||
+              !data.acceptedAt ||
+              !data.method ||
+              Date.parse(data.acceptedAt) > this.now()
+            )
+              throw new IdentityError(
+                400,
+                'Identité, date passée et méthode d’accord requises.',
+              );
+            version.evidence = {
+              acceptedBy: data.acceptedBy,
+              acceptedAt: data.acceptedAt,
+              method: data.method,
+              proposalRevision: old.evidence?.proposalRevision ?? old.revision,
+              recordedBy: c.accountId,
+              recordedByName: name,
+              recordedAt: at,
+            };
+          } else {
+            if (!old.evidence)
+              throw new IdentityError(
+                409,
+                'Consignez les éléments d’accord avant confirmation.',
+              );
+            version.status = 'accepted';
+            version.acceptance = {
+              ...old.evidence,
+              confirmedBy: c.accountId,
+              confirmedByName: name,
+              confirmedAt: at,
+            };
+          }
+        }
+        await r.append(patientId, version);
+        await r.save(data.commandId, c.accountId, replay.hash, { id: data.id });
+        return {
+          clinicId: c.clinicId,
+          value: this.visible([...versions, version], c.permissions),
+        };
+      },
+    );
+    this.updates.publish(result.clinicId);
+    return result.value;
+  }
+  async printable(
+    actor: Actor | undefined,
+    patientId: string,
+    planId: string,
+    revision: number,
+  ) {
+    return this.identity.withClinicalPermission(
+      actor,
+      patientId,
+      'clinical.print',
+      async (c, tx) => {
+        if (!c.permissions.includes('clinical.read'))
+          throw new IdentityError(403, 'Accès en lecture clinique requis.');
+        const versions = await new TreatmentRepository(tx, c.clinicId).versions(
+          patientId,
+          planId,
+        );
+        const version = versions.find((v) => v.revision === revision);
+        if (!version) throw new IdentityError(404, 'Version introuvable.');
+        if (
+          version.revision !== versions.at(-1)?.revision &&
+          !c.permissions.includes('clinical.history')
+        )
+          throw new IdentityError(403, 'Autorisation d’historique requise.');
+        return {
+          ...version,
+          ...(await new TreatmentRepository(tx, c.clinicId).printIdentity(
+            patientId,
+          )),
+        };
+      },
+    );
+  }
   async savePlan(
     actor: Actor | undefined,
     patientId: string,
@@ -117,6 +270,14 @@ export class TreatmentService {
           throw new IdentityError(
             409,
             'La proposition a changé. Rechargez et réconciliez votre saisie conservée.',
+          );
+        if (
+          old &&
+          ['cancelled', 'completed', 'in_progress'].includes(old.status)
+        )
+          throw new IdentityError(
+            409,
+            'Cette proposition ne peut plus être modifiée ici.',
           );
         if (old && old.currency !== data.currency)
           throw new IdentityError(
@@ -185,6 +346,34 @@ export class TreatmentService {
             throw new IdentityError(400, 'La remise dépasse le prix.');
           if (BigInt(discountMinor) > 0n && !input.discountReason)
             throw new IdentityError(400, 'Un motif de remise est requis.');
+          if (
+            new Set(input.extras.map((e) => e.id)).size !== input.extras.length
+          )
+            throw new IdentityError(400, 'Frais supplémentaires en double.');
+          const extras = input.extras.map((e) => ({
+            id: e.id,
+            label: e.label,
+            amountMinor: exactMinor(e.amount, currency.precision).toString(),
+          }));
+          const extrasChanged =
+            JSON.stringify(extras) !==
+            JSON.stringify(
+              (previous?.extras ?? []).map((e) => ({
+                id: e.id,
+                label: e.label,
+                amountMinor: e.amountMinor,
+              })),
+            );
+          needsOverride ||= extrasChanged;
+          if (
+            extrasChanged &&
+            !c.isManager &&
+            !c.permissions.includes('prices.override')
+          )
+            throw new IdentityError(
+              403,
+              'Autorisation de modification de prix requise.',
+            );
           items.push({
             id: input.id,
             procedureId: procedure.id,
@@ -198,19 +387,53 @@ export class TreatmentService {
             priceMinor,
             discountMinor,
             discountReason: input.discountReason,
+            extras,
           });
         }
+        const agreed = (v: { title: string; items: TreatmentItem[] }) =>
+          JSON.stringify({
+            title: v.title,
+            items: v.items
+              .map((i) => ({
+                id: i.id,
+                procedureId: i.procedureId,
+                scope: i.scope,
+                teeth: [...i.teeth].sort(),
+                priceMinor: i.priceMinor,
+                discountMinor: i.discountMinor,
+                discountReason: i.discountReason,
+                extras: (i.extras ?? [])
+                  .map((e) => ({
+                    id: e.id,
+                    label: e.label,
+                    amountMinor: e.amountMinor,
+                  }))
+                  .sort((a, b) => a.id.localeCompare(b.id)),
+              }))
+              .sort((a, b) => a.id.localeCompare(b.id)),
+          });
+        const changed =
+          !old || agreed(old) !== agreed({ title: data.title, items });
         const version: TreatmentVersion = {
+          ...(old && !changed ? old : {}),
           id: data.id,
           patientId,
           revision: data.revision + 1,
           title: data.title,
           currency: data.currency,
-          status: 'draft',
+          status: changed ? 'draft' : old!.status,
+          notes: data.notes,
           items,
           totalMinor: items
             .reduce(
-              (n, i) => n + BigInt(i.priceMinor) - BigInt(i.discountMinor),
+              (n, i) =>
+                n +
+                BigInt(i.priceMinor) -
+                BigInt(i.discountMinor) +
+                (i.extras ?? []).reduce(
+                  (sum, e) => sum + BigInt(e.amountMinor),
+                  0n,
+                ),
               0n,
             )
             .toString(),
