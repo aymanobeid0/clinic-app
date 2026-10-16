@@ -691,3 +691,80 @@ it('capability loss, historical-only status and disabled accounts deny direct cl
     401,
   );
 });
+it('old command replays cannot expose superseded clinical content after history permission is revoked', async () => {
+  const { m, patient, create } = await scenario();
+  const doctor = await create('doctor', 'doctor', [
+    'clinical.read',
+    'clinical.history',
+    'history.draft',
+    'history.finalize',
+  ]);
+  await m.post(`/patient-access/${patient.id}/share`, {
+    commandId: randomUUID(),
+    revision: 0,
+    accountId: doctor.id,
+    kind: 'assigned',
+  });
+  const initial = {
+    commandId: randomUUID(),
+    revision: 0,
+    observedAt: '2026-10-14T09:00:00Z',
+    content: {
+      medicalHistory: 'SUPERSEDED_PRIVATE_HISTORY',
+      allergies: 'SUPERSEDED_PRIVATE_ALLERGY',
+    },
+  };
+  const confirm = { commandId: randomUUID(), revision: 1 };
+  expect(
+    (await doctor.post(`/clinical/${patient.id}/history/draft`, initial))
+      .status,
+  ).toBe(200);
+  expect(
+    (await doctor.post(`/clinical/${patient.id}/history/confirm`, confirm))
+      .status,
+  ).toBe(200);
+  await doctor.post(`/clinical/${patient.id}/history/draft`, {
+    ...initial,
+    commandId: randomUUID(),
+    revision: 2,
+    content: {
+      medicalHistory: 'Current history',
+      allergies: 'Current allergy',
+    },
+  });
+  await doctor.post(`/clinical/${patient.id}/history/confirm`, {
+    commandId: randomUUID(),
+    revision: 3,
+  });
+  await m.post(`/accounts/${doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: ['clinical.read', 'history.draft', 'history.finalize'],
+  });
+  for (const [action, data, revision] of [
+    ['draft', initial, 1],
+    ['confirm', confirm, 2],
+  ] as const) {
+    const replay = await doctor.post(
+      `/clinical/${patient.id}/history/${action}`,
+      data,
+    );
+    expect(replay.status).toBe(200);
+    expect(JSON.stringify(replay.body)).not.toContain('SUPERSEDED_PRIVATE');
+    expect(replay.body).toMatchObject({
+      revision,
+      current: {
+        revision: 4,
+        content: {
+          medicalHistory: 'Current history',
+          allergies: 'Current allergy',
+        },
+      },
+      draft: null,
+      events: [],
+    });
+  }
+  expect(
+    (await doctor.browser.get(`/api/clinical/${patient.id}`)).body.history
+      .revision,
+  ).toBe(4);
+});

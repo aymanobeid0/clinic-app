@@ -88,11 +88,16 @@ export class ClinicalService {
           [id, kind, action, data],
           c.accountId,
         );
-        if (replay.receipt)
+        if (replay.receipt) {
+          // Receipt identity stays stable; access to superseded content is current.
+          const visible = c.permissions.includes('clinical.history')
+            ? replay.receipt
+            : { ...(await r.record(kind)), revision: replay.receipt.revision };
           return {
             clinicId: c.clinicId,
-            record: readable(replay.receipt, c.permissions),
+            record: readable(visible, c.permissions),
           };
+        }
         const record = await r.record(kind);
         if (record.revision !== data.revision)
           throw new IdentityError(
