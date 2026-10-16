@@ -1,3 +1,4 @@
+import { procedureDurations } from '../treatment/index.js';
 import type { z } from 'zod';
 import type {
   bookAppointmentSchema,
@@ -44,7 +45,7 @@ export class SchedulingService {
     return this.run(actor, (r) => r.history(id));
   }
   suggestions(actor: Actor | undefined) {
-    return this.run(actor, async () => ({ available: false, suggestions: [] }));
+    return this.identity.withPermission(actor,'appointments.manage',async(c,tx)=>{const suggestions=await procedureDurations(tx,c.clinicId);return {available:suggestions.length>0,suggestions};});
   }
   authorizeStream(actor: Actor | undefined) {
     return this.identity.withPermission(actor, 'appointments.manage', async (c) => c.clinicId);

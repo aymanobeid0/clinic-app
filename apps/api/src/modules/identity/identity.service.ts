@@ -267,6 +267,12 @@ export class IdentityService {
     });
   }
 
+  withCatalogRead<T>(actor:Actor|undefined, action:(context:{clinicId:string;accountId:string;permissions:readonly string[];isManager:boolean},tx:import('../../database.js').ClinicTransaction)=>Promise<T>) {
+    return this.withReadyAccount(actor,(account,transaction)=> {
+      if (!account.permissions.includes('catalog.manage') && !clinicalEligible(account,'clinical.read')) throw new IdentityError(403,'Accès au catalogue non autorisé.');
+      return transaction.databaseTransaction(tx=>action({clinicId:account.clinicId,accountId:account.id,permissions:account.permissions,isManager:account.isManager},tx));
+    });
+  }
   withClinicalPatients<T>(
     actor: Actor | undefined,
     action: (
@@ -296,7 +302,7 @@ export class IdentityService {
     patientId: string,
     permission: ClinicalPermission,
     action: (
-      context: { clinicId: string; accountId: string; patientId: string; permissions: readonly string[] },
+      context: { clinicId: string; accountId: string; patientId: string; permissions: readonly string[]; isManager:boolean },
       tx: import('../../database.js').ClinicTransaction,
     ) => Promise<T>,
   ) {
@@ -308,7 +314,7 @@ export class IdentityService {
           !(await new PatientAccessRepository(tx, account.clinicId).active(patientId, account.id))
         )
           throw new IdentityError(403, 'Accès clinique non autorisé.');
-        return action({ clinicId: account.clinicId, accountId: account.id, patientId, permissions: account.permissions }, tx);
+        return action({ clinicId: account.clinicId, accountId: account.id, patientId, permissions: account.permissions, isManager:account.isManager }, tx);
       }),
     );
   }

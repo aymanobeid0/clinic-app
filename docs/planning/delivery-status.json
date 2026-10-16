@@ -21,41 +21,41 @@
     "39": "merged",
     "40": "merged",
     "41": "merged",
-    "42": "open"
+    "42": "merged",
+    "43": "open"
   },
   "implementation": {
-    "issue": 12,
+    "issue": 13,
     "state": "review",
-    "branch": "codex/issue-12-clinical-chart",
-    "base": "0808cdefb350a896a811ce70e4b44f9756b9b0a7",
-    "reviewedCommit": "1608f6a6aa55f0d084afb18f46cef2c09ed8505d",
-    "scope": "medical history, allergies and manual dated FDI chart",
-    "evidence": "issue-12-implementation.md",
-    "review": "issue-12-review.md",
+    "branch": "codex/issue-13-treatment-proposals",
+    "base": "3aaa864043575412697e664776b440a0b737146a",
+    "reviewedCommit": "7b258498281906399eac47e3909a5bcc29e3002c",
+    "scope": "procedure catalog and identified draft treatment proposals",
+    "evidence": "issue-13-implementation.md",
+    "review": "issue-13-review.md",
     "checks": {
       "reviewerIndependent": {
+        "typecheck": "pass",
+        "durationSeconds": 112,
+        "finalApplicationTestsPassed": 75,
+        "finalApplicationFilesPassed": 9,
         "pinnedDiffWhitespace": "pass",
-        "finalApplicationTestsPassed": 65,
-        "finalApplicationFilesPassed": 8,
-        "durationSeconds": 86.87
+        "lint": "pass",
+        "freshMigrationsPassed": 17
       },
       "builderReported": {
-        "apiContractsWebBuild": "pass",
-        "lint": "pass",
         "typecheck": "pass",
-        "fullHttpCommit": "375fd109",
-        "fullHttpTestsPassed": 64,
-        "fullBrowserCommit": "375fd109",
-        "fullBrowserJourneysPassed": 20,
-        "finalAffectedApiTestsPassed": 11,
-        "finalRelevantBrowserJourneysPassed": 5
+        "fullBrowserJourneysPassed": 25,
+        "build": "pass",
+        "fullHttpTestsPassed": 75,
+        "lint": "pass"
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings",
-    "publication": "Open PR42 https://github.com/aymanobeid0/clinic-app/pull/42; issue12 open, manual human review/merge required",
+    "publication": "Open PR43 https://github.com/aymanobeid0/clinic-app/pull/43; issue13 open, manual human review/merge required",
     "limitations": [
-      "historical grant and cutoff selection in #18",
-      "qualified clinical/legal validation",
+      "five verified currencies only",
+      "draft proposals only; acceptance/billing and historical cutoff later",
       "production and operational gates"
     ]
   },

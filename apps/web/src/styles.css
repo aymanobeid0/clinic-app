@@ -552,3 +552,10 @@ summary {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+.treatment { margin-block: 24px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); min-inline-size:0; overflow-wrap:anywhere; }
+.treatment fieldset {max-height:none;overflow:visible;min-inline-size:0;}
+.treatment .treatment-item {margin-block:16px;border:1px solid var(--border);padding:16px;}
+.treatment input,.treatment select {min-inline-size:0;max-inline-size:100%;min-block-size:44px;}
+.treatment button {min-block-size:44px;white-space:normal;}
+.treatment details {margin-block:12px;}

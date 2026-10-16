@@ -1,4 +1,5 @@
 import type {
+  ProcedureDurationSuggestion,
   Appointment,
   AppointmentHistory,
   SchedulingChoices,
@@ -16,6 +17,7 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   return data;
 }
 export const schedulingApi = {
+  suggestions:(signal?:AbortSignal)=>get<{available:boolean;suggestions:ProcedureDurationSuggestion[]}>('/suggestions',signal),
   agenda: (date: string, dentistId: string, signal?: AbortSignal) =>
     get<{ appointments: Appointment[] }>(
       `?${new URLSearchParams({ date, ...(dentistId ? { dentistId } : {}) })}`,

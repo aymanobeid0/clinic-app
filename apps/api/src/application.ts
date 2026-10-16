@@ -1,3 +1,4 @@
+import {createTreatmentRoutes} from './modules/treatment/index.js';
 import { createClinicalRoutes } from './modules/clinical/index.js';
 import { createSchedulingRoutes } from './modules/scheduling/index.js';
 import express from 'express';
@@ -60,6 +61,7 @@ export function createApplication(options: Options) {
   );
   app.use('/api', createSchedulingRoutes(createIdentityAccess(config.database, config.now), config.updates, config.now));
   app.use('/api', createClinicalRoutes(createIdentityAccess(config.database, config.now), config.updates, config.now));
+  app.use('/api',createTreatmentRoutes(createIdentityAccess(config.database,config.now),config.updates,config.now));
   app.use(handleErrors);
   return app;
 }

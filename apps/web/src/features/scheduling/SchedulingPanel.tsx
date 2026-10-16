@@ -361,6 +361,7 @@ function Agenda({ identity }: { identity: Identity }) {
         (!selected || ['booked', 'confirmed', 'arrived'].includes(selected.status)) && (
           <AppointmentForm
             key={`${selected?.id ?? 'new'}:${selected?.revision ?? 'new'}:${formEpoch}`}
+            scope={scope}
             appointment={selected}
             choices={displayedChoices}
             settings={settings.data}

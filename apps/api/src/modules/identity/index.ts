@@ -17,6 +17,7 @@ export type { Actor } from './identity.service.js';
 export function createIdentityAccess(database: Database, now: () => number) {
   const service = new IdentityService(new IdentityRepository(database), now, '');
   return {
+    withCatalogRead: service.withCatalogRead.bind(service),
     withPermission: service.withPermission.bind(service),
     withManager: service.withManager.bind(service),
     withPermissionOrManager: service.withPermissionOrManager.bind(service),
