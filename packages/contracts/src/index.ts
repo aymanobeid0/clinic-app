@@ -490,3 +490,115 @@ export type ClinicalWorkspace = {
   history: ClinicalRecord<ClinicalContent>;
   chart: ClinicalRecord<ClinicalContent>;
 };
+
+// Verified ISO 4217 subset: SIX list-one.xml, published 2026-09-17, checked 2026-10-16.
+export const verifiedCurrencies = {
+  MRU: 2,
+  EUR: 2,
+  USD: 2,
+  JPY: 0,
+  KWD: 3,
+} as const;
+export const currencyCodeSchema = z.enum(['MRU', 'EUR', 'USD', 'JPY', 'KWD']);
+export const enableCurrencySchema = z
+  .object({ commandId: z.uuid(), code: currencyCodeSchema })
+  .strict();
+export const exactAmountSchema = z
+  .string()
+  .regex(
+    /^(0|[1-9][0-9]{0,14})(\.[0-9]{1,3})?$/,
+    'Montant exact positif, sans arrondi.',
+  );
+export const catalogCommandSchema = z
+  .object({
+    commandId: z.uuid(),
+    id: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    name: z.string().trim().min(1).max(160),
+    currency: currencyCodeSchema,
+    price: exactAmountSchema,
+    durationMinutes: z.number().int().min(5).max(480),
+    active: z.boolean(),
+  })
+  .strict();
+export type CatalogEntry = {
+  id: string;
+  revision: number;
+  name: string;
+  currency: keyof typeof verifiedCurrencies;
+  priceMinor: string;
+  durationMinutes: number;
+  active: boolean;
+};
+export type Catalog = {
+  entries: CatalogEntry[];
+  currencies: (keyof typeof verifiedCurrencies)[];
+};
+
+export const treatmentItemSchema = z
+  .object({
+    id: z.uuid(),
+    procedureId: z.uuid(),
+    catalogRevision: z.number().int().positive(),
+    scope: z.enum(['tooth', 'teeth', 'whole_mouth']),
+    teeth: z.array(z.string().regex(/^[1-4][1-8]$|^[5-8][1-5]$/)).max(52),
+    price: exactAmountSchema,
+    discount: exactAmountSchema,
+    discountReason: z.string().trim().max(1000),
+  })
+  .strict()
+  .superRefine((v, c) => {
+    if (
+      new Set(v.teeth).size !== v.teeth.length ||
+      (v.scope === 'whole_mouth'
+        ? v.teeth.length !== 0
+        : v.scope === 'tooth'
+          ? v.teeth.length !== 1
+          : v.teeth.length < 2)
+    )
+      c.addIssue({
+        code: 'custom',
+        message: 'Sélection FDI incompatible avec la portée.',
+      });
+  });
+export const treatmentPlanSchema = z
+  .object({
+    commandId: z.uuid(),
+    id: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    title: z.string().trim().min(1).max(160),
+    currency: currencyCodeSchema,
+    items: z.array(treatmentItemSchema).min(1).max(100),
+  })
+  .strict()
+  .superRefine((v, c) => {
+    if (new Set(v.items.map((i) => i.id)).size !== v.items.length)
+      c.addIssue({ code: 'custom', message: 'Acte en double.' });
+  });
+export type TreatmentItem = {
+  id: string;
+  procedureId: string;
+  catalogRevision: number;
+  name: string;
+  durationMinutes: number;
+  scope: 'tooth' | 'teeth' | 'whole_mouth';
+  teeth: string[];
+  baseMinor: string;
+  priceMinor: string;
+  discountMinor: string;
+  discountReason: string;
+};
+export type TreatmentVersion = {
+  id: string;
+  patientId: string;
+  revision: number;
+  title: string;
+  currency: keyof typeof verifiedCurrencies;
+  status: 'draft';
+  items: TreatmentItem[];
+  totalMinor: string;
+  authorId: string;
+  authorName: string;
+  recordedAt: string;
+};
+export type TreatmentPlan = TreatmentVersion & { events: TreatmentVersion[] };

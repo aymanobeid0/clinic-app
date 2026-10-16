@@ -1,3 +1,5 @@
+import {useQuery} from '@tanstack/react-query';
+import {schedulingApi} from './scheduling.api.js';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { Appointment, SchedulingChoices, SchedulingSettings } from '@clinic/contracts';
@@ -12,6 +14,7 @@ type Fields = {
 };
 export function AppointmentForm({
   appointment,
+  scope,
   choices,
   settings,
   busy,
@@ -20,6 +23,7 @@ export function AppointmentForm({
   onDirty,
 }: {
   appointment: Appointment | null;
+  scope:string[];
   choices: SchedulingChoices;
   settings: SchedulingSettings;
   busy: boolean;
@@ -27,6 +31,8 @@ export function AppointmentForm({
   onSubmit: (path: string, body: object) => void;
   onDirty?: (dirty: boolean) => void;
 }) {
+  const suggestions=useQuery({queryKey:[...scope,'suggestions'],queryFn:({signal})=>schedulingApi.suggestions(signal),gcTime:0});
+  const [suggestion,setSuggestion]=useState('');
   const [chosenPatient, setChosenPatient] = useState<
     SchedulingChoices['patients'][number] | undefined
   >();
@@ -123,9 +129,10 @@ export function AppointmentForm({
           </label>
         </div>
         <p className="hint">
-          Durée par défaut : {settings.defaultDurationMinutes} min. Les suggestions du catalogue
-          seront disponibles ultérieurement.
+          Durée par défaut : {settings.defaultDurationMinutes} min. La durée reste modifiable manuellement.
         </p>
+        {suggestions.error&&<p role="alert">{suggestions.error.message}</p>}
+        {suggestions.data?.available&&<div><label>Suggestion du catalogue<select aria-label="Suggestion du catalogue" value={suggestion} onChange={e=>setSuggestion(e.target.value)}><option value="">Choisir une durée suggérée</option>{suggestions.data.suggestions.map(s=><option key={s.procedureId} value={s.procedureId}>{s.label} · {s.durationMinutes} min</option>)}</select></label><button type="button" disabled={!suggestion} onClick={()=>{const s=suggestions.data.suggestions.find(s=>s.procedureId===suggestion);if(s)form.setValue('durationMinutes',String(s.durationMinutes),{shouldDirty:true});}}>Appliquer cette durée</button></div>}
         {!appointment && (
           <label className="check">
             <input type="checkbox" {...form.register('walkIn')} />

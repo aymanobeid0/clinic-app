@@ -201,3 +201,48 @@ model ClinicalRevision {
  @@unique([clinicId,patientId,kind,revision])
  @@index([clinicId,patientId,at])
 }
+
+model ClinicCurrency {
+ clinicId String @db.Uuid
+ code String
+ precision Int
+ @@id([clinicId,code])
+}
+model CatalogProcedure {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ revision Int
+ name String
+ currency String
+ priceMinor BigInt
+ durationMinutes Int
+ active Boolean
+ @@unique([clinicId,id])
+}
+model TreatmentCommand {
+ clinicId String @db.Uuid
+ commandId String @db.Uuid
+ actorId String @db.Uuid
+ payloadHash String
+ receipt Json
+ @@id([clinicId,commandId])
+}
+
+model TreatmentPlanRevision {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ planId String @db.Uuid
+ revision Int
+ authorId String @db.Uuid
+ snapshot Json
+ @@unique([clinicId,patientId,planId,revision])
+}
+
+model TreatmentPlanIdentity {
+ clinicId String @db.Uuid
+ planId String @db.Uuid
+ patientId String @db.Uuid
+ @@id([clinicId,planId])
+ @@unique([clinicId,patientId,planId])
+}

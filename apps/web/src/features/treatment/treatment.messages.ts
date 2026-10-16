@@ -1,0 +1,46 @@
+export const treatmentMessages = {
+  title: 'Propositions de traitement',
+  catalog: 'Catalogue des actes',
+  loading: 'Chargement…',
+  empty: 'Aucune proposition pour ce patient.',
+  newPlan: 'Nouvelle proposition',
+  saved: 'Brouillon enregistré',
+  saving: 'Enregistrement…',
+  unsaved: 'Saisie non enregistrée · conservée dans cet onglet',
+  retry: 'Réessayer la même commande',
+  reconcile: 'Relire la version distante',
+  review:
+    'Version distante relue. Vérifiez les différences puis enregistrez votre saisie conservée.',
+  uncertain:
+    'Réponse incertaine. Réessayez la même commande avant de poursuivre.',
+  noDebt:
+    'Proposition brouillon uniquement · aucun soin démarré, aucune dette créée.',
+  name: 'Nom de l’acte',
+  price: 'Prix',
+  discount: 'Remise',
+  reason: 'Motif de remise',
+  scope: 'Portée',
+  teeth: 'Positions FDI (séparées par des espaces)',
+  whole: 'Bouche entière',
+  tooth: 'Une dent',
+  multiple: 'Plusieurs dents',
+  save: 'Enregistrer le brouillon',
+  add: 'Ajouter un acte',
+  remove: 'Retirer cet acte',
+  currency: 'Devise',
+  duration: 'Durée suggérée (minutes)',
+  active: 'Acte disponible',
+  catalogSaved: 'Acte enregistré',
+  enable: 'Activer la devise',
+  currencyToEnable: 'Devise à activer',
+  currencyHelp:
+    'Devises ISO vérifiées : MRU, EUR, USD, JPY, KWD. Aucune conversion ni réétiquetage.',
+  exactHelp: 'Montants exacts, sans arrondi. La remise fixe exige un motif.',
+  catalogHelp:
+    'Les modifications du catalogue ne changent pas les propositions existantes.',
+  proposal: 'Titre de la proposition',
+  choose: 'Choisir un acte',
+  newEntry: 'Nouvel acte',
+  patientSwitch:
+    'Changer de proposition et abandonner la saisie non enregistrée ?',
+};

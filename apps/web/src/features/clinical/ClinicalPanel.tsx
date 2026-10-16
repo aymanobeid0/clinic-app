@@ -1,3 +1,4 @@
+import {TreatmentPanel} from '../treatment/TreatmentPanel.js';
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Identity } from '@clinic/contracts';
@@ -198,6 +199,7 @@ function ClinicalRecord({
           </section>
         );
       })}
+      <TreatmentPanel id={id} identity={identity} onLock={onLock}/>
       <p>{t.noBilling}</p>
     </div>
   );
