@@ -545,6 +545,18 @@ export const treatmentItemSchema = z
     price: exactAmountSchema,
     discount: exactAmountSchema,
     discountReason: z.string().trim().max(1000),
+    extras: z
+      .array(
+        z
+          .object({
+            id: z.uuid(),
+            label: z.string().trim().min(1).max(200),
+            amount: exactAmountSchema,
+          })
+          .strict(),
+      )
+      .max(50)
+      .default([]),
   })
   .strict()
   .superRefine((v, c) => {
@@ -567,6 +579,7 @@ export const treatmentPlanSchema = z
     id: z.uuid(),
     revision: z.number().int().nonnegative(),
     title: z.string().trim().min(1).max(160),
+    notes: z.string().trim().max(10000).default(''),
     currency: currencyCodeSchema,
     items: z.array(treatmentItemSchema).min(1).max(100),
   })
@@ -587,6 +600,22 @@ export type TreatmentItem = {
   priceMinor: string;
   discountMinor: string;
   discountReason: string;
+  extras?: { id: string; label: string; amountMinor: string }[];
+};
+export type PlanEvidence = {
+  acceptedBy: string;
+  acceptedAt: string;
+  method: string;
+  proposalRevision: number;
+  recordedBy: string;
+  recordedByName: string;
+  recordedAt: string;
+  // Attachment support (#19) will add an authorized immutable file-version reference.
+};
+export type PlanAcceptance = PlanEvidence & {
+  confirmedBy: string;
+  confirmedByName: string;
+  confirmedAt: string;
 };
 export type TreatmentVersion = {
   id: string;
@@ -594,7 +623,22 @@ export type TreatmentVersion = {
   revision: number;
   title: string;
   currency: keyof typeof verifiedCurrencies;
-  status: 'draft';
+  status:
+    | 'draft'
+    | 'presented'
+    | 'accepted'
+    | 'in_progress'
+    | 'completed'
+    | 'cancelled';
+  cancellation?: {
+    reason: string;
+    actorId: string;
+    actorName: string;
+    at: string;
+  };
+  notes?: string;
+  evidence?: PlanEvidence;
+  acceptance?: PlanAcceptance;
   items: TreatmentItem[];
   totalMinor: string;
   authorId: string;
@@ -602,3 +646,16 @@ export type TreatmentVersion = {
   recordedAt: string;
 };
 export type TreatmentPlan = TreatmentVersion & { events: TreatmentVersion[] };
+
+export const planLifecycleSchema = z
+  .object({
+    commandId: z.uuid(),
+    id: z.uuid(),
+    revision: z.number().int().positive(),
+    action: z.enum(['present', 'evidence', 'accept', 'cancel']),
+    reason: z.string().trim().min(1).max(1000).optional(),
+    acceptedBy: z.string().trim().min(1).max(200).optional(),
+    acceptedAt: z.iso.datetime().optional(),
+    method: z.string().trim().min(1).max(1000).optional(),
+  })
+  .strict();

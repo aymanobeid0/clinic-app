@@ -20,9 +20,11 @@ export type PlanItemFields = {
   price: string;
   discount: string;
   discountReason: string;
+  extras: { id: string; label: string; amount: string }[];
 };
 export type PlanFields = {
   title: string;
+  notes: string;
   currency: keyof typeof verifiedCurrencies;
   items: PlanItemFields[];
 };
@@ -33,6 +35,7 @@ export function PlanForm({
   identity,
   cacheKey,
   onLock,
+  onDirty,
 }: {
   patientId: string;
   plan?: TreatmentPlan;
@@ -40,6 +43,7 @@ export function PlanForm({
   identity: Identity;
   cacheKey: string[];
   onLock: (kind: string, v: boolean) => void;
+  onDirty: (v: boolean) => void;
 }) {
   const [snapshot, setSnapshot] = useState(plan);
   const [id] = useState(() => plan?.id ?? crypto.randomUUID());
@@ -50,6 +54,7 @@ export function PlanForm({
   const f = useForm<PlanFields>({
     defaultValues: {
       title: plan?.title ?? '',
+      notes: plan?.notes ?? '',
       currency: plan?.currency ?? catalog.currencies[0] ?? 'MRU',
       items:
         plan?.items.map((i) => ({
@@ -58,6 +63,14 @@ export function PlanForm({
           catalogRevision: i.catalogRevision,
           scope: i.scope,
           discountReason: i.discountReason,
+          extras: (i.extras ?? []).map((e) => ({
+            id: e.id,
+            label: e.label,
+            amount: formatMinor(
+              e.amountMinor,
+              verifiedCurrencies[plan.currency],
+            ),
+          })),
           teeth: i.teeth.join(' '),
           price: formatMinor(i.priceMinor, verifiedCurrencies[plan.currency]),
           discount: formatMinor(
@@ -72,6 +85,11 @@ export function PlanForm({
     name: 'items',
     keyName: 'fieldKey',
   });
+  const dirty = f.formState.isDirty;
+  useEffect(() => {
+    onDirty(dirty);
+    return () => onDirty(false);
+  }, [dirty, onDirty]);
   const currency = f.watch('currency');
   const command = useTreatmentCommand<TreatmentPlan>(
     cacheKey,
@@ -107,6 +125,7 @@ export function PlanForm({
   // Drafts only: first save explicitly creates the identified proposal, later edits autosave.
   useEffect(() => {
     if (
+      snapshot?.status !== 'draft' ||
       !revision ||
       !f.formState.isDirty ||
       command.busy ||
@@ -147,6 +166,10 @@ export function PlanForm({
             ))}
           </select>
         </label>
+        <label>
+          Notes de la proposition
+          <textarea maxLength={10000} {...f.register('notes')} />
+        </label>
         <p>{t.exactHelp}</p>
         <PlanItems
           catalog={catalog}
@@ -158,7 +181,14 @@ export function PlanForm({
           remove={array.remove}
           canOverride={canOverride}
           canDiscount={canDiscount}
+          control={f.control}
         />
+        {snapshot && snapshot.status !== 'draft' && (
+          <p>
+            Toute modification de la portée ou du prix exige une nouvelle
+            acceptation. Les notes conservent l’accord.
+          </p>
+        )}
         <button disabled={!array.fields.length}>{t.save}</button>
       </fieldset>
       <p role="status">{f.formState.isDirty ? t.unsaved : command.notice}</p>
