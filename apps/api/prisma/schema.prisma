@@ -246,3 +246,34 @@ model TreatmentPlanIdentity {
  @@id([clinicId,planId])
  @@unique([clinicId,patientId,planId])
 }
+
+model TreatmentVisit {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ appointmentId String? @db.Uuid
+ snapshot Json
+ @@unique([clinicId,id])
+ @@unique([clinicId,appointmentId])
+}
+model ProcedureStart {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ planId String @db.Uuid
+ itemId String @db.Uuid
+ visitId String @db.Uuid
+ snapshot Json
+ @@unique([clinicId,planId,itemId])
+}
+
+model ProcedureCompletion {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ planId String @db.Uuid
+ itemId String @db.Uuid
+ visitId String @db.Uuid
+ snapshot Json
+ @@unique([clinicId,planId,itemId])
+}

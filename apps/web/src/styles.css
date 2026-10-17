@@ -575,3 +575,7 @@ summary {
   .plan-print li {break-inside: avoid;}
   @page {margin: 16mm;}
 }
+
+.visits .visit-record {margin-block:16px;padding:12px;border-block-end:1px solid var(--border);}
+.visits h5 {font-size:14px;margin-block:8px;}
+.visits ol {padding-inline-start:20px;}

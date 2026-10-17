@@ -1,0 +1,35 @@
+export const visitMessages = {
+  title: 'Visites et actes réalisés',
+  loading: 'Chargement des visites…',
+  startedCount: (n: number) => `Actes commencés : ${n}`,
+  completedCount: (n: number) => `Actes terminés : ${n}`,
+  linkedAppointment: 'Rendez-vous lié',
+  version: 'version',
+  completed: 'Terminé',
+  inProgress: 'En cours',
+  completeAct: (n: number, name: string) => `Terminer l’acte ${n} — ${name}`,
+  careEnded: (date: string) => `Fin des soins : ${date}`,
+  actsLegend: 'Actes de cette visite',
+  appointment: 'Rendez-vous',
+  arrived: 'Arrivée sans rendez-vous',
+  selectionRequired: 'Sélectionnez au moins un acte disponible.',
+  itemNumber: (n: number) => `acte ${n}`,
+  start: 'Démarrer les soins sélectionnés',
+  end: 'Terminer la visite',
+  origin: 'Origine de la visite',
+  walkIn: 'Sans rendez-vous',
+  confirmStart:
+    'Confirmer le début ou la poursuite des actes sélectionnés pour cette visite ?',
+  confirmEnd:
+    'Terminer les soins de cette visite ? Les actes restent en cours jusqu’à leur achèvement explicite.',
+  confirmComplete: 'Confirmer que cet acte est terminé ?',
+  saved: 'Soins enregistrés',
+  empty: 'Aucune visite enregistrée.',
+  select:
+    'Sélectionnez les actes réellement travaillés. Leur achèvement reste une action distincte.',
+  review: 'Relire les plans pour les soins',
+  stale:
+    'Les plans ont changé. Relisez les versions actuelles avant de démarrer les soins.',
+  draft: 'Visite en cours',
+  ended: 'Visite terminée',
+};

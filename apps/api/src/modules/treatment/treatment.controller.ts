@@ -1,6 +1,9 @@
+import type { VisitService } from './visit.service.js';
 import type { RequestHandler } from 'express';
 import { z } from 'zod';
 import {
+  startVisitSchema,
+  visitActionSchema,
   treatmentPlanSchema,
   planLifecycleSchema,
   catalogCommandSchema,
@@ -12,9 +15,33 @@ import type { TreatmentService } from './treatment.service.js';
 export class TreatmentController {
   constructor(
     readonly service: TreatmentService,
+    readonly visits: VisitService,
     readonly updates: ClinicUpdates,
     readonly now: () => number,
   ) {}
+  visitAction: RequestHandler = async (req, res) => {
+    res.json(
+      await this.visits.action(
+        req.session.actor,
+        z.uuid().parse(req.params.id),
+        visitActionSchema.parse(req.body),
+      ),
+    );
+  };
+  visitState: RequestHandler = async (req, res) => {
+    res.json(
+      await this.visits.state(req.session.actor, z.uuid().parse(req.params.id)),
+    );
+  };
+  startVisit: RequestHandler = async (req, res) => {
+    res.json(
+      await this.visits.start(
+        req.session.actor,
+        z.uuid().parse(req.params.id),
+        startVisitSchema.parse(req.body),
+      ),
+    );
+  };
   plans: RequestHandler = async (req, res) => {
     res.json(
       await this.service.plans(

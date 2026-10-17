@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-16",
+  "asOf": "2026-10-17",
   "timezone": "Africa/Bamako",
   "planningIssues": {
     "closedWithOwnerApproval": [
@@ -23,38 +23,41 @@
     "41": "merged",
     "42": "merged",
     "43": "merged",
-    "44": "open"
+    "44": "merged",
+    "45": "open"
   },
   "implementation": {
-    "issue": 14,
+    "issue": 15,
     "state": "review",
-    "branch": "codex/issue-14-plan-acceptance",
-    "base": "dad0585e2b234ae4f0605aa8bcd3143283ed63d3",
-    "reviewedCommit": "f0252c8b5cf73d858bdda57e70c1744eac918c39",
-    "scope": "plan presentation, acceptance, revisions and retained-version printing",
-    "evidence": "issue-14-implementation.md",
-    "review": "issue-14-review.md",
+    "branch": "codex/issue-15-visits",
+    "base": "14dc2ce9e149e1bcbca847b17d45d817ae01f46a",
+    "reviewedCommit": "b1a9e5ffee1efc9dc51448ddafc9e932cce56c92",
+    "scope": "booked/walk-in visits and explicit procedure start/completion",
+    "evidence": "issue-15-implementation.md",
+    "review": "issue-15-review.md",
     "checks": {
-      "reviewerIndependent": {
-        "affectedApplicationFilesPassed": 2,
-        "durationSeconds": 54.14,
-        "pinnedDiffWhitespace": "pass",
-        "affectedApplicationTestsPassed": 27
-      },
       "builderReported": {
-        "typecheck": "pass",
         "build": "pass",
-        "fullApplicationTestsPassed": 84,
-        "fullBrowserJourneysPassed": 27,
-        "lint": "pass"
+        "fullApplicationTestsPassed": 92,
+        "lint": "pass",
+        "typecheck": "pass",
+        "fullBrowserJourneysPassed": 30
+      },
+      "reviewerIndependent": {
+        "pinnedDiffWhitespace": "pass",
+        "freshMigrationsPassed": 19,
+        "durationSeconds": 69.97,
+        "strictUtf8": "pass",
+        "affectedApplicationTestsPassed": 36,
+        "affectedApplicationFilesPassed": 3
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings",
-    "publication": "Open PR44 https://github.com/aymanobeid0/clinic-app/pull/44; human review/manual merge required",
+    "publication": "Open PR45 https://github.com/aymanobeid0/clinic-app/pull/45; human review/manual merge required",
     "limitations": [
-      "signed attachments after #19",
-      "procedure care/billing later tickets",
-      "physical printer and production gates unrun"
+      "clinic-wide refresh fanout near request budget; load testing pending",
+      "billing ledger integration in #20; notes/chart later",
+      "production and clinical/legal gates unrun"
     ]
   },
   "prismaMcp": {

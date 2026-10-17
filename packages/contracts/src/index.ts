@@ -659,3 +659,84 @@ export const planLifecycleSchema = z
     method: z.string().trim().min(1).max(1000).optional(),
   })
   .strict();
+
+// Visit commands carry reviewed plan revisions; a visit never completes an item implicitly.
+export const visitSelectionSchema = z
+  .object({
+    planId: z.uuid(),
+    itemId: z.uuid(),
+    planRevision: z.number().int().positive(),
+  })
+  .strict();
+export const startVisitSchema = z
+  .object({
+    commandId: z.uuid(),
+    id: z.uuid(),
+    appointmentId: z.uuid().nullable(),
+    procedures: z.array(visitSelectionSchema).min(1).max(100),
+  })
+  .strict();
+export type VisitSelection = z.infer<typeof visitSelectionSchema>;
+export type Visit = {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  doctorName: string;
+  appointmentId: string | null;
+  revision: number;
+  status: 'draft' | 'ended';
+  startedAt: string;
+  endedAt?: string;
+  procedures: { planId: string; itemId: string; name: string }[];
+};
+export type ProcedureStart = {
+  id: string;
+  patientId: string;
+  planId: string;
+  itemId: string;
+  visitId: string;
+  acceptedRevision: number;
+  acceptance: PlanAcceptance;
+  item: TreatmentItem;
+  currency: keyof typeof verifiedCurrencies;
+  agreedMinor: string;
+  performedBy: string;
+  performedByName: string;
+  at: string;
+};
+export type ProcedureCompletion = {
+  id: string;
+  patientId: string;
+  planId: string;
+  itemId: string;
+  visitId: string;
+  completedBy: string;
+  completedByName: string;
+  at: string;
+};
+export type VisitState = {
+  visits: Visit[];
+  starts: ProcedureStart[];
+  completions: ProcedureCompletion[];
+  appointments: { id: string; startsAt: string; walkIn: boolean }[];
+};
+export const visitActionSchema = z.discriminatedUnion('action', [
+  z
+    .object({
+      commandId: z.uuid(),
+      id: z.uuid(),
+      revision: z.number().int().positive(),
+      action: z.literal('end'),
+    })
+    .strict(),
+  z
+    .object({
+      commandId: z.uuid(),
+      id: z.uuid(),
+      revision: z.number().int().positive(),
+      action: z.literal('complete'),
+      planId: z.uuid(),
+      itemId: z.uuid(),
+    })
+    .strict(),
+]);
