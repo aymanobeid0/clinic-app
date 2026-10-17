@@ -3,6 +3,7 @@ import type {
   ClinicalRecord,
   ClinicalVersion,
   ClinicalContent,
+  VisitNoteContent,
 } from '@clinic/contracts';
 import type { ClinicTransaction } from '../../database.js';
 import { IdentityError } from '../identity/index.js';
@@ -19,18 +20,18 @@ export class ClinicalRepository {
       orderBy: { patientNumber: 'asc' },
     });
   }
-  async lock() {
+  async lock(kind = 'clinical') {
     await this.tx
-      .$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${this.clinicId + ':' + this.patientId + ':clinical'},0))::text`;
+      .$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${this.clinicId + ':' + this.patientId + ':' + kind},0))::text`;
   }
-  async record(kind: string): Promise<ClinicalRecord<ClinicalContent>> {
+  async record<T extends ClinicalContent | VisitNoteContent = ClinicalContent>(
+    kind: string,
+  ): Promise<ClinicalRecord<T>> {
     const rows = await this.tx.clinicalRevision.findMany({
       where: { clinicId: this.clinicId, patientId: this.patientId, kind },
       orderBy: { revision: 'asc' },
     });
-    const events = rows.map(
-      (r) => r.snapshot as unknown as ClinicalVersion<ClinicalContent>,
-    );
+    const events = rows.map((r) => r.snapshot as unknown as ClinicalVersion<T>);
     const latest = events.at(-1);
     return {
       revision: latest?.revision ?? 0,
@@ -39,7 +40,11 @@ export class ClinicalRepository {
       events,
     };
   }
-  async replay(commandId: string, payload: unknown, actorId: string) {
+  async replay<T extends ClinicalContent | VisitNoteContent = ClinicalContent>(
+    commandId: string,
+    payload: unknown,
+    actorId: string,
+  ) {
     const hash = createHash('sha256')
       .update(JSON.stringify(payload))
       .digest('hex');
@@ -50,18 +55,17 @@ export class ClinicalRepository {
       throw new IdentityError(409, 'Commande déjà utilisée.');
     return {
       hash,
-      receipt: old?.receipt as unknown as
-        ClinicalRecord<ClinicalContent> | undefined,
+      receipt: old?.receipt as unknown as ClinicalRecord<T> | undefined,
     };
   }
-  async append(
+  async append<T extends ClinicalContent | VisitNoteContent = ClinicalContent>(
     kind: string,
     commandId: string,
     hash: string,
     actorId: string,
-    version: ClinicalVersion<ClinicalContent>,
+    version: ClinicalVersion<T>,
   ) {
-    const previous = await this.record(kind);
+    const previous = await this.record<T>(kind);
     const receipt = {
       revision: version.revision,
       current: version.status === 'final' ? version : previous.current,

@@ -759,3 +759,319 @@ it('the settled start fact retains exact accepted discounts, itemized extras and
     },
   });
 });
+
+it('visit notes retain free text and preserve dated corrections after care ends', async () => {
+  const s = await visitScenario();
+  expect((await s.doctor.post(s.path, s.start)).status).toBe(200);
+  const path = `/clinical/${s.patient.id}/notes/${s.start.id}`;
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: [
+      'clinical.read',
+      'clinical.history',
+      'notes.draft',
+      'notes.finalize',
+      'procedures.start',
+    ],
+  });
+  const draft = {
+    commandId: randomUUID(),
+    revision: 0,
+    text: '  Observation libre.\nDeuxième ligne.  ',
+  };
+  const saved = await s.doctor.post(`${path}/draft`, draft);
+  expect(saved.status).toBe(200);
+  expect(saved.body.draft.content.text).toBe(draft.text);
+  expect(
+    (
+      await s.doctor.post(`${s.path}/actions`, {
+        commandId: randomUUID(),
+        id: s.start.id,
+        revision: 1,
+        action: 'end',
+      })
+    ).status,
+  ).toBe(200);
+  expect((await s.doctor.browser.get(`/api${path}`)).body.pending).toBe(true);
+  const finalized = await s.doctor.post(`${path}/finalize`, {
+    commandId: randomUUID(),
+    revision: 1,
+  });
+  expect(finalized.status).toBe(200);
+  expect(finalized.body.pending).toBe(false);
+  expect(finalized.body.current.content.text).toBe(draft.text);
+  expect(
+    (
+      await s.doctor.post(`${path}/draft`, {
+        commandId: randomUUID(),
+        revision: 2,
+        text: 'Correction datée.',
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.doctor.post(`${path}/finalize`, {
+        commandId: randomUUID(),
+        revision: 3,
+      })
+    ).status,
+  ).toBe(200);
+  const history = (await s.doctor.browser.get(`/api${path}`)).body;
+  expect(
+    history.events
+      .filter((e: { status: string }) => e.status === 'final')
+      .map((e: { content: { text: string } }) => e.content.text),
+  ).toEqual([draft.text, 'Correction datée.']);
+  expect(history.current.recordedAt).toEqual(expect.any(String));
+});
+
+async function noteScenario() {
+  const s = await visitScenario();
+  expect((await s.doctor.post(s.path, s.start)).status).toBe(200);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: [
+      'clinical.read',
+      'clinical.history',
+      'notes.draft',
+      'notes.finalize',
+    ],
+  });
+  return { ...s, notePath: `/clinical/${s.patient.id}/notes/${s.start.id}` };
+}
+it('note concurrency requires review, retries retain one revision and old receipts respect current history permission', async () => {
+  const s = await noteScenario();
+  const draft = {
+    commandId: randomUUID(),
+    revision: 0,
+    text: 'SUPERSEDED_PRIVATE_NOTE',
+  };
+  const duplicate = await Promise.all([
+    s.doctor.post(`${s.notePath}/draft`, draft),
+    s.doctor.post(`${s.notePath}/draft`, draft),
+  ]);
+  expect(duplicate.map((r) => r.status)).toEqual([200, 200]);
+  expect(
+    (await s.doctor.browser.get(`/api${s.notePath}`)).body.events,
+  ).toHaveLength(1);
+  const finalize = { commandId: randomUUID(), revision: 1 };
+  expect(
+    (
+      await s.doctor.post(`${s.notePath}/draft`, {
+        ...draft,
+        commandId: randomUUID(),
+        text: 'Saisie concurrente',
+      })
+    ).status,
+  ).toBe(409);
+  expect(
+    (
+      await s.doctor.post(`${s.notePath}/draft`, {
+        ...draft,
+        text: 'Commande modifiée',
+      })
+    ).status,
+  ).toBe(409);
+  expect((await s.doctor.post(`${s.notePath}/finalize`, finalize)).status).toBe(
+    200,
+  );
+  expect(
+    (
+      await s.doctor.post(`${s.notePath}/draft`, {
+        commandId: randomUUID(),
+        revision: 2,
+        text: 'Texte corrigé actuel',
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.doctor.post(`${s.notePath}/finalize`, {
+        commandId: randomUUID(),
+        revision: 3,
+      })
+    ).status,
+  ).toBe(200);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: ['clinical.read', 'notes.draft', 'notes.finalize'],
+  });
+  for (const [action, command, revision] of [
+    ['draft', draft, 1],
+    ['finalize', finalize, 2],
+  ] as const) {
+    const replay = await s.doctor.post(`${s.notePath}/${action}`, command);
+    expect(replay.status).toBe(200);
+    expect(replay.body).toMatchObject({
+      revision,
+      current: { revision: 4, content: { text: 'Texte corrigé actuel' } },
+      draft: null,
+      events: [],
+    });
+    expect(JSON.stringify(replay.body)).not.toContain(
+      'SUPERSEDED_PRIVATE_NOTE',
+    );
+  }
+  const upperPath = `/clinical/${s.patient.id.toUpperCase()}/notes/${s.start.id.toUpperCase()}`;
+  expect((await s.doctor.browser.get(`/api${upperPath}`)).body.revision).toBe(
+    4,
+  );
+  expect(
+    (
+      await s.doctor.post(`${upperPath}/draft`, {
+        commandId: randomUUID(),
+        revision: 4,
+        text: 'Même visite canonique',
+      })
+    ).status,
+  ).toBe(200);
+  expect((await s.doctor.browser.get(`/api${s.notePath}`)).body.revision).toBe(
+    5,
+  );
+});
+it('scoped staff can draft but only an authorized doctor can finalize another author’s note', async () => {
+  const s = await noteScenario();
+  const staff = await s.create('assistant-notes', 'staff', [
+    'clinical.read',
+    'notes.draft',
+    'notes.finalize',
+  ]);
+  expect(
+    (
+      await s.m.post(`/patient-access/${s.patient.id}/share`, {
+        commandId: randomUUID(),
+        revision: 1,
+        accountId: staff.id,
+        kind: 'shared',
+      })
+    ).status,
+  ).toBe(200);
+  const draft = {
+    commandId: randomUUID(),
+    revision: 0,
+    text: 'Note dictée au fauteuil',
+  };
+  expect((await staff.post(`${s.notePath}/draft`, draft)).status).toBe(200);
+  expect(
+    (
+      await staff.post(`${s.notePath}/finalize`, {
+        commandId: randomUUID(),
+        revision: 1,
+      })
+    ).status,
+  ).toBe(403);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: ['clinical.read', 'notes.finalize'],
+  });
+  const result = await s.doctor.post(`${s.notePath}/finalize`, {
+    commandId: randomUUID(),
+    revision: 1,
+  });
+  expect(result.status).toBe(200);
+  expect(result.body.current).toMatchObject({
+    authorId: staff.id,
+    finalizerId: s.doctor.id,
+    content: { text: draft.text },
+  });
+  expect((await staff.browser.get(`/api${s.notePath}`)).body.events).toEqual(
+    [],
+  );
+  expect(
+    (
+      await s.doctor.post(`${s.notePath}/draft`, {
+        ...draft,
+        commandId: randomUUID(),
+        revision: 2,
+      })
+    ).status,
+  ).toBe(403);
+  await s.m.post(`/accounts/${staff.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: ['notes.draft'],
+  });
+  expect((await staff.post(`${s.notePath}/draft`, draft)).status).toBe(403);
+  expect((await staff.browser.get(`/api${s.notePath}`)).status).toBe(403);
+});
+it('note routes deny unauthenticated, unrelated, cross-clinic and revoked actors including direct retries', async () => {
+  const s = await noteScenario();
+  const draft = { commandId: randomUUID(), revision: 0, text: 'Confidentiel' };
+  expect((await request(app).get(`/api${s.notePath}`)).status).toBe(401);
+  expect((await s.m.browser.get(`/api${s.notePath}`)).status).toBe(403);
+  expect((await s.m.post(`${s.notePath}/draft`, draft)).status).toBe(403);
+  const stranger = await s.create('stranger-notes', 'doctor', [
+    'clinical.read',
+    'notes.draft',
+  ]);
+  expect((await stranger.post(`${s.notePath}/draft`, draft)).status).toBe(403);
+  const other = await scenario();
+  const otherDoctor = await other.create('other-notes', 'doctor', [
+    'clinical.read',
+    'notes.draft',
+  ]);
+  expect((await otherDoctor.browser.get(`/api${s.notePath}`)).status).toBe(403);
+  expect((await otherDoctor.post(`${s.notePath}/draft`, draft)).status).toBe(
+    403,
+  );
+  expect((await s.doctor.post(`${s.notePath}/draft`, draft)).status).toBe(200);
+  expect(
+    (
+      await s.doctor.browser.get(
+        `/api/clinical/${s.patient.id}/notes/${randomUUID()}`,
+      )
+    ).status,
+  ).toBe(404);
+  const p2 = (
+    await s.m.post('/patients', {
+      commandId: randomUUID(),
+      name: 'Autre patient fictif',
+      phone: '70000001',
+      contactKind: 'patient',
+      contactName: '',
+    })
+  ).body.patient;
+  await s.m.post(`/patient-access/${p2.id}/share`, {
+    commandId: randomUUID(),
+    revision: 0,
+    accountId: s.doctor.id,
+    kind: 'shared',
+  });
+  expect(
+    (await s.doctor.post(`/clinical/${p2.id}/notes/${s.start.id}/draft`, draft))
+      .status,
+  ).toBe(404);
+  await s.m.post(`/patient-access/${s.patient.id}/remove`, {
+    commandId: randomUUID(),
+    revision: 1,
+    accountId: s.doctor.id,
+  });
+  expect((await s.doctor.browser.get(`/api${s.notePath}`)).status).toBe(403);
+  expect(
+    (await s.doctor.browser.get(`/api/clinical/${s.patient.id}/notes`)).status,
+  ).toBe(403);
+  expect((await s.doctor.post(`${s.notePath}/draft`, draft)).status).toBe(403);
+});
+
+it('a visit created with an uppercase UUID has the same canonical note stream', async () => {
+  const s = await visitScenario();
+  const visitId = s.start.id.toUpperCase();
+  expect(
+    (await s.doctor.post(s.path, { ...s.start, id: visitId })).status,
+  ).toBe(200);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: 'Fictional-manager-pass-2',
+    permissions: ['clinical.read', 'notes.draft'],
+  });
+  const path = `/clinical/${s.patient.id}/notes/${visitId.toLowerCase()}`;
+  const saved = await s.doctor.post(`${path}/draft`, {
+    commandId: randomUUID(),
+    revision: 0,
+    text: 'Note de la même visite',
+  });
+  expect(saved.status).toBe(200);
+  expect(saved.body.visitId).toBe(visitId.toLowerCase());
+  expect(
+    (await s.doctor.browser.get(`/api/clinical/${s.patient.id}/notes`)).body[0],
+  ).toMatchObject({ visitId: visitId.toLowerCase(), revision: 1 });
+});

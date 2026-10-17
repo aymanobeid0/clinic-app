@@ -740,3 +740,16 @@ export const visitActionSchema = z.discriminatedUnion('action', [
     })
     .strict(),
 ]);
+
+export type VisitNoteContent = { text: string };
+export type VisitNote = ClinicalRecord<VisitNoteContent> & {
+  visitId: string;
+  pending: boolean;
+};
+export const noteDraftSchema = z
+  .object({
+    commandId: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    text: z.string().max(30000),
+  })
+  .strict();

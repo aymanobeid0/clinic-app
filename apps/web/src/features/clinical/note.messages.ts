@@ -1,0 +1,37 @@
+export const noteMessages = {
+  title: 'Notes de visite',
+  loading: 'Chargement des notes…',
+  readUnavailable: 'Notes indisponibles. Réessayez.',
+  compareUnavailable:
+    'Version du serveur indisponible. Saisie conservée dans cet onglet.',
+  finalization: 'Finalisation',
+  version: 'version',
+  loadingComparison: 'Chargement de la version à comparer…',
+  free: 'Note libre',
+  saving: 'Enregistrement…',
+  saved: 'Enregistré sur le serveur.',
+  unsaved: 'Modifications non enregistrées.',
+  uncertain:
+    'Réponse incertaine. Votre saisie reste dans cet onglet. Réessayez la même commande.',
+  memory:
+    'La saisie reste uniquement dans cet onglet. Ne le fermez pas avant confirmation de l’enregistrement.',
+  retry: 'Réessayer la même commande',
+  retrySave: 'Réessayer l’enregistrement',
+  compare: 'Comparer avec la version du serveur',
+  conflict: 'Cette note a changé. Relisez les deux versions avant de choisir.',
+  server: 'Version du serveur',
+  mine: 'J’ai comparé : conserver ma saisie',
+  theirs: 'J’ai comparé : reprendre la version du serveur',
+  finalize: 'Finaliser la note',
+  confirmFinal:
+    'Finaliser cette note ? Le texte original sera conservé ; les changements suivants seront des corrections datées.',
+  correction: 'Rédiger une correction datée',
+  history: 'Historique essentiel de la note',
+  pending: 'Note à finaliser — soins terminés',
+  noDraft: 'Aucune note enregistrée.',
+  draft: 'Brouillon',
+  final: 'Note finalisée',
+  correctionFinal: 'Correction finalisée',
+  unavailable: 'Enregistrement impossible. Saisie conservée dans cet onglet.',
+  open: (date: string) => `Rédiger la note — visite du ${date}`,
+};

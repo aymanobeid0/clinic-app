@@ -7,6 +7,8 @@
   line-height: 1.55;
   --brand: #4657e8;
   --border: #e1e5ed;
+  --warning: #956008;
+  --warning-soft: #fff5dd;
 }
 * {
   box-sizing: border-box;
@@ -579,3 +581,35 @@ summary {
 .visits .visit-record {margin-block:16px;padding:12px;border-block-end:1px solid var(--border);}
 .visits h5 {font-size:14px;margin-block:8px;}
 .visits ol {padding-inline-start:20px;}
+
+.visit-notes {
+  border-block-start: 1px solid var(--border);
+  margin-block-start: 24px;
+  padding-block-start: 16px;
+}
+.note-editor {
+  margin-block: 16px;
+}
+.note-editor textarea {
+  inline-size: 100%;
+  max-inline-size: 100%;
+  resize: vertical;
+  min-block-size: 160px;
+}
+.note-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.note-pending {
+  color: var(--warning);
+  background: var(--warning-soft);
+  padding: 8px 12px;
+}
+.note-conflict {
+  border: 1px solid var(--border);
+  padding: 16px;
+}
+.note-editor article {
+  border-block-end: 1px solid var(--border);
+  padding-block: 8px;
+}

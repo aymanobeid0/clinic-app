@@ -9,6 +9,16 @@ export class VisitRepository {
     readonly tx: ClinicTransaction,
     readonly clinicId: string,
   ) {}
+  async noteVisits(patientId: string) {
+    const rows = await this.tx.treatmentVisit.findMany({
+      where: { clinicId: this.clinicId, patientId },
+      select: { id: true, snapshot: true },
+    });
+    return rows.map((row) => {
+      const v = row.snapshot as unknown as Visit;
+      return { id: row.id, status: v.status };
+    });
+  }
   async state(patientId: string) {
     const [visits, starts, completions] = await Promise.all([
       this.tx.treatmentVisit.findMany({
