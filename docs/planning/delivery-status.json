@@ -23,7 +23,8 @@
     "41": "merged",
     "42": "merged",
     "43": "merged",
-    "44": "merged"
+    "44": "merged",
+    "45": "open"
   },
   "implementation": {
     "issue": 15,
@@ -52,7 +53,7 @@
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings",
-    "publication": "pending human-review PR",
+    "publication": "Open PR45 https://github.com/aymanobeid0/clinic-app/pull/45; human review/manual merge required",
     "limitations": [
       "clinic-wide refresh fanout near request budget; load testing pending",
       "billing ledger integration in #20; notes/chart later",
