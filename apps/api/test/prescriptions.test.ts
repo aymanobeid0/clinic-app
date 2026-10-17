@@ -997,3 +997,12 @@ it("old prescription printing and command replay never bypass revoked history ca
   expect(replay.body.events).toEqual([]);
   expect(replay.body.current.content.instructions).toBe("Correction");
 });
+
+it('reference management can retrieve and retire an entry beyond the autocomplete limit',async()=>{
+ const m=await manager();let last={id:'',revision:1,name:'',strength:'',form:'',active:true};
+ for(let i=0;i<101;i++){const entry={commandId:randomUUID(),id:randomUUID(),revision:0,name:`Référence ${String(i).padStart(3,'0')}`,strength:'',form:'',active:true};const response=await m.post('/medications',entry);expect(response.status).toBe(200);last=response.body;}
+ const list=await m.browser.get('/api/medications?retired=true');expect(list.body).toHaveLength(101);expect(list.body.at(-1).id).toBe(last.id);
+ expect((await m.browser.get('/api/medications?q=Référence')).body).toHaveLength(100);
+ expect((await m.post('/medications',{...last,commandId:randomUUID(),active:false})).status).toBe(200);
+ expect((await m.browser.get('/api/medications?retired=true')).body.find((v:{id:string})=>v.id===last.id).active).toBe(false);
+});

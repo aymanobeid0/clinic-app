@@ -61,7 +61,7 @@ export class PrescriptionRepository {
         name: { contains: q, mode: "insensitive" },
       },
       orderBy: { name: "asc" },
-      take: 100,
+      take: includeRetired ? undefined : 100,
       select: {
         id: true,
         revision: true,
