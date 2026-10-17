@@ -174,3 +174,47 @@ export class SchedulingService {
     return result.value;
   }
 }
+
+// Clinical caller supplies its already authorized patient scope and transaction.
+export async function visitAppointments(
+  tx: import('../../database.js').ClinicTransaction,
+  clinicId: string,
+  patientId: string,
+  doctorId: string,
+  now: () => number,
+) {
+  return new SchedulingRepository(tx, clinicId, doctorId, now).visitChoices(
+    patientId,
+    doctorId,
+  );
+}
+export async function transitionVisitAppointment(
+  tx: import('../../database.js').ClinicTransaction,
+  clinicId: string,
+  patientId: string,
+  doctorId: string,
+  id: string,
+  action: 'start' | 'end',
+  now: () => number,
+) {
+  const r = new SchedulingRepository(tx, clinicId, doctorId, now),
+    old = await r.get(id);
+  if (
+    old.patientId !== patientId ||
+    old.dentistId !== doctorId ||
+    !(
+      action === 'start' ? ['booked', 'confirmed', 'arrived'] : ['in_care']
+    ).includes(old.status)
+  )
+    throw new IdentityError(409, 'Rendez-vous indisponible pour ces soins.');
+  const value = await r.status(
+    id,
+    action === 'start' ? 'in_care' : 'completed',
+    '',
+  );
+  await r.record(
+    value,
+    action === 'start' ? 'care_started' : 'care_ended',
+    false,
+  );
+}

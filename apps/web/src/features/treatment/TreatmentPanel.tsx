@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { VisitPanel } from './VisitPanel.js';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   verifiedCurrencies,
@@ -46,6 +47,9 @@ export function TreatmentPanel({
     const refresh = () => {
       setConnected(true);
       void cache.invalidateQueries({
+        queryKey: ['visits', identity.clinicId, identity.accountId, id],
+      });
+      void cache.invalidateQueries({
         queryKey: ['plans', identity.clinicId, identity.accountId, id],
       });
       void cache.invalidateQueries({
@@ -53,7 +57,8 @@ export function TreatmentPanel({
       });
     };
     stream.addEventListener('invalidate', refresh);
-    stream.onopen = refresh;
+    // The server sends an authorized invalidate on each connection/reconnect.
+    stream.onopen = () => setConnected(true);
     stream.onerror = () => {
       setConnected(false);
       void cache.invalidateQueries({
@@ -70,9 +75,12 @@ export function TreatmentPanel({
       });
     };
   }, [id, identity.clinicId, identity.accountId, cache]);
+  const lockKinds = useRef(new Set<string>());
   const lock = useCallback(
     (kind: string, v: boolean) => {
-      setLocked(v);
+      if (v) lockKinds.current.add(kind);
+      else lockKinds.current.delete(kind);
+      setLocked(lockKinds.current.size > 0);
       onLock(kind, v);
     },
     [onLock],
@@ -85,7 +93,9 @@ export function TreatmentPanel({
   return (
     <section className="treatment" aria-label={t.title}>
       <h4>{t.title}</h4>
-      <p>{t.noDebt}</p>
+      {!query.data?.some((p) =>
+        ['in_progress', 'completed'].includes(p.status),
+      ) && <p>{t.noDebt}</p>}
       {!connected && (
         <p role="alert">
           Connexion interrompue. Saisie conservée dans cet onglet.
@@ -158,6 +168,23 @@ export function TreatmentPanel({
               onDirty={setDirty}
             />
           </>
+        )}
+      {query.data &&
+        (query.data.some((p) =>
+          ['in_progress', 'completed'].includes(p.status),
+        ) ||
+          (query.data.some((p) => p.status === 'accepted') &&
+            identity.permissions.some((p) =>
+              ['procedures.start', 'procedures.complete'].includes(p),
+            )) ||
+          lockKinds.current.has('visit')) && (
+          <VisitPanel
+            patientId={id}
+            identity={identity}
+            plans={query.data}
+            onLock={lock}
+            dirty={dirty}
+          />
         )}
     </section>
   );

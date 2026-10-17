@@ -1,3 +1,4 @@
+import { VisitService } from './visit.service.js';
 import { TreatmentRepository } from './treatment.repository.js';
 import type { IdentityAccess } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
@@ -12,6 +13,7 @@ export function createTreatmentRoutes(
   return treatmentRoutes(
     new TreatmentController(
       new TreatmentService(identity, updates, now),
+      new VisitService(identity, updates, now),
       updates,
       now,
     ),
@@ -24,3 +26,5 @@ export async function procedureDurations(
 ) {
   return new TreatmentRepository(tx, clinicId).durations();
 }
+
+export { recordProcedureStart } from './procedure-start.js';

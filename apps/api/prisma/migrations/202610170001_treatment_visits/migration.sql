@@ -1,0 +1,10 @@
+CREATE TABLE "TreatmentVisit" (id uuid PRIMARY KEY,"clinicId" uuid NOT NULL,"patientId" uuid NOT NULL,"appointmentId" uuid,snapshot jsonb NOT NULL,UNIQUE("clinicId",id),UNIQUE("clinicId","appointmentId"),FOREIGN KEY("clinicId","patientId") REFERENCES "Patient"("clinicId",id),FOREIGN KEY("clinicId","appointmentId") REFERENCES "Appointment"("clinicId",id));
+CREATE TABLE "ProcedureStart" (id uuid PRIMARY KEY,"clinicId" uuid NOT NULL,"patientId" uuid NOT NULL,"planId" uuid NOT NULL,"itemId" uuid NOT NULL,"visitId" uuid NOT NULL,snapshot jsonb NOT NULL,UNIQUE("clinicId","planId","itemId"),FOREIGN KEY("clinicId","patientId","planId") REFERENCES "TreatmentPlanIdentity"("clinicId","patientId","planId"),FOREIGN KEY("clinicId","visitId") REFERENCES "TreatmentVisit"("clinicId",id));
+ALTER TABLE "TreatmentVisit" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "TreatmentVisit" FORCE ROW LEVEL SECURITY;
+CREATE POLICY visit_clinic ON "TreatmentVisit" TO clinic_runtime USING("clinicId"::text=current_setting('app.clinic_id',true)) WITH CHECK("clinicId"::text=current_setting('app.clinic_id',true));
+ALTER TABLE "ProcedureStart" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ProcedureStart" FORCE ROW LEVEL SECURITY;
+CREATE POLICY start_clinic ON "ProcedureStart" TO clinic_runtime USING("clinicId"::text=current_setting('app.clinic_id',true)) WITH CHECK("clinicId"::text=current_setting('app.clinic_id',true));
+GRANT SELECT,INSERT,UPDATE ON "TreatmentVisit" TO clinic_runtime;
+GRANT SELECT,INSERT ON "ProcedureStart" TO clinic_runtime;

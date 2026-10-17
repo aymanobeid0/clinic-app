@@ -12,3 +12,5 @@ export function createSchedulingRoutes(
     new SchedulingController(new SchedulingService(identity, updates, now), updates, now),
   );
 }
+
+export { visitAppointments, transitionVisitAppointment } from './scheduling.service.js';

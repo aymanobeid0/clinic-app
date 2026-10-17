@@ -10,6 +10,20 @@ export class SchedulingRepository {
     private readonly actorId: string,
     private readonly now: () => number,
   ) {}
+  async visitChoices(patientId: string, dentistId: string) {
+    return (
+      await this.tx.appointment.findMany({
+        where: {
+          clinicId: this.clinicId,
+          patientId,
+          dentistId,
+          status: { in: ['booked', 'confirmed', 'arrived'] },
+        },
+        orderBy: { startsAt: 'asc' },
+        select: { id: true, startsAt: true, walkIn: true },
+      })
+    ).map((a) => ({ ...a, startsAt: a.startsAt.toISOString() }));
+  }
   async settings(): Promise<SchedulingSettings> {
     const s = await this.tx.schedulingSettings.upsert({
       where: { clinicId: this.clinicId },

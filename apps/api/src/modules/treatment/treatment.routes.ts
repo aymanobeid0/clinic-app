@@ -2,6 +2,9 @@ import { Router } from 'express';
 import type { TreatmentController } from './treatment.controller.js';
 export function treatmentRoutes(c: TreatmentController) {
   const r = Router();
+  r.get('/treatment/:id/visits', c.visitState);
+  r.post('/treatment/:id/visits', c.startVisit);
+  r.post('/treatment/:id/visits/actions', c.visitAction);
   r.get('/treatment/:id/plans', c.plans);
   r.post('/treatment/:id/plans', c.savePlan);
   r.post('/treatment/:id/plans/lifecycle', c.lifecycle);
