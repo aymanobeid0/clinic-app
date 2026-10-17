@@ -1,3 +1,4 @@
+import { NotesPanel } from '../clinical/NotesPanel.js';
 import { VisitStartForm } from './VisitStartForm.js';
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -177,6 +178,14 @@ export function VisitPanel({
               </li>
             ))}
           </ol>
+          {data.visits.length > 0 && (
+            <NotesPanel
+              patientId={patientId}
+              identity={identity}
+              visits={data.visits}
+              onLock={onLock}
+            />
+          )}
         </>
       )}
       <CommandState state={command} />

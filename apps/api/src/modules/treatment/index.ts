@@ -1,3 +1,4 @@
+import { VisitRepository } from './visit.repository.js';
 import { VisitService } from './visit.service.js';
 import { TreatmentRepository } from './treatment.repository.js';
 import type { IdentityAccess } from '../identity/index.js';
@@ -28,3 +29,24 @@ export async function procedureDurations(
 }
 
 export { recordProcedureStart } from './procedure-start.js';
+
+// Clinical notes use this patient-scoped encounter projection, without pricing.
+export async function noteVisit(
+  tx: import('../../database.js').ClinicTransaction,
+  clinicId: string,
+  patientId: string,
+  visitId: string,
+) {
+  const row = await new VisitRepository(tx, clinicId).existing(visitId);
+  if (!row || row.patientId !== patientId) return null;
+  const v = row.snapshot as unknown as import('@clinic/contracts').Visit;
+  return { id: row.id, status: v.status };
+}
+
+export async function noteVisits(
+  tx: import('../../database.js').ClinicTransaction,
+  clinicId: string,
+  patientId: string,
+) {
+  return new VisitRepository(tx, clinicId).noteVisits(patientId);
+}

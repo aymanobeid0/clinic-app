@@ -24,40 +24,42 @@
     "42": "merged",
     "43": "merged",
     "44": "merged",
-    "45": "open"
+    "45": "merged",
+    "46": "open"
   },
   "implementation": {
-    "issue": 15,
+    "issue": 16,
     "state": "review",
-    "branch": "codex/issue-15-visits",
-    "base": "14dc2ce9e149e1bcbca847b17d45d817ae01f46a",
-    "reviewedCommit": "b1a9e5ffee1efc9dc51448ddafc9e932cce56c92",
-    "scope": "booked/walk-in visits and explicit procedure start/completion",
-    "evidence": "issue-15-implementation.md",
-    "review": "issue-15-review.md",
+    "branch": "codex/issue-16-visit-notes",
+    "base": "203181d321f4ad1e57fbfd53e64246a1f39166da",
+    "reviewedCommit": "c0ad508dc8f65672975b1caf2d6046b418ecdeee",
+    "scope": "French visit note autosave, conflict review, doctor finalization and retained corrections",
+    "evidence": "issue-16-implementation.md",
+    "review": "issue-16-review.md",
     "checks": {
       "builderReported": {
         "build": "pass",
-        "fullApplicationTestsPassed": 92,
         "lint": "pass",
         "typecheck": "pass",
-        "fullBrowserJourneysPassed": 30
+        "fullApplicationTestsPassedBeforeFinalCanonicalFix": 96,
+        "focusedNotesTestsPassedAfterFix": 5,
+        "fullBrowserJourneysPassed": 32
       },
       "reviewerIndependent": {
         "pinnedDiffWhitespace": "pass",
-        "freshMigrationsPassed": 19,
-        "durationSeconds": 69.97,
         "strictUtf8": "pass",
-        "affectedApplicationTestsPassed": 36,
-        "affectedApplicationFilesPassed": 3
+        "freshMigrationsPassed": 20,
+        "affectedApplicationTestsPassed": 32,
+        "affectedApplicationFilesPassed": 3,
+        "durationSeconds": 63.74
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings",
-    "publication": "Open PR45 https://github.com/aymanobeid0/clinic-app/pull/45; human review/manual merge required",
+    "publication": "Open PR46 https://github.com/aymanobeid0/clinic-app/pull/46; attached; human review/manual merge required",
     "limitations": [
-      "clinic-wide refresh fanout near request budget; load testing pending",
-      "billing ledger integration in #20; notes/chart later",
-      "production and clinical/legal gates unrun"
+      "current-tab memory does not survive closing the tab",
+      "per-visit database reads/history growth and multi-user request budget unbenchmarked",
+      "production, accessibility certification and clinical/legal gates unrun"
     ]
   },
   "prismaMcp": {

@@ -5,6 +5,7 @@ export function authorizedEvents(
   authorize: (actor: Actor | undefined) => Promise<string>,
   updates: ClinicUpdates,
   now: () => number,
+  scope?: string,
 ): RequestHandler {
   return async (req, res) => {
     const actor = req.session.actor;
@@ -40,7 +41,10 @@ export function authorizedEvents(
         )
           throw new Error('Session expired');
         await authorize(req.session.actor);
-        if (!closed) res.write(invalidate ? 'event: invalidate\ndata: {}\n\n' : ': heartbeat\n\n');
+        if (!closed)
+          res.write(
+            invalidate ? 'event: invalidate\ndata: {}\n\n' : ': heartbeat\n\n',
+          );
       } catch {
         if (!closed) res.end();
         cleanup();
@@ -52,8 +56,8 @@ export function authorizedEvents(
         }
       }
     };
-    const unsubscribe = updates.subscribe(clinicId, () => {
-      void verify(true);
+    const unsubscribe = updates.subscribe(clinicId, (changedScope) => {
+      if (!changedScope || changedScope === scope) void verify(true);
     });
     const timer = setInterval(() => {
       void verify(false);

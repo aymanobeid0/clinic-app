@@ -5,6 +5,10 @@ export function clinicalRoutes(c: ClinicalController) {
   r.get('/clinical-patients', c.patients);
   r.get('/clinical-events', c.discoveryEvents);
   r.get('/clinical/:id', c.get);
+  r.get('/clinical/:id/notes', c.notes);
+  r.get('/clinical/:id/notes-events', c.noteEvents);
+  r.get('/clinical/:id/notes/:visitId', c.note);
+  r.post('/clinical/:id/notes/:visitId/:action', c.noteChange);
   r.get('/clinical/:id/events', c.events);
   r.post('/clinical/:id/:kind/draft', c.draft);
   r.post('/clinical/:id/:kind/confirm', c.confirm);
