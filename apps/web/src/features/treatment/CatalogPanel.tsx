@@ -175,6 +175,7 @@ function CatalogForm({
   const f = useForm({
     defaultValues: {
       name: entry?.name ?? '',
+      chartCategory: entry?.chartCategory ?? 'manual',
       currency: entry?.currency ?? currencies[0] ?? 'MRU',
       price: entry
         ? formatMinor(entry.priceMinor, verifiedCurrencies[entry.currency])
@@ -234,6 +235,9 @@ function CatalogForm({
             max={480}
             {...f.register('durationMinutes')}
           />
+        </label>
+        <label>Catégorie explicite pour le schéma
+          <select {...f.register('chartCategory')}><option value="manual">Sans suggestion — manuel</option><option value="extraction">Extraction</option><option value="restoration">Restauration</option><option value="crown">Couronne</option><option value="root_canal">Traitement canalaire</option><option value="implant">Implant</option></select>
         </label>
         <label className="check">
           <input type="checkbox" {...f.register('active')} />

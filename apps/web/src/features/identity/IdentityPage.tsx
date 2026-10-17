@@ -1,3 +1,4 @@
+import {MedicationPanel} from '../clinical/MedicationPanel.js';
 import {CatalogPanel} from '../treatment/CatalogPanel.js';
 import { ClinicalPanel } from '../clinical/ClinicalPanel.js';
 import { SchedulingPanel } from '../scheduling/SchedulingPanel.js';
@@ -59,6 +60,7 @@ export function IdentityPage() {
             <p className="description">
               Bonjour {session.identity?.displayName}. Votre compte est prêt.
             </p>
+            {session.identity && <MedicationPanel key={'medications:'+session.identity.clinicId+':'+session.identity.accountId} identity={session.identity}/>}
             {session.identity && <AccountsPanel identity={session.identity} />}
             {session.identity && <CatalogPanel key={'catalog:'+session.identity.clinicId+':'+session.identity.accountId} identity={session.identity}/>}
             {session.identity && <ClinicalPanel key={'clinical:'+session.identity.clinicId+':'+session.identity.accountId} identity={session.identity} />}

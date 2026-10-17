@@ -509,6 +509,7 @@ export const exactAmountSchema = z
     /^(0|[1-9][0-9]{0,14})(\.[0-9]{1,3})?$/,
     'Montant exact positif, sans arrondi.',
   );
+export const chartCategorySchema=z.enum(['manual','extraction','restoration','crown','root_canal','implant']);
 export const catalogCommandSchema = z
   .object({
     commandId: z.uuid(),
@@ -518,10 +519,12 @@ export const catalogCommandSchema = z
     currency: currencyCodeSchema,
     price: exactAmountSchema,
     durationMinutes: z.number().int().min(5).max(480),
+    chartCategory: chartCategorySchema.default('manual'),
     active: z.boolean(),
   })
   .strict();
 export type CatalogEntry = {
+  chartCategory?: z.infer<typeof chartCategorySchema>;
   id: string;
   revision: number;
   name: string;
@@ -589,6 +592,7 @@ export const treatmentPlanSchema = z
       c.addIssue({ code: 'custom', message: 'Acte en double.' });
   });
 export type TreatmentItem = {
+  chartCategory?: z.infer<typeof chartCategorySchema>;
   id: string;
   procedureId: string;
   catalogRevision: number;
@@ -751,5 +755,92 @@ export const noteDraftSchema = z
     commandId: z.uuid(),
     revision: z.number().int().nonnegative(),
     text: z.string().max(30000),
+  })
+  .strict();
+
+export const medicationCommandSchema = z
+  .object({
+    commandId: z.uuid(),
+    id: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    name: z.string().trim().min(1).max(160),
+    strength: z.string().trim().max(100),
+    form: z.string().trim().max(100),
+    active: z.boolean(),
+  })
+  .strict();
+export type MedicationEntry = Omit<
+  z.infer<typeof medicationCommandSchema>,
+  "commandId"
+>;
+export const prescriptionMedicineSchema = z
+  .object({
+    name: z.string().trim().min(1).max(160),
+    strength: z.string().trim().max(100),
+    form: z.string().trim().max(100),
+    dose: z.string().trim().min(1).max(200),
+    route: z.string().trim().min(1).max(100),
+    frequency: z.string().trim().min(1).max(200),
+    duration: z.string().trim().min(1).max(200),
+    quantity: z.string().trim().max(100),
+    instructions: z.string().trim().max(2000),
+  })
+  .strict();
+export const prescriptionContentSchema = z
+  .object({
+    medicines: z.array(prescriptionMedicineSchema).min(1).max(30),
+    instructions: z.string().trim().max(5000),
+  })
+  .strict();
+export const prescriptionDraftSchema = z
+  .object({
+    commandId: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    content: prescriptionContentSchema,
+    reason: z.string().trim().max(1000).default(""),
+  })
+  .strict();
+export type PrescriptionContent = z.infer<typeof prescriptionContentSchema> & {
+  reason: string;
+  issued?: {
+    patientName: string;
+    patientNumber: number;
+    clinicName: string;
+    header: string;
+    footer: string;
+    prescriberName: string;
+    prescriberId: string;
+    issuedAt: string;
+  };
+  replaces: number | null;
+};
+export type Prescription = ClinicalRecord<PrescriptionContent> & { id: string };
+export const prescriptionTemplateSchema = z
+  .object({
+    commandId: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    header: z.string().trim().max(2000),
+    footer: z.string().trim().max(2000),
+  })
+  .strict();
+export type PrescriptionTemplate = {
+  revision: number;
+  header: string;
+  footer: string;
+};
+
+export type ChartSuggestion = {
+  id: string;
+  name: string;
+  category: Exclude<z.infer<typeof chartCategorySchema>, "manual">;
+  teeth: string[];
+  status: "pending" | "confirmed" | "dismissed";
+};
+export const chartSuggestionSchema = z
+  .object({
+    commandId: z.uuid(),
+    chartRevision: z.number().int().nonnegative(),
+    action: z.enum(["confirm", "dismiss"]),
+    targets: z.array(chartContentSchema.shape.teeth.element).max(52),
   })
   .strict();

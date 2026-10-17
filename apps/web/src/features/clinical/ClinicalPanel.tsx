@@ -1,3 +1,5 @@
+import {SuggestionsPanel} from './SuggestionsPanel.js';
+import {PrescriptionsPanel} from './PrescriptionsPanel.js';
 import {TreatmentPanel} from '../treatment/TreatmentPanel.js';
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -122,6 +124,9 @@ function ClinicalRecord({
     const refresh = () => {
       setConnected(true);
       void cache.invalidateQueries({ queryKey: ['clinical', accountKey, id] });
+      void cache.invalidateQueries({ queryKey: ['prescriptions'] });
+      void cache.invalidateQueries({ queryKey: ['medications'] });
+      void cache.invalidateQueries({ queryKey: ['chart-suggestions'] });
       void cache.invalidateQueries({
         queryKey: ['clinical-patients', accountKey],
       });
@@ -131,6 +136,9 @@ function ClinicalRecord({
     stream.onerror = () => {
       setConnected(false);
       void cache.invalidateQueries({ queryKey: ['clinical', accountKey, id] });
+      void cache.invalidateQueries({ queryKey: ['prescriptions'] });
+      void cache.invalidateQueries({ queryKey: ['medications'] });
+      void cache.invalidateQueries({ queryKey: ['chart-suggestions'] });
     };
     return () => {
       stream.close();
@@ -199,6 +207,8 @@ function ClinicalRecord({
           </section>
         );
       })}
+      <SuggestionsPanel patientId={id} identity={identity} chartRevision={query.data.chart.revision}/>
+      <PrescriptionsPanel patientId={id} identity={identity} onLock={onLock}/>
       <TreatmentPanel id={id} identity={identity} onLock={onLock}/>
       <p>{t.noBilling}</p>
     </div>

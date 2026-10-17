@@ -379,6 +379,7 @@ export class TreatmentService {
             procedureId: procedure.id,
             catalogRevision: previous?.catalogRevision ?? procedure.revision,
             name: previous?.name ?? procedure.name,
+            chartCategory: previous?.chartCategory ?? procedure.chartCategory as TreatmentItem['chartCategory'],
             durationMinutes:
               previous?.durationMinutes ?? procedure.durationMinutes,
             scope: input.scope,
@@ -534,6 +535,7 @@ export class TreatmentService {
           name: data.name,
           currency: data.currency,
           durationMinutes: data.durationMinutes,
+          chartCategory: data.chartCategory,
           active: data.active,
         };
         const saved = await r.put({

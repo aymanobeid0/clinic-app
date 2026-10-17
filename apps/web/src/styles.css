@@ -570,7 +570,7 @@ summary {
 .plan-version li {margin-block: 8px;}
 .treatment textarea {inline-size: 100%; min-block-size: 88px;}
 @media print {
-  body > :not(.plan-print) {display: none !important;}
+  body:not(.printing-prescription) > :not(.plan-print) {display: none !important;}
   .plan-print {display: block; position: static; inline-size: auto; max-block-size: none; overflow: visible; border: 0; padding: 0; margin: 0; background: white; color: black;}
   .plan-print .no-print {display:none !important;}
   .plan-print::backdrop {background: transparent;}
@@ -612,4 +612,32 @@ summary {
 .note-editor article {
   border-block-end: 1px solid var(--border);
   padding-block: 8px;
+}
+
+.prescription-version {
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-block: 12px;
+  overflow-wrap: anywhere;
+  background: var(--surface);
+}
+@media print {
+  body.printing-prescription * {
+    visibility: hidden;
+  }
+  body.printing-prescription .prescription-print.printing,
+  body.printing-prescription .prescription-print.printing * {
+    visibility: visible;
+  }
+  .prescription-print.printing {
+    position: absolute;
+    inset: 0;
+    background: white;
+  }
+  .prescription-print .no-print {
+    display: none;
+  }
+  .prescription-version {
+    border: 0;
+  }
 }
