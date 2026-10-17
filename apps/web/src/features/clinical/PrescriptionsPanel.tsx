@@ -6,7 +6,7 @@ import { HttpError } from "../identity/identity.api.js";
 import { PrescriptionEditor } from "./PrescriptionEditor.js";
 import { PrescriptionPrint, PrescriptionVersion } from "./PrescriptionPrint.js";
 import { prescriptionMessages as t } from "./prescription.messages.js";
-export function PrescriptionsPanel({
+function PrescriptionList({
   patientId,
   identity,
   onLock,
@@ -140,4 +140,9 @@ export function PrescriptionsPanel({
       )}
     </section>
   );
+}
+
+export function PrescriptionsPanel(props:Parameters<typeof PrescriptionList>[0]){
+ const [initialized,setInitialized]=useState(false);
+ return <details onToggle={e=>{if(e.currentTarget.open)setInitialized(true);}}><summary>{t.title}</summary>{initialized&&<PrescriptionList {...props}/>}</details>;
 }

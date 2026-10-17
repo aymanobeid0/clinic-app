@@ -19,7 +19,7 @@ const labels = {
   root_canal: "Traitement canalaire",
   implant: "Implant",
 };
-export function SuggestionsPanel({
+function SuggestionList({
   patientId,
   identity,
   chartRevision,
@@ -157,4 +157,9 @@ function Suggestion({
       )}
     </div>
   );
+}
+
+export function SuggestionsPanel(props:Parameters<typeof SuggestionList>[0]){
+ const [initialized,setInitialized]=useState(false);
+ return <details onToggle={e=>{if(e.currentTarget.open)setInitialized(true);}}><summary>{t.title}</summary>{initialized&&<SuggestionList {...props}/>}</details>;
 }

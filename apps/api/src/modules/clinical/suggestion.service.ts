@@ -150,7 +150,7 @@ export class SuggestionService {
         return { clinicId: c.clinicId, value };
       },
     );
-    this.updates.publish(result.clinicId);
+    this.updates.publish(result.clinicId,'suggestions:'+patientId);
     return result.value;
   }
 }

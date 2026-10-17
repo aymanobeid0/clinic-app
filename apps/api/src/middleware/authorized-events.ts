@@ -5,7 +5,7 @@ export function authorizedEvents(
   authorize: (actor: Actor | undefined) => Promise<string>,
   updates: ClinicUpdates,
   now: () => number,
-  scope?: string,
+  scope?: string | Readonly<Record<string,string>>,
 ): RequestHandler {
   return async (req, res) => {
     const actor = req.session.actor;
@@ -19,12 +19,12 @@ export function authorizedEvents(
     });
     res.flushHeaders();
     let checking = false;
-    let pendingInvalidation = false;
+    const pendingInvalidations = new Set<string|undefined>();
     let closed = false;
-    const verify = async (invalidate: boolean) => {
+    const verify = async (invalidate: boolean, eventScope?:string) => {
       if (closed) return;
       if (checking) {
-        pendingInvalidation ||= invalidate;
+        if(invalidate) pendingInvalidations.add(eventScope);
         return;
       }
       checking = true;
@@ -43,21 +43,22 @@ export function authorizedEvents(
         await authorize(req.session.actor);
         if (!closed)
           res.write(
-            invalidate ? 'event: invalidate\ndata: {}\n\n' : ': heartbeat\n\n',
+            invalidate ? 'event: invalidate\ndata: '+JSON.stringify(eventScope?{scope:eventScope}:{})+'\n\n' : ': heartbeat\n\n',
           );
       } catch {
         if (!closed) res.end();
         cleanup();
       } finally {
         checking = false;
-        if (pendingInvalidation && !closed) {
-          pendingInvalidation = false;
-          void verify(true);
+        if (pendingInvalidations.size && !closed) {
+          const nextScope=pendingInvalidations.values().next().value;
+          pendingInvalidations.delete(nextScope);
+          void verify(true,nextScope);
         }
       }
     };
     const unsubscribe = updates.subscribe(clinicId, (changedScope) => {
-      if (!changedScope || changedScope === scope) void verify(true);
+      if (!changedScope || changedScope === scope || typeof scope==='object' && changedScope in scope) void verify(true,changedScope&&typeof scope==='object'?scope[changedScope]:undefined);
     });
     const timer = setInterval(() => {
       void verify(false);

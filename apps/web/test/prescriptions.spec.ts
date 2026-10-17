@@ -241,6 +241,7 @@ test("French medication autocomplete, independent manual retry, issuance, retain
       name: `Ouvrir le dossier n°${p.patientNumber} — ${p.name}`,
     })
     .click();
+  await page.getByText("Ordonnances",{exact:true}).click();
   const section = page.getByRole("region", {
     name: "Ordonnances",
     exact: true,
@@ -326,7 +327,7 @@ test("French medication autocomplete, independent manual retry, issuance, retain
   );
   await page.evaluate(() => {
     window.print = () => {
-      document.documentElement.dataset.printCalled = "true";
+      document.documentElement.dataset.printCalled = String(Number(document.documentElement.dataset.printCalled??0)+1);
     };
   });
   await section
@@ -334,7 +335,7 @@ test("French medication autocomplete, independent manual retry, issuance, retain
     .click();
   await expect(page.locator("html")).toHaveAttribute(
     "data-print-called",
-    "true",
+    "1",
   );
   await section.getByLabel("Motif de correction").fill("Correction documentée");
   await section.getByLabel("Instructions générales").fill("Consigne corrigée");
@@ -349,11 +350,13 @@ test("French medication autocomplete, independent manual retry, issuance, retain
   await expect(
     section.getByText(/REMPLACÉE — version conservée/).first(),
   ).toBeVisible();
-  const preview=section.locator('.prescription-print').first();
+  await section.getByRole('button',{name:'Imprimer l’ordonnance affichée'}).click();
+  await expect(page.locator('html')).toHaveAttribute('data-print-called','2');
+  const preview=page.locator('.prescription-print').first();
   await preview.evaluate(el=>{el.classList.add('printing');document.body.classList.add('printing-prescription');});
   await page.emulateMedia({media:'print'});
   expect(await preview.evaluate(el=>getComputedStyle(el).visibility)).toBe('visible');
-  expect(await page.getByRole('heading',{name:'Clinique patients fictifs'}).evaluate(el=>getComputedStyle(el).visibility)).toBe('hidden');
+  expect(await page.getByRole('heading',{name:'Clinique patients fictifs',includeHidden:true}).evaluate(el=>getComputedStyle(el).visibility)).toBe('hidden');
   await preview.screenshot({path:test.info().outputPath('prescription-print.png')});
   await page.emulateMedia({media:'screen'});
   await preview.evaluate(el=>{el.classList.remove('printing');document.body.classList.remove('printing-prescription');});
@@ -482,7 +485,7 @@ test("French chart suggestion requires explicit valid FDI confirmation and suppo
       })
     ).status,
   ).toBe(200);
-  for (const [index, item] of plan.items.entries())
+  for (const [index, item] of plan.items.slice(0,1).entries())
     expect(
       (
         await send(path + "/actions", {
@@ -501,6 +504,7 @@ test("French chart suggestion requires explicit valid FDI confirmation and suppo
       name: `Ouvrir le dossier n°${p.patientNumber} — ${p.name}`,
     })
     .click();
+  await page.getByText("Suggestions du schéma",{exact:true}).click();
   const panel = page.getByRole("region", {
     name: "Suggestions du schéma",
     exact: true,
@@ -516,9 +520,30 @@ test("French chart suggestion requires explicit valid FDI confirmation and suppo
     .getByRole("button", { name: "Confirmer la suggestion" })
     .click();
   await expect(panel.getByText(/Confirmée/)).toBeVisible();
+  expect((await send(path+'/actions',{commandId:randomUUID(),id,revision:2,action:'complete',planId,itemId:plan.items[1].id})).status).toBe(200);
+  await expect(forms).toHaveCount(1);
   await forms
     .last()
     .getByRole("button", { name: "Ignorer la suggestion" })
     .click();
   await expect(panel.getByText(/Ignorée/)).toBeVisible();
+});
+
+test('two PCs refresh the selected prescription without invalidating another patient',async({page,browser})=>{
+ const p=await grant(),other=await grant();
+ const client=request.agent('http://127.0.0.1:3000');let token=(await client.get('/api/session')).body.csrfToken;
+ const send=(path:string,body:object)=>client.post('/api/'+path).set('Origin','http://127.0.0.1:4173').set('x-csrf-token',token).send(body);
+ token=(await send('sign-in',{method:'clinic_username',clinicCode:code,username:'doctor',password:'Fictional-doctor-personal'})).body.csrfToken;
+ const secondContext=await browser.newContext(),second=await secondContext.newPage();second.on('dialog',d=>d.accept());
+ try{
+ await loginDoctor(page);await page.getByRole('button',{name:`Ouvrir le dossier n°${p.patientNumber} — ${p.name}`}).click();await page.getByText('Ordonnances',{exact:true}).click();
+ await loginDoctor(second);await second.getByRole('button',{name:`Ouvrir le dossier n°${other.patientNumber} — ${other.name}`}).click();await second.getByText('Ordonnances',{exact:true}).click();await expect(second.getByText('Aucune ordonnance.',{exact:true})).toBeVisible();
+ let unrelatedReads=0;second.on('request',r=>{if(new URL(r.url()).pathname===`/api/clinical/${other.id}/prescriptions`)unrelatedReads++;});
+ const id=randomUUID(),path=`clinical/${p.id}/prescriptions/${id}`,content={medicines:[{name:'Fictif isolé',strength:'',form:'',dose:'Dose manuelle',route:'Voie manuelle',frequency:'Fréquence manuelle',duration:'Durée manuelle',quantity:'',instructions:''}],instructions:'Avant modification distante'};
+ expect((await send(path+'/draft',{commandId:randomUUID(),revision:0,content})).status).toBe(200);
+ await page.getByRole('button',{name:'Ouvrir l’ordonnance '+id.slice(0,8)}).click();await expect(page.getByLabel('Instructions générales')).toHaveValue('Avant modification distante');expect(unrelatedReads).toBe(0);
+ await second.getByRole('button',{name:`Ouvrir le dossier n°${p.patientNumber} — ${p.name}`}).click();await expect(second.getByRole('heading',{name:`Dossier n°${p.patientNumber} — ${p.name}`,exact:true})).toBeVisible();await second.locator('summary').filter({hasText:/^Ordonnances$/}).click();await second.getByRole('button',{name:'Ouvrir l’ordonnance '+id.slice(0,8)}).click();
+ expect((await send(path+'/draft',{commandId:randomUUID(),revision:1,content:{...content,instructions:'Modification depuis un autre poste'}})).status).toBe(200);
+ await expect(page.getByLabel('Instructions générales')).toHaveValue('Modification depuis un autre poste');await expect(second.getByLabel('Instructions générales')).toHaveValue('Modification depuis un autre poste');
+ }finally{await secondContext.close();}
 });

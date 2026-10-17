@@ -124,21 +124,21 @@ function ClinicalRecord({
     const refresh = () => {
       setConnected(true);
       void cache.invalidateQueries({ queryKey: ['clinical', accountKey, id] });
-      void cache.invalidateQueries({ queryKey: ['prescriptions'] });
-      void cache.invalidateQueries({ queryKey: ['medications'] });
-      void cache.invalidateQueries({ queryKey: ['chart-suggestions'] });
       void cache.invalidateQueries({
         queryKey: ['clinical-patients', accountKey],
       });
     };
-    stream.addEventListener('invalidate', refresh);
-    stream.onopen = refresh;
+    stream.addEventListener('invalidate', (event) => {
+      const scope=(JSON.parse((event as MessageEvent<string>).data) as {scope?:string}).scope;
+      if(scope==='prescriptions')void cache.invalidateQueries({queryKey:['prescriptions']});
+      else if(scope==='medications')void cache.invalidateQueries({queryKey:['medications']});
+      else if(scope==='suggestions'){void cache.invalidateQueries({queryKey:['chart-suggestions']});void cache.invalidateQueries({queryKey:['clinical',accountKey,id]});}
+      else refresh();
+    });
+    stream.onopen = () => {refresh();void cache.invalidateQueries({queryKey:['prescriptions']});void cache.invalidateQueries({queryKey:['chart-suggestions']});void cache.invalidateQueries({queryKey:['medications']});};
     stream.onerror = () => {
       setConnected(false);
       void cache.invalidateQueries({ queryKey: ['clinical', accountKey, id] });
-      void cache.invalidateQueries({ queryKey: ['prescriptions'] });
-      void cache.invalidateQueries({ queryKey: ['medications'] });
-      void cache.invalidateQueries({ queryKey: ['chart-suggestions'] });
     };
     return () => {
       stream.close();

@@ -206,7 +206,7 @@ export class PrescriptionService {
         };
       },
     );
-    this.updates.publish(result.clinicId);
+    this.updates.publish(result.clinicId,'prescriptions:'+patientId);
     return result.value;
   }
 }

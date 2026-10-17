@@ -154,6 +154,7 @@ export class VisitService {
       },
     );
     this.updates.publish(result.clinicId);
+    if(data.action==='complete')this.updates.publish(result.clinicId,'suggestions:'+patientId);
     return result.value;
   }
   async start(

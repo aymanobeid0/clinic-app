@@ -13,11 +13,12 @@ import {
   CommandState,
 } from "../treatment/useTreatmentCommand.js";
 export function MedicationPanel({ identity }: { identity: Identity }) {
+  const [initialized,setInitialized]=useState(false);
   const allowed =
     identity.isManager ||
     (identity.kind === "doctor" &&
       identity.permissions.includes("prescriptions.sign"));
-  return allowed ? <MedicationList identity={identity} /> : null;
+  return allowed ? <details onToggle={e=>{if(e.currentTarget.open)setInitialized(true);}}><summary>{r.title}</summary>{initialized&&<MedicationList identity={identity}/>}</details> : null;
 }
 function MedicationList({ identity }: { identity: Identity }) {
   const cache = useQueryClient(),
@@ -38,7 +39,6 @@ function MedicationList({ identity }: { identity: Identity }) {
       void cache.invalidateQueries({ queryKey: ["medications"] });
     };
     stream.addEventListener("invalidate", refresh);
-    stream.onopen = refresh;
     stream.onerror = refresh;
     return () => stream.close();
   }, [cache]);

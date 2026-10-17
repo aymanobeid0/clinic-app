@@ -81,7 +81,7 @@ export class MedicationService {
         return { clinicId: c.clinicId, value };
       },
     );
-    this.updates.publish(result.clinicId);
+    this.updates.publish(result.clinicId,'medications');
     return result.value;
   }
   async saveTemplate(
