@@ -24,7 +24,8 @@
     "42": "merged",
     "43": "merged",
     "44": "merged",
-    "45": "merged"
+    "45": "merged",
+    "46": "open"
   },
   "implementation": {
     "issue": 16,
@@ -54,7 +55,7 @@
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings",
-    "publication": "Review and handoff complete; PR publication pending",
+    "publication": "Open PR46 https://github.com/aymanobeid0/clinic-app/pull/46; attached; human review/manual merge required",
     "limitations": [
       "current-tab memory does not survive closing the tab",
       "per-visit database reads/history growth and multi-user request budget unbenchmarked",

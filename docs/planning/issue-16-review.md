@@ -29,3 +29,5 @@ Long-record per-visit database reads/history growth and clinic multi-user reques
 Independent fresh-database results follow before publication.
 
 Root independently recreated only the fictional PostgreSQL project, applied all20 migrations from scratch and ran `node node_modules/vitest/vitest.mjs run apps/api/test/visits.test.ts apps/api/test/clinical.test.ts apps/api/test/patient-access.test.ts` on c0ad508: **32/32 PASS across3files in63.74s**, exit0. Durable logs: real OS-temp clinic-16-review-migrate.log and clinic-16-review-api.log. No independent fullbaseline/browser rerun claimed. Summary: Standards0 and Spec0 residual material findings; ready for human review.
+
+Publication: PR46 https://github.com/aymanobeid0/clinic-app/pull/46 is OPEN, non-draft and MERGEABLE against main; attached to this chat. Only documentation follows the reviewed application commit. Disposable database stopped; builder API/Vite ports cleared. One-time implement-clinic-issue-16 automation PAUSED. Human review/manual merge remains the next step; no later issue authorized.
