@@ -26,7 +26,8 @@
     "44": "merged",
     "45": "merged",
     "46": "merged",
-    "47": "merged"
+    "47": "merged",
+    "48": "open"
   },
   "implementation": {
     "issue": 17,
@@ -75,13 +76,14 @@
     "branch": "codex/local-dev-runner",
     "base": "921b3faca47cc3515dbe17f297d93f23b6bbaca3",
     "runtimeCommit": "8919d5f",
-    "state": "reviewed; PR publication pending",
+    "state": "Open non-draft PR48; attached; human review/manual merge required",
     "url": "http://127.0.0.1:5173",
     "evidence": "local-dev-implementation.md",
     "review": "local-dev-review.md",
     "checks": {
       "builder": "API114/114; typecheck/lint/build pass",
       "independent": "real proxy/login/scopes; stop/restart persistence; production/remote/mismatch/duplicate guards pass"
-    }
+    },
+    "pullRequest": "https://github.com/aymanobeid0/clinic-app/pull/48"
   }
 }
