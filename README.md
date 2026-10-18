@@ -1,4 +1,4 @@
-# Clinic app â€” implementation in progress
+# Clinic app — implementation in progress
 
 Issues #7/#8/#9 are merged/closed through PR #35/#36/#38. Issue #9 adds permission-controlled patient registration, contact search/editing, duplicate warnings, archive/reactivation and essential per-record history, with functional French forms and SSE invalidation. No public clinic registration. Live patient data, deployment, live migrations and live email are not authorized.
 
@@ -43,7 +43,7 @@ The API requires DATABASE_URL, SESSION_SECRET and APP_ORIGIN. DATABASE_URL must 
 
 `npm run provision` is an operator-only stdin JSON tool, not an HTTP registration endpoint. Set PROVISION_DATABASE_URL out of band to the authorized owner connection. Input includes clinicCode, clinicName, username, displayName, globally unique email and temporaryPassword. Use secure stdin rather than command arguments or committed files. Primary managers authenticate by normalized email/password. Before that email is verified, only restricted activation is available; verification must use the provisioned address. Employees and doctors promoted to manager authenticate by clinic code/username/password. Login method and manager authority are independent. Existing pre-amendment manager accounts retain username login until a separately authorized operator conversion; no address is guessed or trusted automatically.
 
-The temporary password expires after 24 hours and must be replaced before access; replacement revokes all sessions and requires sign-in again. Initial password validation accepts 12â€“128 characters without changing the owner's account/recovery lifecycle.
+The temporary password expires after 24 hours and must be replaced before access; replacement revokes all sessions and requires sign-in again. Initial password validation accepts 12–128 characters without changing the owner's account/recovery lifecycle.
 
 A replaceable mail adapter is accepted by createApplication. The shipped runtime intentionally has no live provider adapter; verification returns 503 until delivery is configured. No fake verification fallback exists in the runtime. Test-only delivery proves the onboarding flow, not live email readiness. Verification URLs use fragments so tokens are not sent in HTTP request URLs; verification remains an authenticated, CSRF-protected POST. Code regeneration requires the current password and invalidates the previous batch; losing the one-time display requires regeneration. Manager recovery consumption and staff administration are implemented in #8. The mail adapter additionally supports sendRecovery and sendNotification; recovery/email replacement remains blocked where the required delivery method is absent.
 
