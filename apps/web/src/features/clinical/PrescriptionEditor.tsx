@@ -70,7 +70,7 @@ export function PrescriptionEditor({
         )}
         <button>{t.save}</button>
       </fieldset>
-      <p role="status">{e.busy ? t.saving : e.dirty ? t.unsaved : t.saved}</p>
+      <p role="status">{e.busy ? t.saving : e.dirty ? t.unsaved : e.revision === 0 ? t.newDraft : t.saved}</p>
       {e.error && <p role="alert">{e.error}</p>}
       {e.uncertain && (
         <button type="button" disabled={e.busy} onClick={() => void e.save()}>

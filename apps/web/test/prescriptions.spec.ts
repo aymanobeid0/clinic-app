@@ -249,6 +249,8 @@ test("French medication autocomplete, independent manual retry, issuance, retain
   await section
     .getByRole("button", { name: "Nouvelle ordonnance", exact: true })
     .click();
+  await expect(section.getByText("Brouillon non enregistré", {exact:true})).toBeVisible();
+  await expect(section.getByText("Brouillon enregistré", {exact:true})).toHaveCount(0);
   await section.getByLabel("Médicament", { exact: true }).fill("Référence");
   await section
     .getByRole("button", {

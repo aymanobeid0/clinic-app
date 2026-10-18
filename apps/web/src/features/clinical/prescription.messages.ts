@@ -27,6 +27,7 @@ export const prescriptionMessages = {
   print: "Imprimer cette version",
   history: "Versions conservées",
   saved: "Brouillon enregistré",
+  newDraft: "Brouillon non enregistré",
   saving: "Enregistrement…",
   unsaved: "Modifications non enregistrées",
   compare: "Comparer avec le serveur",
