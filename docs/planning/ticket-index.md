@@ -1,5 +1,7 @@
 # Spec 001 — published implementation tickets
 
+> Recovery — 2026-10-18: this table is the original publication index. Use [the reconciled ownership map](recovery-reconciliation.md) and [recovery tickets](recovery-ticket-index.md) for current backend/logic/UI scope. Original issue closure does not establish final UI acceptance.
+
 Current execution status: [delivery-status.md](delivery-status.md). ticket-publication.json is the original publication payload, not a live issue-status tracker. Native blocker links are retained even after their issues close.
 
 Parent specification: https://github.com/aymanobeid0/clinic-app/issues/1

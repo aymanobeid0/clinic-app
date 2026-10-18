@@ -1,5 +1,9 @@
 # Current delivery status
 
+## Recovery correction — 2026-10-18
+
+Existing feature evidence below establishes implemented behavior and historical checks, not the approved final Dentara UI or a completed backend. The owner authorized tracker reconciliation under #50, following Spec #49. Current order: remaining backend/API (#18–#27) → backend evidence gate (#51) → separate frontend business logic (#52–#59) → separately authorized components/pages/routing/main app (#60–#75) → connected verification/scaffold retirement (#76). See [the requirement ownership map](recovery-reconciliation.md). The current scaffold is an internal development consumer. No application/UI implementation, deletion, deployment, pilot start or automatic progression is authorized by this reconciliation. #50 remains open for human acceptance; operational and real-data gates remain separate.
+
 As of 2026-10-18 (Africa/Bamako). Planning #2–#6 owner-approved/closed. PR46 is merged in main cd678de; earlier evidence remains in the per-ticket reports.
 
 Owner-authorized #17 is implemented on codex/issue-17-prescriptions. Application8b4ebdf adds independent French prescription drafts, doctor issuance, retained corrections and authorized selected-version printing; clinic medication reference lookup/explicit management remains independent of saved prescriptions. Supported completed procedures suggest chart changes requiring explicit dentist confirmation.

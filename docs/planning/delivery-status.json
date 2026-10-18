@@ -85,5 +85,51 @@
       "independent": "real proxy/login/scopes; stop/restart persistence; production/remote/mismatch/duplicate guards pass"
     },
     "pullRequest": "https://github.com/aymanobeid0/clinic-app/pull/48"
+  },
+  "recovery": {
+    "specification": 49,
+    "reconciliation": 50,
+    "stage": "tracker-reconciliation-awaiting-review-and-human-acceptance",
+    "backendGate": 51,
+    "frontendLogic": [
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59
+    ],
+    "deferredProductUi": [
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75
+    ],
+    "connectedVerification": 76,
+    "productUiCodingAuthorized": false,
+    "applicationImplementationAuthorized": false,
+    "evidence": "recovery-reconciliation.md",
+    "order": [
+      "backend/API",
+      "frontend business logic",
+      "components",
+      "pages",
+      "app routing",
+      "main app"
+    ]
   }
 }

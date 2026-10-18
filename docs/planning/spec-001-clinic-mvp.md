@@ -1,5 +1,7 @@
 # Spec 001 — Dental clinic management MVP
 
+> Recovery execution — 2026-10-18: Spec #49 and the owner's subsequent clarification supersede the original simultaneous backend/UI delivery order. This remains the product baseline; later approved identity/clinical/financial/file decisions govern conflicting earlier wording. See [the recovery reconciliation](recovery-reconciliation.md) for layer ownership, current gates and preserved outstanding UI requirements.
+
 Date: 2026-10-10
 Status: first specification; product baseline and testing seams confirmed. Published as https://github.com/aymanobeid0/clinic-app/issues/1 with label ready-for-agent.
 Scope: French-language online pilot for a single-location clinic in Mauritania.
