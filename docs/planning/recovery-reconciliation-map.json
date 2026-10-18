@@ -1,0 +1,285 @@
+[
+  {
+    "number": 7,
+    "logic": [
+      52
+    ],
+    "ui": [
+      60
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 8,
+    "logic": [
+      52
+    ],
+    "ui": [
+      60,
+      74
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 9,
+    "logic": [
+      53
+    ],
+    "ui": [
+      61
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 10,
+    "logic": [
+      53
+    ],
+    "ui": [
+      62
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 11,
+    "logic": [
+      53,
+      55
+    ],
+    "ui": [
+      65
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 12,
+    "logic": [
+      54
+    ],
+    "ui": [
+      63,
+      75
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 13,
+    "logic": [
+      53,
+      55
+    ],
+    "ui": [
+      64,
+      65,
+      74
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 14,
+    "logic": [
+      55
+    ],
+    "ui": [
+      64,
+      68
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 15,
+    "logic": [
+      56
+    ],
+    "ui": [
+      66
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 16,
+    "logic": [
+      56,
+      59
+    ],
+    "ui": [
+      66,
+      73
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 17,
+    "logic": [
+      56
+    ],
+    "ui": [
+      67,
+      74
+    ],
+    "originalBlockers": []
+  },
+  {
+    "number": 18,
+    "logic": [
+      54,
+      57
+    ],
+    "ui": [
+      75
+    ],
+    "originalBlockers": [
+      12,
+      14,
+      16,
+      17,
+      23
+    ]
+  },
+  {
+    "number": 19,
+    "logic": [
+      54
+    ],
+    "ui": [
+      68,
+      64
+    ],
+    "originalBlockers": [
+      6,
+      10
+    ]
+  },
+  {
+    "number": 20,
+    "logic": [
+      57
+    ],
+    "ui": [
+      69
+    ],
+    "originalBlockers": [
+      4,
+      15
+    ]
+  },
+  {
+    "number": 21,
+    "logic": [
+      57
+    ],
+    "ui": [
+      69
+    ],
+    "originalBlockers": [
+      20
+    ]
+  },
+  {
+    "number": 22,
+    "logic": [
+      57
+    ],
+    "ui": [
+      70
+    ],
+    "originalBlockers": [
+      21
+    ]
+  },
+  {
+    "number": 23,
+    "logic": [
+      57
+    ],
+    "ui": [
+      70
+    ],
+    "originalBlockers": [
+      22
+    ]
+  },
+  {
+    "number": 24,
+    "logic": [
+      58
+    ],
+    "ui": [
+      71
+    ],
+    "originalBlockers": [
+      8
+    ]
+  },
+  {
+    "number": 25,
+    "logic": [
+      58
+    ],
+    "ui": [
+      72
+    ],
+    "originalBlockers": [
+      24
+    ]
+  },
+  {
+    "number": 26,
+    "logic": [
+      59
+    ],
+    "ui": [
+      60,
+      73
+    ],
+    "originalBlockers": [
+      16,
+      23,
+      25
+    ]
+  },
+  {
+    "number": 27,
+    "logic": [
+      59
+    ],
+    "ui": [
+      73
+    ],
+    "originalBlockers": [
+      6,
+      18,
+      19,
+      23,
+      25
+    ]
+  },
+  {
+    "number": 28,
+    "logic": [],
+    "ui": [],
+    "originalBlockers": [
+      2,
+      6,
+      19,
+      21,
+      25
+    ]
+  },
+  {
+    "number": 29,
+    "logic": [],
+    "ui": [
+      76
+    ],
+    "originalBlockers": [
+      17,
+      18,
+      22,
+      23,
+      26,
+      27,
+      28
+    ]
+  }
+]

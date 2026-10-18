@@ -1,0 +1,278 @@
+[
+  {
+    "key": "R1",
+    "title": "Reconcile recovery requirements and preserve a baseline",
+    "deps": [],
+    "delivery": "Record one capability map separating backend/API evidence, frontend logic and missing UI; preserve a recoverable baseline and unrelated changes.",
+    "criteria": "Map original UI criteria to future page tickets without treating backend acceptance as full feature completion. Reconcile stale historical-access and attachment wording against approved owner amendments."
+  },
+  {
+    "key": "R2",
+    "title": "Verify the completed backend/API",
+    "deps": [
+      "R1",
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27
+    ],
+    "delivery": "Demonstrate the complete MVP API using authenticated workflows, stable contracts and isolated PostgreSQL.",
+    "criteria": "Record backend acceptance independently of issue closure or UI completion. Verify fresh migrations, permissions/isolation, retries, conflicts, relevant concurrency and required checks; identify unresolved operational gates."
+  },
+  {
+    "key": "R3",
+    "title": "Separate identity, session and account business logic",
+    "deps": [
+      "R2"
+    ],
+    "delivery": "Expose presentation-independent login, onboarding, recovery, account administration, permission and session behavior.",
+    "criteria": "Test successful and denied transitions, account/clinic switching and sensitive cache cleanup. Preserve existing API contracts and keep credentials out of logs/storage."
+  },
+  {
+    "key": "R4",
+    "title": "Separate patient, assignment and appointment business logic",
+    "deps": [
+      "R3"
+    ],
+    "delivery": "Expose patient registration/search/archive, assignment/sharing and booking/status workflows without product UI.",
+    "criteria": "Verify duplicate warnings, valid shared phones, authorized scopes, scheduling conflicts, retries and cache invalidation."
+  },
+  {
+    "key": "R5",
+    "title": "Separate clinical record and attachment business logic",
+    "deps": [
+      "R4"
+    ],
+    "delivery": "Expose medical history, manual dental chart, historical views and authorized attachment operations without product UI.",
+    "criteria": "Verify cutoff/revision selection, validation, quota feedback, denied access and recoverable input/error states."
+  },
+  {
+    "key": "R6",
+    "title": "Separate treatment plan and catalog business logic",
+    "deps": [
+      "R5"
+    ],
+    "delivery": "Expose procedure catalog, proposals, versions, pricing, presentation, acceptance and revision behavior.",
+    "criteria": "Verify accepted versions retain their values; changed scope/prices require renewed acceptance; surface conflict and permission states."
+  },
+  {
+    "key": "R7",
+    "title": "Separate visit, note and prescription business logic",
+    "deps": [
+      "R6"
+    ],
+    "delivery": "Expose care progression, procedure completion, note autosave/finalization/corrections, prescriptions and authorized document operations.",
+    "criteria": "Verify idempotent starts, stale conflicts, tab-memory drafts, explicit chart confirmation and prescription independence from medication references."
+  },
+  {
+    "key": "R8",
+    "title": "Separate billing business logic",
+    "deps": [
+      "R4"
+    ],
+    "delivery": "Expose charges, opening balances, deposits, allocations, receipts, invoices, summaries and corrections through cohesive frontend workflow interfaces.",
+    "criteria": "Verify distinct planned/due/credit and new-money/applied-credit states; explicit consequential actions, error/retry handling and server-authorized document access."
+  },
+  {
+    "key": "R9",
+    "title": "Separate inventory business logic",
+    "deps": [
+      "R3"
+    ],
+    "delivery": "Expose item/supplier settings, receiving, batch availability, consumption and reasoned stock correction workflows.",
+    "criteria": "Verify whole-pack validation, expiry/negative-stock errors, retry handling, authorized state and invalidation."
+  },
+  {
+    "key": "R10",
+    "title": "Separate report, follow-up and export business logic",
+    "deps": [
+      "R7",
+      "R8",
+      "R9"
+    ],
+    "delivery": "Expose authorized operational reports, follow-up tasks, manual sharing and export lifecycle behavior.",
+    "criteria": "Verify scope restrictions, reconciled totals, empty/failure states and no fabricated data. Record the frontend behavior-layer gate across R3–R10."
+  },
+  {
+    "key": "R11",
+    "title": "Build the Dentara shell, dashboard and authentication pages",
+    "deps": [
+      "R10"
+    ],
+    "delivery": "After separate UI-stage authorization, deliver the approved responsive workspace, actual operational dashboard, sidebar/header and designed authentication/onboarding/recovery journeys.",
+    "criteria": "Support direct links, refresh, back/forward, active navigation and denied/not-found states. Every visible destination works; omit unfinished destinations. Historical-only accounts do not enter active-care screens."
+  },
+  {
+    "key": "R12",
+    "title": "Build the patient list and profile pages",
+    "deps": [
+      "R11"
+    ],
+    "delivery": "Deliver the dedicated searchable patient list and profile with registration, editing, archive/reactivation and patient navigation.",
+    "criteria": "Connect established logic through components and pages; demonstrate duplicate warnings, valid shared contacts and role-specific behavior."
+  },
+  {
+    "key": "R13",
+    "title": "Build patient assignment and sharing workflows",
+    "deps": [
+      "R12"
+    ],
+    "delivery": "Deliver understandable patient assignment, explicit sharing/removal and scope-aware navigation.",
+    "criteria": "Verify denied direct navigation and permission changes do not expose unauthorized patient data or stale cached records."
+  },
+  {
+    "key": "R14",
+    "title": "Build medical history and dental chart pages",
+    "deps": [
+      "R13"
+    ],
+    "delivery": "Deliver the patient clinical workspace, history/allergies, manual chart and essential retained history.",
+    "criteria": "Verify assigned access, supported dentition/tooth/surface states, revision conflicts and clinically restricted views."
+  },
+  {
+    "key": "R15",
+    "title": "Build treatment proposal, version and acceptance pages",
+    "deps": [
+      "R14"
+    ],
+    "delivery": "Deliver plan creation, procedure selection, pricing, presentation, acceptance, retained versions and revisions.",
+    "criteria": "Demonstrate printable proposals, changed-scope acceptance and permission-controlled price changes using existing behavior interfaces."
+  },
+  {
+    "key": "R16",
+    "title": "Build appointment and arrival pages",
+    "deps": [
+      "R12"
+    ],
+    "delivery": "Deliver the appointment workspace with booking/rescheduling, statuses, conflicts and walk-in arrival.",
+    "criteria": "Demonstrate explicit authorized override and preserved history; bookings do not implicitly grant clinical access."
+  },
+  {
+    "key": "R17",
+    "title": "Build visit and clinical note pages",
+    "deps": [
+      "R15",
+      "R16"
+    ],
+    "delivery": "Deliver starting care, selecting/progressing procedures, visit completion and note drafting/finalization/corrections.",
+    "criteria": "Demonstrate save/error/conflict states, retained tab-memory input, pending notes and independent procedure completion."
+  },
+  {
+    "key": "R18",
+    "title": "Build prescription and chart-confirmation workflows",
+    "deps": [
+      "R17"
+    ],
+    "delivery": "Deliver manual prescribing, medication reference lookup, retained corrections, authorized printing and explicit chart-update confirmation.",
+    "criteria": "Demonstrate manual entry during reference failure, preserved prescription text and doctor-only issuance where required."
+  },
+  {
+    "key": "R19",
+    "title": "Build patient attachment workflows",
+    "deps": [
+      "R15"
+    ],
+    "delivery": "Deliver authorized upload/view, quota feedback, acceptance-evidence linking and reasoned logical removal.",
+    "criteria": "Preserve existing-file access at quota, protected history and scope/format/size restrictions; use approved current quota contracts."
+  },
+  {
+    "key": "R20",
+    "title": "Build charges, deposits and settlement pages",
+    "deps": [
+      "R17"
+    ],
+    "delivery": "Deliver the billing workspace with documented opening balances, planned/due separation, debt/credit, manual allocation and receipts.",
+    "criteria": "Demonstrate new money versus existing credit, explicit deposits and safe consequential-action/retry states."
+  },
+  {
+    "key": "R21",
+    "title": "Build invoice, summary and financial correction pages",
+    "deps": [
+      "R20"
+    ],
+    "delivery": "Deliver eligible invoice issue/reprints, whole-plan summaries and reasoned refund/reversal/credit workflows.",
+    "criteria": "Preserve document identity/history; demonstrate settlement eligibility and distinct correction outcomes without automatic refunds."
+  },
+  {
+    "key": "R22",
+    "title": "Build inventory receiving and availability pages",
+    "deps": [
+      "R11"
+    ],
+    "delivery": "Deliver item/supplier setup, whole-pack receiving, batch availability, low-stock thresholds and expiry settings.",
+    "criteria": "Demonstrate real stock data, permissions, expiry boundaries and meaningful empty/error states."
+  },
+  {
+    "key": "R23",
+    "title": "Build inventory consumption and correction pages",
+    "deps": [
+      "R22"
+    ],
+    "delivery": "Deliver batch selection, whole-pack consumption, waste/disposal, count corrections and retained movement history.",
+    "criteria": "Demonstrate expired/negative-stock denial and explicit reasons without treatment-visit linkage."
+  },
+  {
+    "key": "R24",
+    "title": "Build report, follow-up and export pages",
+    "deps": [
+      "R18",
+      "R19",
+      "R21",
+      "R23"
+    ],
+    "delivery": "Deliver scoped operational reports, follow-up tasks, manual sharing and authorized export journeys.",
+    "criteria": "Reconcile totals and authorization; expose true export state/failures, with no advanced BI or automatic delivery."
+  },
+  {
+    "key": "R25",
+    "title": "Build administration and reference catalog pages",
+    "deps": [
+      "R11"
+    ],
+    "delivery": "Deliver staff accounts, permissions, clinic settings, recovery administration and procedure/medication reference management.",
+    "criteria": "Demonstrate admin workflows without granting a non-doctor manager clinical access; catalog changes preserve patient records."
+  },
+  {
+    "key": "R26",
+    "title": "Build the restricted historical workspace",
+    "deps": [
+      "R14",
+      "R15",
+      "R17",
+      "R18",
+      "R21",
+      "R25"
+    ],
+    "delivery": "Deliver restricted historical login, permitted cutoff-bound clinical and own-work financial snapshots under the approved contracts, plus manager grant/revocation workflows.",
+    "criteria": "Exclude later changes and unauthorized operational/edit/print/download/export actions. Apply current owner amendments, not superseded blanket wording."
+  },
+  {
+    "key": "R27",
+    "title": "Retire the scaffold and verify the connected application",
+    "deps": [
+      "R12",
+      "R13",
+      "R14",
+      "R15",
+      "R16",
+      "R17",
+      "R18",
+      "R19",
+      "R20",
+      "R21",
+      "R22",
+      "R23",
+      "R24",
+      "R25",
+      "R26"
+    ],
+    "delivery": "Remove replaced scaffold presentation only after every required journey has a verified real-page replacement; retain/adapt useful tests and complete a fictional-data connected rehearsal.",
+    "criteria": "Record all backend/logic/UI requirement coverage and residual gates. Supply evidence to existing #28/#29 without declaring restoration, deployment or real-patient acceptance complete."
+  }
+]

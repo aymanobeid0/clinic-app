@@ -1,0 +1,295 @@
+[
+  {
+    "key": "R1",
+    "number": 50,
+    "title": "Reconcile recovery requirements and preserve a baseline",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/50",
+    "nativeBlockers": [],
+    "linksComplete": true
+  },
+  {
+    "key": "R2",
+    "number": 51,
+    "title": "Verify the completed backend/API",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/51",
+    "nativeBlockers": [
+      50
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R3",
+    "number": 52,
+    "title": "Separate identity, session and account business logic",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/52",
+    "nativeBlockers": [
+      51
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R4",
+    "number": 53,
+    "title": "Separate patient, assignment and appointment business logic",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/53",
+    "nativeBlockers": [
+      52
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R5",
+    "number": 54,
+    "title": "Separate clinical record and attachment business logic",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/54",
+    "nativeBlockers": [
+      53
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R6",
+    "number": 55,
+    "title": "Separate treatment plan and catalog business logic",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/55",
+    "nativeBlockers": [
+      54
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R7",
+    "number": 56,
+    "title": "Separate visit, note and prescription business logic",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/56",
+    "nativeBlockers": [
+      55
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R8",
+    "number": 57,
+    "title": "Separate billing business logic",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/57",
+    "nativeBlockers": [
+      53
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R9",
+    "number": 58,
+    "title": "Separate inventory business logic",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/58",
+    "nativeBlockers": [
+      52
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R10",
+    "number": 59,
+    "title": "Separate report, follow-up and export business logic",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/59",
+    "nativeBlockers": [
+      56,
+      57,
+      58
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R11",
+    "number": 60,
+    "title": "Build the Dentara shell, dashboard and authentication pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/60",
+    "nativeBlockers": [
+      59
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R12",
+    "number": 61,
+    "title": "Build the patient list and profile pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/61",
+    "nativeBlockers": [
+      60
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R13",
+    "number": 62,
+    "title": "Build patient assignment and sharing workflows",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/62",
+    "nativeBlockers": [
+      61
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R14",
+    "number": 63,
+    "title": "Build medical history and dental chart pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/63",
+    "nativeBlockers": [
+      62
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R15",
+    "number": 64,
+    "title": "Build treatment proposal, version and acceptance pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/64",
+    "nativeBlockers": [
+      63
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R16",
+    "number": 65,
+    "title": "Build appointment and arrival pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/65",
+    "nativeBlockers": [
+      61
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R17",
+    "number": 66,
+    "title": "Build visit and clinical note pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/66",
+    "nativeBlockers": [
+      64,
+      65
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R18",
+    "number": 67,
+    "title": "Build prescription and chart-confirmation workflows",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/67",
+    "nativeBlockers": [
+      66
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R19",
+    "number": 68,
+    "title": "Build patient attachment workflows",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/68",
+    "nativeBlockers": [
+      64
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R20",
+    "number": 69,
+    "title": "Build charges, deposits and settlement pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/69",
+    "nativeBlockers": [
+      66
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R21",
+    "number": 70,
+    "title": "Build invoice, summary and financial correction pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/70",
+    "nativeBlockers": [
+      69
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R22",
+    "number": 71,
+    "title": "Build inventory receiving and availability pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/71",
+    "nativeBlockers": [
+      60
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R23",
+    "number": 72,
+    "title": "Build inventory consumption and correction pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/72",
+    "nativeBlockers": [
+      71
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R24",
+    "number": 73,
+    "title": "Build report, follow-up and export pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/73",
+    "nativeBlockers": [
+      67,
+      68,
+      70,
+      72
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R25",
+    "number": 74,
+    "title": "Build administration and reference catalog pages",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/74",
+    "nativeBlockers": [
+      60
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R26",
+    "number": 75,
+    "title": "Build the restricted historical workspace",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/75",
+    "nativeBlockers": [
+      63,
+      64,
+      66,
+      67,
+      70,
+      74
+    ],
+    "linksComplete": true
+  },
+  {
+    "key": "R27",
+    "number": 76,
+    "title": "Retire the scaffold and verify the connected application",
+    "url": "https://github.com/aymanobeid0/clinic-app/issues/76",
+    "nativeBlockers": [
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75
+    ],
+    "linksComplete": true
+  }
+]
