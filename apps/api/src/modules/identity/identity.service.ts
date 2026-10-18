@@ -267,6 +267,29 @@ export class IdentityService {
     });
   }
 
+  withMedicationReference<T>(
+    actor: Actor | undefined,
+    action: (
+      context: { clinicId: string; accountId: string },
+      tx: import("../../database.js").ClinicTransaction,
+    ) => Promise<T>,
+    manage = true,
+  ) {
+    return this.withReadyAccount(actor, (account, transaction) => {
+      if (
+        !account.isManager &&
+        !(
+          account.kind === "doctor" &&
+          clinicalEligible(account, "prescriptions.sign")
+        ) &&
+        !(!manage && clinicalEligible(account, "prescriptions.draft"))
+      )
+        throw new IdentityError(403, "Gestion des médicaments non autorisée.");
+      return transaction.databaseTransaction((tx) =>
+        action({ clinicId: account.clinicId, accountId: account.id }, tx),
+      );
+    });
+  }
   withCatalogRead<T>(actor:Actor|undefined, action:(context:{clinicId:string;accountId:string;permissions:readonly string[];isManager:boolean},tx:import('../../database.js').ClinicTransaction)=>Promise<T>) {
     return this.withReadyAccount(actor,(account,transaction)=> {
       if (!account.permissions.includes('catalog.manage') && !clinicalEligible(account,'clinical.read')) throw new IdentityError(403,'Accès au catalogue non autorisé.');

@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-10-17",
+  "asOf": "2026-10-18",
   "timezone": "Africa/Bamako",
   "planningIssues": {
     "closedWithOwnerApproval": [
@@ -25,41 +25,43 @@
     "43": "merged",
     "44": "merged",
     "45": "merged",
-    "46": "open"
+    "46": "merged",
+    "47": "open"
   },
   "implementation": {
-    "issue": 16,
+    "issue": 17,
     "state": "review",
-    "branch": "codex/issue-16-visit-notes",
-    "base": "203181d321f4ad1e57fbfd53e64246a1f39166da",
-    "reviewedCommit": "c0ad508dc8f65672975b1caf2d6046b418ecdeee",
-    "scope": "French visit note autosave, conflict review, doctor finalization and retained corrections",
-    "evidence": "issue-16-implementation.md",
-    "review": "issue-16-review.md",
+    "branch": "codex/issue-17-prescriptions",
+    "base": "cd678de98b3cb4aeeb3114935e5ac87ee3e79634",
+    "reviewedCommit": "8b4ebdfdcead5ba7d805ca60e19c2e9adefbfd22",
+    "scope": "Independent French prescription snapshots, medication reference management/autocomplete and dentist-confirmed chart suggestions",
+    "evidence": "issue-17-implementation.md",
+    "review": "issue-17-review.md",
     "checks": {
       "builderReported": {
-        "build": "pass",
-        "lint": "pass",
+        "fullApplicationTestsBeforeLaterFixes": 113,
+        "fullBrowserJourneysAt1541948": 35,
+        "focusedBrowserAfterStatusFix": 3,
         "typecheck": "pass",
-        "fullApplicationTestsPassedBeforeFinalCanonicalFix": 96,
-        "focusedNotesTestsPassedAfterFix": 5,
-        "fullBrowserJourneysPassed": 32
+        "lint": "pass",
+        "build": "pass; 521.55KB chunk warning"
       },
       "reviewerIndependent": {
+        "freshMigrationsPassed": 26,
+        "affectedApplicationTestsPassed": 28,
+        "affectedApplicationFilesPassed": 2,
+        "durationSeconds": 70.91,
         "pinnedDiffWhitespace": "pass",
         "strictUtf8": "pass",
-        "freshMigrationsPassed": 20,
-        "affectedApplicationTestsPassed": 32,
-        "affectedApplicationFilesPassed": 3,
-        "durationSeconds": 63.74
+        "printScreenshot": "viewed"
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings",
-    "publication": "Open PR46 https://github.com/aymanobeid0/clinic-app/pull/46; attached; human review/manual merge required",
+    "publication": "Open non-draft PR47 https://github.com/aymanobeid0/clinic-app/pull/47; attached; human review/manual merge required",
     "limitations": [
       "current-tab memory does not survive closing the tab",
-      "per-visit database reads/history growth and multi-user request budget unbenchmarked",
-      "production, accessibility certification and clinical/legal gates unrun"
+      "bundle size, large histories/reference lists and multi-user load unbenchmarked",
+      "physical printer, accessibility certification, clinical/legal and production/restore gates unrun"
     ]
   },
   "prismaMcp": {

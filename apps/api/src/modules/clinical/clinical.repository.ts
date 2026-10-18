@@ -4,6 +4,7 @@ import type {
   ClinicalVersion,
   ClinicalContent,
   VisitNoteContent,
+  PrescriptionContent,
 } from '@clinic/contracts';
 import type { ClinicTransaction } from '../../database.js';
 import { IdentityError } from '../identity/index.js';
@@ -24,7 +25,7 @@ export class ClinicalRepository {
     await this.tx
       .$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${this.clinicId + ':' + this.patientId + ':' + kind},0))::text`;
   }
-  async record<T extends ClinicalContent | VisitNoteContent = ClinicalContent>(
+  async record<T extends ClinicalContent | VisitNoteContent | PrescriptionContent = ClinicalContent>(
     kind: string,
   ): Promise<ClinicalRecord<T>> {
     const rows = await this.tx.clinicalRevision.findMany({
@@ -40,7 +41,7 @@ export class ClinicalRepository {
       events,
     };
   }
-  async replay<T extends ClinicalContent | VisitNoteContent = ClinicalContent>(
+  async replay<T extends ClinicalContent | VisitNoteContent | PrescriptionContent = ClinicalContent>(
     commandId: string,
     payload: unknown,
     actorId: string,
@@ -58,7 +59,7 @@ export class ClinicalRepository {
       receipt: old?.receipt as unknown as ClinicalRecord<T> | undefined,
     };
   }
-  async append<T extends ClinicalContent | VisitNoteContent = ClinicalContent>(
+  async append<T extends ClinicalContent | VisitNoteContent | PrescriptionContent = ClinicalContent>(
     kind: string,
     commandId: string,
     hash: string,

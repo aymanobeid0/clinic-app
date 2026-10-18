@@ -209,6 +209,7 @@ model ClinicCurrency {
  @@id([clinicId,code])
 }
 model CatalogProcedure {
+ chartCategory String @default("manual")
  id String @id @db.Uuid
  clinicId String @db.Uuid
  revision Int
@@ -276,4 +277,40 @@ model ProcedureCompletion {
  visitId String @db.Uuid
  snapshot Json
  @@unique([clinicId,planId,itemId])
+}
+
+model MedicationReference {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ revision Int
+ name String
+ strength String
+ form String
+ active Boolean
+ @@unique([clinicId,id])
+}
+model PrescriptionTemplate {
+ clinicId String @id @db.Uuid
+ revision Int
+ header String
+ footer String
+}
+
+model PrescriptionCommand {
+ clinicId String @db.Uuid
+ commandId String @db.Uuid
+ actorId String @db.Uuid
+ payloadHash String
+ receipt Json
+ @@id([clinicId,commandId])
+}
+
+model ChartSuggestionDecision {
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ completionId String @db.Uuid
+ status String
+ actorId String @db.Uuid
+ at DateTime @db.Timestamptz(6)
+ @@id([clinicId,completionId])
 }

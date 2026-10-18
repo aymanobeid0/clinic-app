@@ -92,3 +92,8 @@ PR #32 was merged at the previous clinic-code/username login contract (c634e9b).
 Existing pre-amendment accounts retain their existing username login; migration never guesses or silently trusts an email. Any conversion of an existing primary manager requires a separately authorized operator-assisted email verification/conversion procedure before live rollout. Account creation/promotion/recovery operations remain #8; #7 tests the persistence and authentication invariant with operator-only fictional fixtures.
 
 Login method also remains unchanged when manager authority is removed. Email-login accounts still require verification of their login address before clinic access, while mandatory offline recovery-code setup applies only to current managers. No promotion/demotion administration endpoint is added by #7.
+
+
+## Medication reference-list access amendment — 2026-10-17
+
+Owner-approved issue #17 permits eligible doctors and clinic managers to manage clinic-scoped medicine reference data (names, strengths and forms), separate from patient clinical records. Non-doctor managers remain denied all patient prescription content, patient-specific medicine usage and other clinical records; reference-list management does not grant clinical access. Ordinary staff gain no implicit list-management authority. Authorized staff may use list lookup for an otherwise authorized prescription draft; doctor signature/finalization and patient-scope rules remain unchanged. Saved prescriptions are independent of list access, availability and later changes. This supersedes the older doctor-only list-management statement in clinical-decisions.md, without changing the clinical access matrix.

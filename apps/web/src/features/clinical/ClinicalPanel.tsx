@@ -1,3 +1,5 @@
+import {SuggestionsPanel} from './SuggestionsPanel.js';
+import {PrescriptionsPanel} from './PrescriptionsPanel.js';
 import {TreatmentPanel} from '../treatment/TreatmentPanel.js';
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -39,7 +41,7 @@ export function ClinicalPanel({ identity }: { identity: Identity }) {
       void cache.invalidateQueries({ queryKey: ['identity'] });
     };
     stream.addEventListener('invalidate', refresh);
-    stream.onopen = refresh;
+    // Each connection receives an authorized initial invalidate.
     stream.onerror = refresh;
     return () => {
       stream.close();
@@ -126,8 +128,15 @@ function ClinicalRecord({
         queryKey: ['clinical-patients', accountKey],
       });
     };
-    stream.addEventListener('invalidate', refresh);
-    stream.onopen = refresh;
+    stream.addEventListener('invalidate', (event) => {
+      const scope=(JSON.parse((event as MessageEvent<string>).data) as {scope?:string}).scope;
+      if(scope==='prescriptions')void cache.invalidateQueries({queryKey:['prescriptions']});
+      else if(scope==='medications')void cache.invalidateQueries({queryKey:['medications']});
+      else if(scope==='suggestions')void cache.invalidateQueries({queryKey:['chart-suggestions']});
+      else if(scope==='chart')void cache.invalidateQueries({queryKey:['clinical',accountKey,id]});
+      else refresh();
+    });
+    stream.onopen = () => {setConnected(true);void cache.invalidateQueries({queryKey:['prescriptions']});void cache.invalidateQueries({queryKey:['chart-suggestions']});void cache.invalidateQueries({queryKey:['medications']});};
     stream.onerror = () => {
       setConnected(false);
       void cache.invalidateQueries({ queryKey: ['clinical', accountKey, id] });
@@ -199,6 +208,8 @@ function ClinicalRecord({
           </section>
         );
       })}
+      <SuggestionsPanel patientId={id} identity={identity} chartRevision={query.data.chart.revision}/>
+      <PrescriptionsPanel patientId={id} identity={identity} onLock={onLock}/>
       <TreatmentPanel id={id} identity={identity} onLock={onLock}/>
       <p>{t.noBilling}</p>
     </div>

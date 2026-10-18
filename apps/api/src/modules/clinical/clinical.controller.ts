@@ -96,6 +96,7 @@ export class ClinicalController {
         ),
       this.updates,
       this.now,
+      {['prescriptions:'+String(req.params.id).toLowerCase()]:'prescriptions',medications:'medications',['suggestions:'+String(req.params.id).toLowerCase()]:'suggestions',['chart:'+String(req.params.id).toLowerCase()]:'chart'},
     )(req, res, next);
   get: RequestHandler = async (req, res) => {
     res.json(

@@ -50,3 +50,28 @@ export async function noteVisits(
 ) {
   return new VisitRepository(tx, clinicId).noteVisits(patientId);
 }
+
+// Clinical chart consumes only completed, explicitly categorized work; no price data.
+export async function completedChartWork(
+  tx: import("../../database.js").ClinicTransaction,
+  clinicId: string,
+  patientId: string,
+) {
+  const state = await new VisitRepository(tx, clinicId).state(patientId);
+  return state.completions.flatMap((completion) => {
+    const start = state.starts.find(
+      (s) => s.planId === completion.planId && s.itemId === completion.itemId,
+    );
+    const category = start?.item.chartCategory;
+    if (!start || !category || category === "manual") return [];
+    return [
+      {
+        id: completion.id,
+        name: start.item.name,
+        category,
+        teeth: start.item.teeth,
+        scope: start.item.scope,
+      },
+    ];
+  });
+}
