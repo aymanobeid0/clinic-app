@@ -26,11 +26,11 @@
     "44": "merged",
     "45": "merged",
     "46": "merged",
-    "47": "open"
+    "47": "merged"
   },
   "implementation": {
     "issue": 17,
-    "state": "review",
+    "state": "merged",
     "branch": "codex/issue-17-prescriptions",
     "base": "cd678de98b3cb4aeeb3114935e5ac87ee3e79634",
     "reviewedCommit": "8b4ebdfdcead5ba7d805ca60e19c2e9adefbfd22",
@@ -57,7 +57,7 @@
       }
     },
     "reviewStatus": "standards/specification: zero residual material findings",
-    "publication": "Open non-draft PR47 https://github.com/aymanobeid0/clinic-app/pull/47; attached; human review/manual merge required",
+    "publication": "PR47 merged at921b3faca47cc3515dbe17f297d93f23b6bbaca3; local main synchronized",
     "limitations": [
       "current-tab memory does not survive closing the tab",
       "bundle size, large histories/reference lists and multi-user load unbenchmarked",
@@ -70,5 +70,18 @@
     "use": "Historical #7 documentation lookup only; no Prisma MCP execution claimed for #9"
   },
   "liveDataDeploymentAuthorized": false,
-  "publicationPayload": "ticket-publication.json"
+  "publicationPayload": "ticket-publication.json",
+  "localDevelopment": {
+    "branch": "codex/local-dev-runner",
+    "base": "921b3faca47cc3515dbe17f297d93f23b6bbaca3",
+    "runtimeCommit": "8919d5f",
+    "state": "reviewed; PR publication pending",
+    "url": "http://127.0.0.1:5173",
+    "evidence": "local-dev-implementation.md",
+    "review": "local-dev-review.md",
+    "checks": {
+      "builder": "API114/114; typecheck/lint/build pass",
+      "independent": "real proxy/login/scopes; stop/restart persistence; production/remote/mismatch/duplicate guards pass"
+    }
+  }
 }
