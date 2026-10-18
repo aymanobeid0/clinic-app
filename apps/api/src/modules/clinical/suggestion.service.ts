@@ -151,6 +151,7 @@ export class SuggestionService {
       },
     );
     this.updates.publish(result.clinicId,'suggestions:'+patientId);
+    if(data.action==='confirm')this.updates.publish(result.clinicId,'chart:'+patientId);
     return result.value;
   }
 }

@@ -41,7 +41,7 @@ export function ClinicalPanel({ identity }: { identity: Identity }) {
       void cache.invalidateQueries({ queryKey: ['identity'] });
     };
     stream.addEventListener('invalidate', refresh);
-    stream.onopen = refresh;
+    // Each connection receives an authorized initial invalidate.
     stream.onerror = refresh;
     return () => {
       stream.close();
@@ -132,10 +132,11 @@ function ClinicalRecord({
       const scope=(JSON.parse((event as MessageEvent<string>).data) as {scope?:string}).scope;
       if(scope==='prescriptions')void cache.invalidateQueries({queryKey:['prescriptions']});
       else if(scope==='medications')void cache.invalidateQueries({queryKey:['medications']});
-      else if(scope==='suggestions'){void cache.invalidateQueries({queryKey:['chart-suggestions']});void cache.invalidateQueries({queryKey:['clinical',accountKey,id]});}
+      else if(scope==='suggestions')void cache.invalidateQueries({queryKey:['chart-suggestions']});
+      else if(scope==='chart')void cache.invalidateQueries({queryKey:['clinical',accountKey,id]});
       else refresh();
     });
-    stream.onopen = () => {refresh();void cache.invalidateQueries({queryKey:['prescriptions']});void cache.invalidateQueries({queryKey:['chart-suggestions']});void cache.invalidateQueries({queryKey:['medications']});};
+    stream.onopen = () => {setConnected(true);void cache.invalidateQueries({queryKey:['prescriptions']});void cache.invalidateQueries({queryKey:['chart-suggestions']});void cache.invalidateQueries({queryKey:['medications']});};
     stream.onerror = () => {
       setConnected(false);
       void cache.invalidateQueries({ queryKey: ['clinical', accountKey, id] });
