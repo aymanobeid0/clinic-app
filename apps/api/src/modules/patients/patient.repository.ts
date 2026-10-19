@@ -1,7 +1,8 @@
+import { AppError } from '../../errors/app-error.js';
 import type { Patient, PatientDetails } from '@clinic/contracts';
 import type { ClinicTransaction } from '../../database.js';
 import { randomUUID, createHash } from 'node:crypto';
-import { IdentityError } from '../identity/index.js';
+
 function summary(p: Patient): Patient {
   return {
     id: p.id,
@@ -55,12 +56,12 @@ export class PatientRepository {
     });
     if (previous) {
       if (previous.registrationHash !== registrationHash)
-        throw new IdentityError(409, 'Cette demande a déjà été utilisée.');
+        throw new AppError(409, 'Cette demande a déjà été utilisée.');
       const receipt = await this.tx.patientHistory.findUniqueOrThrow({
         where: { clinicId_commandId: { clinicId: this.clinicId, commandId } },
       });
       if (receipt.actorId !== this.actorId)
-        throw new IdentityError(409, 'Cette demande a déjà été utilisée.');
+        throw new AppError(409, 'Cette demande a déjà été utilisée.');
       return receipt.patient as Patient;
     }
     const clinic = await this.tx.clinic.update({
@@ -118,7 +119,7 @@ export class PatientRepository {
     details?: PatientDetails,
   ) {
     const patient = await this.get(id);
-    if (!patient) throw new IdentityError(404, 'Patient introuvable.');
+    if (!patient) throw new AppError(404, 'Patient introuvable.');
     const payloadHash = createHash('sha256')
       .update(
         JSON.stringify([
@@ -137,18 +138,18 @@ export class PatientRepository {
     });
     if (previous) {
       if (previous.payloadHash !== payloadHash || previous.actorId !== this.actorId)
-        throw new IdentityError(409, 'Cette demande a déjà été utilisée.');
+        throw new AppError(409, 'Cette demande a déjà été utilisée.');
       return previous.patient as Patient;
     }
     if (patient.revision !== revision)
-      throw new IdentityError(409, 'Ce dossier a changé. Rechargez et réconciliez votre saisie.');
+      throw new AppError(409, 'Ce dossier a changé. Rechargez et réconciliez votre saisie.');
     if (action === 'contact' && patient.archived)
-      throw new IdentityError(409, 'Réactivez ce patient avant modification.');
+      throw new AppError(409, 'Réactivez ce patient avant modification.');
     if (
       (action === 'archived' && patient.archived) ||
       (action === 'reactivated' && !patient.archived)
     )
-      throw new IdentityError(409, 'État du dossier déjà modifié.');
+      throw new AppError(409, 'État du dossier déjà modifié.');
     const updated = summary(
       (await this.tx.patient.update({
         where: { id },

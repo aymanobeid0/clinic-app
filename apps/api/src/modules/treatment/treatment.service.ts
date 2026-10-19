@@ -1,3 +1,4 @@
+import { AppError } from '../../errors/app-error.js';
 import {
   verifiedCurrencies,
   type catalogCommandSchema,
@@ -9,18 +10,14 @@ import {
   type enableCurrencySchema,
 } from '@clinic/contracts';
 import type { z } from 'zod';
-import {
-  IdentityError,
-  type Actor,
-  type IdentityAccess,
-} from '../identity/index.js';
+import type { Actor, IdentityAccess } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
 import { TreatmentRepository } from './treatment.repository.js';
 import { VisitRepository } from './visit.repository.js';
 export function exactMinor(value: string, precision: number) {
   const [whole, fraction = ''] = value.split('.');
   if (fraction.length > precision)
-    throw new IdentityError(
+    throw new AppError(
       400,
       'Décimales excessives : aucun arrondi autorisé.',
     );
@@ -86,7 +83,7 @@ export class TreatmentService {
           : 'plans.finalize',
       async (c, tx) => {
         if (!c.permissions.includes('clinical.read'))
-          throw new IdentityError(403, 'Accès en lecture clinique requis.');
+          throw new AppError(403, 'Accès en lecture clinique requis.');
         const r = new TreatmentRepository(tx, c.clinicId);
         await r.lock();
         const replay = await r.replay(
@@ -101,9 +98,9 @@ export class TreatmentService {
             value: this.visible(versions, c.permissions),
           };
         const old = versions.at(-1);
-        if (!old) throw new IdentityError(404, 'Proposition introuvable.');
+        if (!old) throw new AppError(404, 'Proposition introuvable.');
         if (old.revision !== data.revision)
-          throw new IdentityError(
+          throw new AppError(
             409,
             'La proposition a changé. Rechargez et réconciliez votre saisie conservée.',
           );
@@ -118,11 +115,11 @@ export class TreatmentService {
         };
         if (data.action === 'cancel') {
           if ((await new VisitRepository(tx,c.clinicId).state(patientId)).starts.some(s=>s.planId===data.id))
-            throw new IdentityError(409,'Les soins commencés nécessitent un ajustement financier explicite.');
+            throw new AppError(409,'Les soins commencés nécessitent un ajustement financier explicite.');
           if (!data.reason)
-            throw new IdentityError(400, 'Motif d’annulation requis.');
+            throw new AppError(400, 'Motif d’annulation requis.');
           if (!['draft', 'presented', 'accepted'].includes(old.status))
-            throw new IdentityError(
+            throw new AppError(
               409,
               'Cette proposition ne peut plus être annulée ici.',
             );
@@ -135,14 +132,14 @@ export class TreatmentService {
           };
         } else if (data.action === 'present') {
           if (old.status !== 'draft')
-            throw new IdentityError(
+            throw new AppError(
               409,
               'Seul un brouillon peut être présenté.',
             );
           version.status = 'presented';
         } else {
           if (old.status !== 'presented')
-            throw new IdentityError(
+            throw new AppError(
               409,
               'Présentez la version actuelle avant son acceptation.',
             );
@@ -153,7 +150,7 @@ export class TreatmentService {
               !data.method ||
               Date.parse(data.acceptedAt) > this.now()
             )
-              throw new IdentityError(
+              throw new AppError(
                 400,
                 'Identité, date passée et méthode d’accord requises.',
               );
@@ -168,7 +165,7 @@ export class TreatmentService {
             };
           } else {
             if (!old.evidence)
-              throw new IdentityError(
+              throw new AppError(
                 409,
                 'Consignez les éléments d’accord avant confirmation.',
               );
@@ -207,18 +204,18 @@ export class TreatmentService {
       'clinical.print',
       async (c, tx) => {
         if (!c.permissions.includes('clinical.read'))
-          throw new IdentityError(403, 'Accès en lecture clinique requis.');
+          throw new AppError(403, 'Accès en lecture clinique requis.');
         const versions = await new TreatmentRepository(tx, c.clinicId).versions(
           patientId,
           planId,
         );
         const version = versions.find((v) => v.revision === revision);
-        if (!version) throw new IdentityError(404, 'Version introuvable.');
+        if (!version) throw new AppError(404, 'Version introuvable.');
         if (
           version.revision !== versions.at(-1)?.revision &&
           !c.permissions.includes('clinical.history')
         )
-          throw new IdentityError(403, 'Autorisation d’historique requise.');
+          throw new AppError(403, 'Autorisation d’historique requise.');
         return {
           ...version,
           ...(await new TreatmentRepository(tx, c.clinicId).printIdentity(
@@ -239,7 +236,7 @@ export class TreatmentService {
       'plans.draft',
       async (c, tx) => {
         if (!c.permissions.includes('clinical.read'))
-          throw new IdentityError(403, 'Accès en lecture clinique requis.');
+          throw new AppError(403, 'Accès en lecture clinique requis.');
         const r = new TreatmentRepository(tx, c.clinicId);
         await r.lock();
         const replay = await r.replay(
@@ -261,7 +258,7 @@ export class TreatmentService {
               !c.isManager &&
               !c.permissions.includes('discounts'))
           )
-            throw new IdentityError(
+            throw new AppError(
               403,
               'Autorisation financière de la commande retirée.',
             );
@@ -273,7 +270,7 @@ export class TreatmentService {
         await r.bind(patientId, data.id);
         const old = versions.at(-1);
         if ((old?.revision ?? 0) !== data.revision)
-          throw new IdentityError(
+          throw new AppError(
             409,
             'La proposition a changé. Rechargez et réconciliez votre saisie conservée.',
           );
@@ -281,17 +278,17 @@ export class TreatmentService {
           old &&
           ['cancelled'].includes(old.status)
         )
-          throw new IdentityError(
+          throw new AppError(
             409,
             'Cette proposition ne peut plus être modifiée ici.',
           );
         if (old && old.currency !== data.currency)
-          throw new IdentityError(
+          throw new AppError(
             400,
             'La devise d’une proposition existante ne peut pas changer.',
           );
         const currency = await r.enabled(data.currency);
-        if (!currency) throw new IdentityError(400, 'Devise non activée.');
+        if (!currency) throw new AppError(400, 'Devise non activée.');
         const items: TreatmentItem[] = [];
         let needsOverride = false,
           needsDiscount = false;
@@ -299,9 +296,9 @@ export class TreatmentService {
           const previous = old?.items.find((i) => i.id === input.id);
           const procedure = await r.procedure(input.procedureId);
           if (!procedure)
-            throw new IdentityError(400, 'Acte du catalogue introuvable.');
+            throw new AppError(400, 'Acte du catalogue introuvable.');
           if (previous && previous.procedureId !== input.procedureId)
-            throw new IdentityError(
+            throw new AppError(
               400,
               'Utilisez une nouvelle ligne pour changer d’acte.',
             );
@@ -309,12 +306,12 @@ export class TreatmentService {
             !previous &&
             (!procedure.active || procedure.revision !== input.catalogRevision)
           )
-            throw new IdentityError(
+            throw new AppError(
               409,
               'Cet acte a changé. Relisez le catalogue avant de l’ajouter.',
             );
           if (procedure.currency !== data.currency)
-            throw new IdentityError(
+            throw new AppError(
               400,
               'Chaque proposition utilise une seule devise, sans conversion.',
             );
@@ -337,7 +334,7 @@ export class TreatmentService {
             !c.isManager &&
             !c.permissions.includes('prices.override')
           )
-            throw new IdentityError(
+            throw new AppError(
               403,
               'Autorisation de modification de prix requise.',
             );
@@ -347,15 +344,15 @@ export class TreatmentService {
             !c.isManager &&
             !c.permissions.includes('discounts')
           )
-            throw new IdentityError(403, 'Autorisation de remise requise.');
+            throw new AppError(403, 'Autorisation de remise requise.');
           if (BigInt(discountMinor) > BigInt(priceMinor))
-            throw new IdentityError(400, 'La remise dépasse le prix.');
+            throw new AppError(400, 'La remise dépasse le prix.');
           if (BigInt(discountMinor) > 0n && !input.discountReason)
-            throw new IdentityError(400, 'Un motif de remise est requis.');
+            throw new AppError(400, 'Un motif de remise est requis.');
           if (
             new Set(input.extras.map((e) => e.id)).size !== input.extras.length
           )
-            throw new IdentityError(400, 'Frais supplémentaires en double.');
+            throw new AppError(400, 'Frais supplémentaires en double.');
           const extras = input.extras.map((e) => ({
             id: e.id,
             label: e.label,
@@ -376,7 +373,7 @@ export class TreatmentService {
             !c.isManager &&
             !c.permissions.includes('prices.override')
           )
-            throw new IdentityError(
+            throw new AppError(
               403,
               'Autorisation de modification de prix requise.',
             );
@@ -424,7 +421,7 @@ export class TreatmentService {
         for(const start of starts) {
           const item=items.find(i=>i.id===start.itemId);
           if(!item || item.procedureId!==start.item.procedureId || item.scope!==start.item.scope || JSON.stringify([...item.teeth].sort())!==JSON.stringify([...start.item.teeth].sort()))
-            throw new IdentityError(409,'Conservez les références des actes déjà commencés.');
+            throw new AppError(409,'Conservez les références des actes déjà commencés.');
         }
         const changed =
           !old || agreed(old) !== agreed({ title: data.title, items });
@@ -527,18 +524,18 @@ export class TreatmentService {
           return { clinicId: c.clinicId, value: replay.receipt };
         const currency = await r.enabled(data.currency);
         if (!currency)
-          throw new IdentityError(
+          throw new AppError(
             400,
             'Activez cette devise dans les paramètres.',
           );
         const old = await r.procedure(data.id);
         if ((old?.revision ?? 0) !== data.revision)
-          throw new IdentityError(
+          throw new AppError(
             409,
             'Le catalogue a changé. Rechargez et réconciliez votre saisie conservée.',
           );
         if (old && old.currency !== data.currency)
-          throw new IdentityError(
+          throw new AppError(
             400,
             'La devise existante ne peut pas être réétiquetée. Créez un autre acte.',
           );

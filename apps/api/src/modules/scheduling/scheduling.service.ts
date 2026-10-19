@@ -1,3 +1,4 @@
+import { AppError } from '../../errors/app-error.js';
 import { procedureDurations } from '../treatment/index.js';
 import type { z } from 'zod';
 import type {
@@ -8,7 +9,7 @@ import type {
   Appointment,
   SchedulingSettings,
 } from '@clinic/contracts';
-import { IdentityError, type Actor, type IdentityAccess } from '../identity/index.js';
+import type { Actor, IdentityAccess } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
 import { SchedulingRepository } from './scheduling.repository.js';
 export class SchedulingService {
@@ -52,9 +53,9 @@ export class SchedulingService {
   }
   private override(conflict: boolean, override: boolean, permissions: readonly string[]) {
     if (override && !permissions.includes('appointments.override'))
-      throw new IdentityError(403, 'Autorisation de dérogation requise.');
+      throw new AppError(403, 'Autorisation de dérogation requise.');
     if (conflict && !override)
-      throw new IdentityError(
+      throw new AppError(
         409,
         'Conflit de dentiste ou de fauteuil. Choisissez un autre créneau ou confirmez une dérogation autorisée.',
       );
@@ -100,12 +101,12 @@ export class SchedulingService {
     return this.mutate(actor, data.commandId, ['reschedule', id, data], async (r, p) => {
       const old = await r.get(id);
       if (old.revision !== data.revision)
-        throw new IdentityError(
+        throw new AppError(
           409,
           'Ce rendez-vous a changé. Rechargez puis réconciliez votre saisie.',
         );
       if (!['booked', 'confirmed', 'arrived'].includes(old.status))
-        throw new IdentityError(409, 'Ce rendez-vous ne peut pas être déplacé.');
+        throw new AppError(409, 'Ce rendez-vous ne peut pas être déplacé.');
       this.override(
         await r.validateSlot({ ...data, patientId: old.patientId }, id),
         data.override,
@@ -124,7 +125,7 @@ export class SchedulingService {
     return this.mutate(actor, data.commandId, ['status', id, data], async (r, p) => {
       const old = await r.get(id);
       if (old.revision !== data.revision)
-        throw new IdentityError(
+        throw new AppError(
           409,
           'Ce rendez-vous a changé. Rechargez puis réconciliez votre saisie.',
         );
@@ -136,7 +137,7 @@ export class SchedulingService {
         no_show: ['booked'],
       };
       if (!transitions[old.status]?.includes(data.status))
-        throw new IdentityError(
+        throw new AppError(
           409,
           'Transition impossible. Le début et la fin des soins nécessitent une visite clinique.',
         );
@@ -162,7 +163,7 @@ export class SchedulingService {
         };
       const old = await r.settings();
       if (old.revision !== data.revision)
-        throw new IdentityError(
+        throw new AppError(
           409,
           'Les paramètres ont changé. Rechargez puis réconciliez votre saisie.',
         );
@@ -206,7 +207,7 @@ export async function transitionVisitAppointment(
       action === 'start' ? ['booked', 'confirmed', 'arrived'] : ['in_care']
     ).includes(old.status)
   )
-    throw new IdentityError(409, 'Rendez-vous indisponible pour ces soins.');
+    throw new AppError(409, 'Rendez-vous indisponible pour ces soins.');
   const value = await r.status(
     id,
     action === 'start' ? 'in_care' : 'completed',

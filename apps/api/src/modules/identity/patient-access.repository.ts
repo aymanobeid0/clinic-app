@@ -1,7 +1,8 @@
+import { AppError } from '../../errors/app-error.js';
 import { createHash } from 'node:crypto';
 import type { PatientAccess, AssignmentCandidate, PatientAccessEvent } from '@clinic/contracts';
 import type { ClinicTransaction } from '../../database.js';
-import { IdentityError } from './identity.service.js';
+
 import { clinicalEligible } from './clinical-access.policy.js';
 export class PatientAccessRepository {
   constructor(
@@ -37,7 +38,7 @@ export class PatientAccessRepository {
       }));
   }
   async get(patientId: string): Promise<PatientAccess> {
-    if (!(await this.exists(patientId))) throw new IdentityError(404, 'Patient introuvable.');
+    if (!(await this.exists(patientId))) throw new AppError(404, 'Patient introuvable.');
     const state = await this.tx.patientAccessState.findUnique({
       where: { clinicId_patientId: { clinicId: this.clinicId, patientId } },
     });
@@ -115,20 +116,20 @@ export class PatientAccessRepository {
     });
     if (old) {
       if (old.actorId !== actorId || old.payloadHash !== hash)
-        throw new IdentityError(409, 'Commande déjà utilisée.');
+        throw new AppError(409, 'Commande déjà utilisée.');
       return old.snapshot as unknown as PatientAccess;
     }
     const current = await this.get(patientId);
     if (current.revision !== data.revision)
-      throw new IdentityError(409, 'Les accès ont changé. Rechargez et confirmez votre choix.');
+      throw new AppError(409, 'Les accès ont changé. Rechargez et confirmez votre choix.');
     const target = await this.tx.account.findFirst({
       where: { clinicId: this.clinicId, id: data.accountId },
     });
-    if (!target) throw new IdentityError(404, 'Compte introuvable.');
+    if (!target) throw new AppError(404, 'Compte introuvable.');
     if (action === 'share' && !clinicalEligible(target))
-      throw new IdentityError(403, 'Compte non éligible aux soins.');
+      throw new AppError(403, 'Compte non éligible aux soins.');
     if (action === 'remove' && !(await this.active(patientId, data.accountId)))
-      throw new IdentityError(409, 'Accès déjà retiré.');
+      throw new AppError(409, 'Accès déjà retiré.');
     await this.tx.patientGrant.upsert({
       where: {
         clinicId_patientId_accountId: {

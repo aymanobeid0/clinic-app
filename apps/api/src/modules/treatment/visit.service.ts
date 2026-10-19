@@ -1,3 +1,4 @@
+import { AppError } from '../../errors/app-error.js';
 import { recordProcedureStart } from './procedure-start.js';
 import {
   visitAppointments,
@@ -12,11 +13,7 @@ import type {
   ProcedureStart,
   ProcedureCompletion,
 } from '@clinic/contracts';
-import {
-  IdentityError,
-  type Actor,
-  type IdentityAccess,
-} from '../identity/index.js';
+import type { Actor, IdentityAccess } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
 import { TreatmentRepository } from './treatment.repository.js';
 import { VisitRepository } from './visit.repository.js';
@@ -54,7 +51,7 @@ export class VisitService {
       data.action === 'complete' ? 'procedures.complete' : 'procedures.start',
       async (c, tx) => {
         if (!c.permissions.includes('clinical.read'))
-          throw new IdentityError(403, 'Accès en lecture clinique requis.');
+          throw new AppError(403, 'Accès en lecture clinique requis.');
         const plans = new TreatmentRepository(tx, c.clinicId),
           r = new VisitRepository(tx, c.clinicId);
         await plans.lock();
@@ -72,14 +69,14 @@ export class VisitService {
         }
         const state = await r.state(patientId),
           old = state.visits.find((v) => v.id === data.id);
-        if (!old) throw new IdentityError(404, 'Visite introuvable.');
+        if (!old) throw new AppError(404, 'Visite introuvable.');
         if (old.doctorId !== c.accountId)
-          throw new IdentityError(
+          throw new AppError(
             403,
             'Seul le dentiste de cette visite peut la modifier.',
           );
         if (old.status !== 'draft' || old.revision !== data.revision)
-          throw new IdentityError(
+          throw new AppError(
             409,
             'La visite a changé. Rechargez et relisez les soins.',
           );
@@ -108,7 +105,7 @@ export class VisitService {
               (v) => v.planId === data.planId && v.itemId === data.itemId,
             )
           )
-            throw new IdentityError(
+            throw new AppError(
               409,
               'Sélectionnez un acte commencé dans cette visite.',
             );
@@ -117,7 +114,7 @@ export class VisitService {
               (v) => v.planId === data.planId && v.itemId === data.itemId,
             )
           )
-            throw new IdentityError(409, 'Cet acte est déjà terminé.');
+            throw new AppError(409, 'Cet acte est déjà terminé.');
           const event: ProcedureCompletion = {
             id: randomUUID(),
             patientId,
@@ -168,7 +165,7 @@ export class VisitService {
       'procedures.start',
       async (c, tx) => {
         if (!c.permissions.includes('clinical.read'))
-          throw new IdentityError(403, 'Accès en lecture clinique requis.');
+          throw new AppError(403, 'Accès en lecture clinique requis.');
         const plans = new TreatmentRepository(tx, c.clinicId),
           r = new VisitRepository(tx, c.clinicId);
         await plans.lock();
@@ -185,9 +182,9 @@ export class VisitService {
           };
         }
         if (!(await r.available(patientId)))
-          throw new IdentityError(409, 'Patient indisponible ou archivé.');
+          throw new AppError(409, 'Patient indisponible ou archivé.');
         if (await r.existing(data.id))
-          throw new IdentityError(409, 'Identifiant de visite déjà utilisé.');
+          throw new AppError(409, 'Identifiant de visite déjà utilisé.');
         const at = new Date(this.now()).toISOString(),
           name = await plans.name(c.accountId);
         const visit: Visit = {
@@ -217,7 +214,7 @@ export class VisitService {
             (v) => v.doctorId === c.accountId && v.status === 'draft',
           )
         )
-          throw new IdentityError(
+          throw new AppError(
             409,
             'Une visite est déjà en cours pour ce patient.',
           );
@@ -230,7 +227,7 @@ export class VisitService {
         for (const selection of data.procedures) {
           const key = selection.planId + ':' + selection.itemId;
           if (seen.has(key))
-            throw new IdentityError(400, 'Acte sélectionné en double.');
+            throw new AppError(400, 'Acte sélectionné en double.');
           seen.add(key);
           const versions = await plans.versions(patientId, selection.planId),
             plan = versions.at(-1);
@@ -240,7 +237,7 @@ export class VisitService {
             !['accepted', 'in_progress'].includes(plan.status) ||
             plan.revision !== selection.planRevision
           )
-            throw new IdentityError(
+            throw new AppError(
               409,
               'Relisez la version acceptée du plan.',
             );
@@ -249,9 +246,9 @@ export class VisitService {
               (v) => v.planId === plan.id && v.itemId === selection.itemId,
             )
           )
-            throw new IdentityError(409, 'Cet acte est déjà terminé.');
+            throw new AppError(409, 'Cet acte est déjà terminé.');
           const item = plan.items.find((i) => i.id === selection.itemId);
-          if (!item) throw new IdentityError(409, 'Acte introuvable.');
+          if (!item) throw new AppError(409, 'Acte introuvable.');
           visit.procedures.push({
             planId: plan.id,
             itemId: item.id,

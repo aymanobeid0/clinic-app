@@ -1,3 +1,4 @@
+import { AppError } from '../../errors/app-error.js';
 import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import type {
@@ -13,11 +14,7 @@ import type {
   PaymentMethod,
   Settlement,
 } from "@clinic/contracts";
-import {
-  IdentityError,
-  type Actor,
-  type IdentityAccess,
-} from "../identity/index.js";
+import type { Actor, IdentityAccess } from "../identity/index.js";
 import { treatmentBilling, exactMinor } from "../treatment/index.js";
 import type { ClinicTransaction } from "../../database.js";
 import type { ClinicUpdates } from "../../clinic-updates.js";
@@ -62,7 +59,7 @@ export class BillingService {
         return { clinicId: c.clinicId, value: replay.receipt };
       const current = (await r.methods()).find((m) => m.id === data.id);
       if ((current?.revision ?? 0) !== data.revision)
-        throw new IdentityError(409, "Relisez le moyen de paiement.");
+        throw new AppError(409, "Relisez le moyen de paiement.");
       const value: PaymentMethod = {
         id: data.id,
         revision: data.revision + 1,
@@ -90,7 +87,7 @@ export class BillingService {
   async settlement(actor: Actor | undefined, patientId: string, id: string) {
     const state = await this.state(actor, patientId);
     const value = state.settlements.find((s) => s.id === id);
-    if (!value) throw new IdentityError(404, "Règlement introuvable.");
+    if (!value) throw new AppError(404, "Règlement introuvable.");
     return value;
   }
   output(
@@ -107,7 +104,7 @@ export class BillingService {
         await treatmentBilling(tx, c.clinicId).lock();
         const state = await this.project(tx, c, patientId);
         const settlement = state.settlements.find((s) => s.id === id);
-        if (!settlement) throw new IdentityError(404, "Règlement introuvable.");
+        if (!settlement) throw new AppError(404, "Règlement introuvable.");
         return {
           title: settlement.receiptNumber ? "Reçu" : "Affectation de crédit",
           settlement,
@@ -325,18 +322,18 @@ export class BillingService {
                 (a) => !state.charges.some((ch) => ch.id === a.chargeId),
               ))
           )
-            throw new IdentityError(403, "Périmètre financier non autorisé.");
+            throw new AppError(403, "Périmètre financier non autorisé.");
           return { clinicId: c.clinicId, value: replay.receipt };
         }
         const currency = await plans.currency(data.currency);
-        if (!currency) throw new IdentityError(400, "Devise non activée.");
+        if (!currency) throw new AppError(400, "Devise non activée.");
         const money = exactMinor(data.newMoney, currency.precision),
           deposit = exactMinor(data.deposit, currency.precision);
         const method = (await r.methods()).find(
           (m) => m.id === data.methodId && m.active,
         );
         if ((money > 0n && !method) || (money === 0n && data.methodId !== null))
-          throw new IdentityError(
+          throw new AppError(
             400,
             "Moyen de paiement actif requis uniquement pour les nouveaux fonds.",
           );
@@ -344,20 +341,20 @@ export class BillingService {
           new Set(data.allocations.map((a) => a.chargeId)).size !==
           data.allocations.length
         )
-          throw new IdentityError(400, "Charge répétée.");
+          throw new AppError(400, "Charge répétée.");
         const allocations: Settlement["allocations"] = data.allocations.map(
           (a) => {
             const charge = state.charges.find((ch) => ch.id === a.chargeId);
-            if (!charge) throw new IdentityError(404, "Charge introuvable.");
+            if (!charge) throw new AppError(404, "Charge introuvable.");
             if (charge.currency !== data.currency)
-              throw new IdentityError(400, "Devise différente.");
+              throw new AppError(400, "Devise différente.");
             const fresh = exactMinor(a.newMoney, currency.precision),
               credit = exactMinor(a.credit, currency.precision);
             if (
               fresh + credit <= 0n ||
               fresh + credit > BigInt(charge.dueMinor)
             )
-              throw new IdentityError(
+              throw new AppError(
                 409,
                 "Montant supérieur au solde ou allocation vide.",
               );
@@ -378,12 +375,12 @@ export class BillingService {
           0n,
         );
         if (money !== newAllocated + deposit || money + creditUsed === 0n)
-          throw new IdentityError(
+          throw new AppError(
             400,
             "Rapprochez les nouveaux fonds, allocations et dépôt explicite.",
           );
         if (c.ownWork && (deposit > 0n || creditUsed > 0n))
-          throw new IdentityError(
+          throw new AppError(
             403,
             "Le crédit non attribué nécessite une autorité financière générale.",
           );
@@ -412,7 +409,7 @@ export class BillingService {
             needed -= used;
           }
           if (needed > 0n)
-            throw new IdentityError(409, "Crédit disponible insuffisant.");
+            throw new AppError(409, "Crédit disponible insuffisant.");
         }
         const at = new Date(this.now()).toISOString();
         const value: Settlement = {
@@ -452,7 +449,7 @@ export class BillingService {
       "billing.edit",
       async (c, tx) => {
         if (c.ownWork)
-          throw new IdentityError(
+          throw new AppError(
             403,
             "Un solde non attribué nécessite une autorité financière générale.",
           );
@@ -467,11 +464,11 @@ export class BillingService {
         if (replay.receipt)
           return { clinicId: c.clinicId, value: replay.receipt };
         const currency = await plans.currency(data.currency);
-        if (!currency) throw new IdentityError(400, "Devise non activée.");
+        if (!currency) throw new AppError(400, "Devise non activée.");
         if (Date.parse(data.asOf) > this.now())
-          throw new IdentityError(400, "Date future interdite.");
+          throw new AppError(400, "Date future interdite.");
         const amount = exactMinor(data.amount, currency.precision);
-        if (amount <= 0n) throw new IdentityError(400, "Solde positif requis.");
+        if (amount <= 0n) throw new AppError(400, "Solde positif requis.");
         const value: OpeningBalance = {
           id: data.id,
           currency: data.currency,
@@ -504,7 +501,7 @@ export class BillingService {
         await plans.lock();
         const state = await this.project(tx, c, patientId);
         const charge = state.charges.find((e) => e.id === data.chargeId);
-        if (!charge) throw new IdentityError(404, "Charge introuvable.");
+        if (!charge) throw new AppError(404, "Charge introuvable.");
         const replay = await r.replay(data.commandId, c.accountId, [
           "reconcile",
           patientId,
@@ -520,21 +517,21 @@ export class BillingService {
           plan.revision !== data.acceptedRevision ||
           charge.revision !== data.revision
         )
-          throw new IdentityError(
+          throw new AppError(
             409,
             "Relisez la charge et la version acceptée.",
           );
         const item = plan.items.find((i) => i.id === charge.itemId);
-        if (!item) throw new IdentityError(409, "Acte accepté introuvable.");
+        if (!item) throw new AppError(409, "Acte accepté introuvable.");
         const target = agreed(item),
           delta = target - BigInt(charge.chargedMinor);
         if (target < BigInt(charge.paidMinor))
-          throw new IdentityError(
+          throw new AppError(
             409,
             "Les fonds alloués nécessitent une correction explicite avant réduction.",
           );
         if (delta === 0n)
-          throw new IdentityError(409, "Charge déjà réconciliée.");
+          throw new AppError(409, "Charge déjà réconciliée.");
         const value: BillingAdjustment = {
           id: randomUUID(),
           chargeId: charge.id,

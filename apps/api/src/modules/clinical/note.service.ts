@@ -1,3 +1,4 @@
+import { AppError } from '../../errors/app-error.js';
 import type { z } from 'zod';
 import type {
   VisitNote,
@@ -6,11 +7,7 @@ import type {
   noteDraftSchema,
   clinicalConfirmSchema,
 } from '@clinic/contracts';
-import {
-  IdentityError,
-  type Actor,
-  type IdentityAccess,
-} from '../identity/index.js';
+import type { Actor, IdentityAccess } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
 import { noteVisit, noteVisits } from '../treatment/index.js';
 import { ClinicalRepository } from './clinical.repository.js';
@@ -48,7 +45,7 @@ export class NoteService {
       'clinical.read',
       async (c, tx) => {
         const visit = await noteVisit(tx, c.clinicId, patientId, visitId);
-        if (!visit) throw new IdentityError(404, 'Visite introuvable.');
+        if (!visit) throw new AppError(404, 'Visite introuvable.');
         const record = await new ClinicalRepository(
           tx,
           c.clinicId,
@@ -85,9 +82,9 @@ export class NoteService {
       action === 'draft' ? 'notes.draft' : 'notes.finalize',
       async (c, tx) => {
         if (!c.permissions.includes('clinical.read'))
-          throw new IdentityError(403, 'Accès en lecture clinique requis.');
+          throw new AppError(403, 'Accès en lecture clinique requis.');
         const visit = await noteVisit(tx, c.clinicId, patientId, visitId);
-        if (!visit) throw new IdentityError(404, 'Visite introuvable.');
+        if (!visit) throw new AppError(404, 'Visite introuvable.');
         const r = new ClinicalRepository(tx, c.clinicId, patientId),
           kind = `note:${visit.id}`;
         await r.lock(kind);
@@ -108,7 +105,7 @@ export class NoteService {
           };
         }
         if (record.revision !== data.revision)
-          throw new IdentityError(
+          throw new AppError(
             409,
             'Cette note a changé. Comparez la version du serveur avec votre saisie conservée.',
           );
@@ -116,7 +113,7 @@ export class NoteService {
           action === 'finalize' &&
           (!record.draft || !record.draft.content.text.trim())
         )
-          throw new IdentityError(409, 'Un brouillon non vide est requis.');
+          throw new AppError(409, 'Un brouillon non vide est requis.');
         const at = new Date(this.now()).toISOString(),
           authorId = action === 'draft' ? c.accountId : record.draft!.authorId;
         const saved = await r.append(

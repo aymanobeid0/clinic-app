@@ -1,5 +1,6 @@
+import { AppError } from '../../errors/app-error.js';
 import type { PatientDetails } from '@clinic/contracts';
-import { IdentityError, type Actor, type IdentityAccess } from '../identity/index.js';
+import type { Actor, IdentityAccess } from '../identity/index.js';
 import { PatientRepository } from './patient.repository.js';
 import type { PatientUpdates } from './patient.updates.js';
 export class PatientService {
@@ -57,14 +58,14 @@ export class PatientService {
         context.accountId,
         this.now,
       ).get(id);
-      if (!patient) throw new IdentityError(404, 'Patient introuvable.');
+      if (!patient) throw new AppError(404, 'Patient introuvable.');
       return patient;
     });
   }
   history(actor: Actor | undefined, id: string) {
     return this.identity.withPermission(actor, 'patients.read', async (context, tx) => {
       const repository = new PatientRepository(tx, context.clinicId, context.accountId, this.now);
-      if (!(await repository.get(id))) throw new IdentityError(404, 'Patient introuvable.');
+      if (!(await repository.get(id))) throw new AppError(404, 'Patient introuvable.');
       return repository.history(id);
     });
   }

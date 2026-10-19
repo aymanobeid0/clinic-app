@@ -1,3 +1,4 @@
+import { AppError } from '../../errors/app-error.js';
 import { PatientAccessRepository } from './patient-access.repository.js';
 import {
   clinicalEligible,
@@ -24,14 +25,6 @@ export type Mail = {
   sendNotification?(message: { to: string; subject: string }): Promise<void>;
   sendVerification(message: { to: string; token: string; verificationUrl: string }): Promise<void>;
 };
-export class IdentityError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
-    super(message);
-  }
-}
 
 const DAY = 24 * 60 * 60 * 1000;
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -63,7 +56,7 @@ export class IdentityService {
         : await this.repository.findLoginAccount(input.clinicCode, input.username);
     const valid = await verify(account?.passwordHash ?? (await this.dummyHash), input.password);
     if (!valid || !account || account.loginMethod !== input.method || this.isUnavailable(account)) {
-      throw new IdentityError(401, 'Identifiants invalides.');
+      throw new AppError(401, 'Identifiants invalides.');
     }
     return {
       actor: {
@@ -77,25 +70,25 @@ export class IdentityService {
 
   private async notify(to: string, subject: string) {
     if (!this.mail?.sendNotification)
-      throw new IdentityError(503, 'Service de notification non configuré.');
+      throw new AppError(503, 'Service de notification non configuré.');
     try {
       await this.mail.sendNotification({ to, subject });
     } catch {
-      throw new IdentityError(503, 'Envoi impossible. Réessayez.');
+      throw new AppError(503, 'Envoi impossible. Réessayez.');
     }
   }
   async changeEmail(actor: Actor | undefined, currentPassword: string, email: string) {
-    if (!this.mail) throw new IdentityError(503, 'Service de courriel non configuré.');
+    if (!this.mail) throw new AppError(503, 'Service de courriel non configuré.');
     const token = randomBytes(32).toString('hex');
     const tokenHash = digest(token);
     const recipient = await this.withReadyAccount(actor, async (account, tx) => {
       if (!account.isManager && account.loginMethod !== 'email')
-        throw new IdentityError(403, 'Compte responsable requis.');
+        throw new AppError(403, 'Compte responsable requis.');
       if (!(await verify(account.passwordHash, currentPassword)))
-        throw new IdentityError(401, 'Mot de passe incorrect.');
-      if (account.verifiedEmail === email) throw new IdentityError(409, 'Adresse déjà vérifiée.');
+        throw new AppError(401, 'Mot de passe incorrect.');
+      if (account.verifiedEmail === email) throw new AppError(409, 'Adresse déjà vérifiée.');
       if (!this.mail?.sendNotification)
-        throw new IdentityError(503, 'Service de notification non configuré.');
+        throw new AppError(503, 'Service de notification non configuré.');
       await tx.saveVerification(account.id, email, tokenHash, new Date(this.now() + DAY));
       return account;
     });
@@ -111,16 +104,16 @@ export class IdentityService {
         recipient.id,
         tokenHash,
       );
-      throw new IdentityError(503, 'Envoi impossible. Réessayez.');
+      throw new AppError(503, 'Envoi impossible. Réessayez.');
     }
   }
   async changePassword(actor: Actor | undefined, currentPassword: string, password: string) {
     const passwordHash = await hash(password);
     return this.withReadyAccount(actor, async (account, tx) => {
       if (!(await verify(account.passwordHash, currentPassword)))
-        throw new IdentityError(401, 'Mot de passe incorrect.');
+        throw new AppError(401, 'Mot de passe incorrect.');
       if (await verify(account.passwordHash, password))
-        throw new IdentityError(400, 'Choisissez un nouveau mot de passe.');
+        throw new AppError(400, 'Choisissez un nouveau mot de passe.');
       await tx.replacePassword(account.id, passwordHash);
     });
   }
@@ -131,7 +124,7 @@ export class IdentityService {
   }
   private recoverable(account: ManagerAccount | null) {
     if (!account || !account.isManager || account.disabled || account.historicalOnly)
-      throw new IdentityError(400, 'Récupération invalide.');
+      throw new AppError(400, 'Récupération invalide.');
     return account;
   }
   async recoverCode(
@@ -145,7 +138,7 @@ export class IdentityService {
     return this.repository.withAccount(a.clinicId, a.id, async (account, tx) => {
       const current = this.recoverable(account);
       if (!(await tx.hasCode(current.id, digest(code))))
-        throw new IdentityError(400, 'Récupération invalide.');
+        throw new AppError(400, 'Récupération invalide.');
       if (current.verifiedEmail)
         await this.notify(current.verifiedEmail, 'Récupération de votre compte');
       const recovered = await tx.consumeRecovery(current, passwordHash);
@@ -158,7 +151,7 @@ export class IdentityService {
   }
   async requestRecovery(identity: z.infer<typeof recoveryIdentitySchema>) {
     if (!this.mail?.sendRecovery)
-      throw new IdentityError(503, 'Service de courriel non configuré.');
+      throw new AppError(503, 'Service de courriel non configuré.');
     const located = await this.locate(identity);
     if (
       !located ||
@@ -214,7 +207,7 @@ export class IdentityService {
         !current.recoveryExpiresAt ||
         current.recoveryExpiresAt.getTime() <= this.now()
       )
-        throw new IdentityError(400, 'Lien invalide ou expiré.');
+        throw new AppError(400, 'Lien invalide ou expiré.');
       const recovered = await tx.consumeRecovery(current, passwordHash);
       return {
         clinicId: recovered.clinicId,
@@ -246,7 +239,7 @@ export class IdentityService {
   ) {
     return this.withAuthenticatedAccount(actor, async (account, transaction) => {
       if (onboardingStage(account) !== 'ready' || account.historicalOnly)
-        throw new IdentityError(403, 'Accès limité.');
+        throw new AppError(403, 'Accès limité.');
       return action(account, transaction);
     });
   }
@@ -260,7 +253,7 @@ export class IdentityService {
   ) {
     return this.withReadyAccount(actor, (account, transaction) => {
       if (!account.isManager && !account.permissions.includes('patients.assign'))
-        throw new IdentityError(403, 'Autorisation d’attribution requise.');
+        throw new AppError(403, 'Autorisation d’attribution requise.');
       return transaction.databaseTransaction((tx) =>
         action({ clinicId: account.clinicId, accountId: account.id }, tx),
       );
@@ -284,7 +277,7 @@ export class IdentityService {
         ) &&
         !(!manage && clinicalEligible(account, "prescriptions.draft"))
       )
-        throw new IdentityError(403, "Gestion des médicaments non autorisée.");
+        throw new AppError(403, "Gestion des médicaments non autorisée.");
       return transaction.databaseTransaction((tx) =>
         action({ clinicId: account.clinicId, accountId: account.id }, tx),
       );
@@ -292,7 +285,7 @@ export class IdentityService {
   }
   withCatalogRead<T>(actor:Actor|undefined, action:(context:{clinicId:string;accountId:string;permissions:readonly string[];isManager:boolean},tx:import('../../database.js').ClinicTransaction)=>Promise<T>) {
     return this.withReadyAccount(actor,(account,transaction)=> {
-      if (!account.permissions.includes('catalog.manage') && !clinicalEligible(account,'clinical.read')) throw new IdentityError(403,'Accès au catalogue non autorisé.');
+      if (!account.permissions.includes('catalog.manage') && !clinicalEligible(account,'clinical.read')) throw new AppError(403,'Accès au catalogue non autorisé.');
       return transaction.databaseTransaction(tx=>action({clinicId:account.clinicId,accountId:account.id,permissions:account.permissions,isManager:account.isManager},tx));
     });
   }
@@ -306,7 +299,7 @@ export class IdentityService {
     return this.withReadyAccount(actor, (account, transaction) =>
       transaction.databaseTransaction(async (tx) => {
         if (!clinicalEligible(account, 'clinical.read'))
-          throw new IdentityError(403, 'Accès clinique non autorisé.');
+          throw new AppError(403, 'Accès clinique non autorisé.');
         const patientIds = await new PatientAccessRepository(tx, account.clinicId)
           .activePatientIds(account.id);
         return action(
@@ -336,7 +329,7 @@ export class IdentityService {
           !clinicalEligible(account, permission) ||
           !(await new PatientAccessRepository(tx, account.clinicId).active(patientId, account.id))
         )
-          throw new IdentityError(403, 'Accès clinique non autorisé.');
+          throw new AppError(403, 'Accès clinique non autorisé.');
         return action({ clinicId: account.clinicId, accountId: account.id, patientId, permissions: account.permissions, isManager:account.isManager }, tx);
       }),
     );
@@ -351,14 +344,14 @@ export class IdentityService {
     return this.withReadyAccount(actor, (account, transaction) =>
       transaction.databaseTransaction(async (tx) => {
         if (!account.isManager && !account.permissions.includes(permission))
-          throw new IdentityError(403, 'Autorisation financière requise.');
+          throw new AppError(403, 'Autorisation financière requise.');
         if (!account.isManager && permission.startsWith('financial.') && !account.permissions.includes('billing.read'))
-          throw new IdentityError(403, 'Lecture financière requise.');
+          throw new AppError(403, 'Lecture financière requise.');
         const patients = new PatientAccessRepository(tx, account.clinicId);
         const active = await patients.active(patientId, account.id);
         if (!account.isManager && account.kind === 'doctor' && !active)
-          throw new IdentityError(403, 'Accès financier patient non autorisé.');
-        if (!(await patients.exists(patientId))) throw new IdentityError(404, 'Patient introuvable.');
+          throw new AppError(403, 'Accès financier patient non autorisé.');
+        if (!(await patients.exists(patientId))) throw new AppError(404, 'Patient introuvable.');
         return action({clinicId: account.clinicId, accountId: account.id,
           ownWork: !account.isManager && account.kind === 'doctor',
           clinical: account.isManager || (active && clinicalEligible(account, 'clinical.read'))}, tx);
@@ -374,7 +367,7 @@ export class IdentityService {
   ) {
     return this.withReadyAccount(actor, (account, transaction) => {
       if (!account.isManager)
-        throw new IdentityError(403, "Autorité de responsable requise.");
+        throw new AppError(403, "Autorité de responsable requise.");
       return transaction.databaseTransaction((tx) =>
         action({ clinicId: account.clinicId, accountId: account.id }, tx),
       );
@@ -390,9 +383,9 @@ export class IdentityService {
   ) {
     return this.withReadyAccount(actor, (account, transaction) => {
       if (!account.isManager && !account.permissions.includes(permission))
-        throw new IdentityError(403, "Autorisation requise.");
+        throw new AppError(403, "Autorisation requise.");
       if ((clinicalPermissions as readonly string[]).includes(permission))
-        throw new IdentityError(
+        throw new AppError(
           403,
           "Une autorisation clinique par patient est requise.",
         );
@@ -415,9 +408,9 @@ export class IdentityService {
   ) {
     return this.withReadyAccount(actor, (account, transaction) => {
       if ((clinicalPermissions as readonly string[]).includes(permission))
-        throw new IdentityError(403, 'Une autorisation clinique par patient est requise.');
+        throw new AppError(403, 'Une autorisation clinique par patient est requise.');
       if (!account.permissions.includes(permission))
-        throw new IdentityError(403, 'Autorisation requise.');
+        throw new AppError(403, 'Autorisation requise.');
       return transaction.databaseTransaction((tx) =>
         action(
           {
@@ -438,10 +431,10 @@ export class IdentityService {
     const passwordHash = await hash(password);
     await this.withAuthenticatedAccount(actor, async (account, transaction) => {
       if (!account.temporaryExpiresAt) {
-        throw new IdentityError(409, 'Mot de passe déjà remplacé.');
+        throw new AppError(409, 'Mot de passe déjà remplacé.');
       }
       if (await verify(account.passwordHash, password)) {
-        throw new IdentityError(400, 'Choisissez un nouveau mot de passe.');
+        throw new AppError(400, 'Choisissez un nouveau mot de passe.');
       }
       await transaction.replacePassword(account.id, passwordHash);
     });
@@ -449,19 +442,19 @@ export class IdentityService {
   }
 
   async sendEmailVerification(actor: Actor | undefined, email: string) {
-    if (!this.mail) throw new IdentityError(503, 'Service de courriel non configuré.');
+    if (!this.mail) throw new AppError(503, 'Service de courriel non configuré.');
     const token = randomBytes(32).toString('hex');
     const tokenHash = digest(token);
     const recipient = await this.withAuthenticatedAccount(actor, async (account, transaction) => {
       if (onboardingStage(account) !== 'email') {
-        throw new IdentityError(409, 'Étape de configuration incorrecte.');
+        throw new AppError(409, 'Étape de configuration incorrecte.');
       }
       if (
         account.loginMethod === 'email' &&
         !account.recoverySetup &&
         email !== account.loginEmail
       ) {
-        throw new IdentityError(400, 'Vérifiez votre adresse de connexion.');
+        throw new AppError(400, 'Vérifiez votre adresse de connexion.');
       }
       await transaction.saveVerification(account.id, email, tokenHash, new Date(this.now() + DAY));
       return { clinicId: account.clinicId, accountId: account.id };
@@ -478,7 +471,7 @@ export class IdentityService {
         recipient.accountId,
         tokenHash,
       );
-      throw new IdentityError(503, 'Envoi impossible. Réessayez.');
+      throw new AppError(503, 'Envoi impossible. Réessayez.');
     }
   }
 
@@ -491,7 +484,7 @@ export class IdentityService {
         account.verificationExpiresAt &&
         account.verificationExpiresAt.getTime() > this.now();
       if (!valid || !account.recoveryEmail) {
-        throw new IdentityError(400, 'Lien invalide ou expiré.');
+        throw new AppError(400, 'Lien invalide ou expiré.');
       }
       const changed =
         account.verifiedEmail !== null && account.verifiedEmail !== account.recoveryEmail;
@@ -524,10 +517,10 @@ export class IdentityService {
         !account.verifiedEmail ||
         account.temporaryExpiresAt
       ) {
-        throw new IdentityError(409, 'Vérifiez votre adresse courriel.');
+        throw new AppError(409, 'Vérifiez votre adresse courriel.');
       }
       if (!(await verify(account.passwordHash, password))) {
-        throw new IdentityError(401, 'Mot de passe incorrect.');
+        throw new AppError(401, 'Mot de passe incorrect.');
       }
       return this.issueCodes(account, transaction);
     });
@@ -542,7 +535,7 @@ export class IdentityService {
         account.temporaryExpiresAt ||
         account.codesBatchId !== batchId
       ) {
-        throw new IdentityError(409, 'Codes remplacés ou configuration incomplète.');
+        throw new AppError(409, 'Codes remplacés ou configuration incomplète.');
       }
       await transaction.confirmSavedCodes(account.id);
     });
@@ -560,7 +553,7 @@ export class IdentityService {
     actor: Actor | undefined,
     action: (account: ManagerAccount, transaction: IdentityTransaction) => Promise<T>,
   ) {
-    if (!actor) throw new IdentityError(401, 'Connexion requise.');
+    if (!actor) throw new AppError(401, 'Connexion requise.');
     return this.repository.withAccount(
       actor.clinicId,
       actor.accountId,
@@ -570,7 +563,7 @@ export class IdentityService {
           this.isUnavailable(account) ||
           account.credentialVersion !== actor.version
         ) {
-          throw new IdentityError(401, 'Connexion requise.');
+          throw new AppError(401, 'Connexion requise.');
         }
         return action(account, transaction);
       },

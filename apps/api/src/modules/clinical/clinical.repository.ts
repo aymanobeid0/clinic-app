@@ -1,3 +1,4 @@
+import { AppError } from '../../errors/app-error.js';
 import { createHash, randomUUID } from 'node:crypto';
 import type {
   ClinicalRecord,
@@ -7,7 +8,7 @@ import type {
   PrescriptionContent,
 } from '@clinic/contracts';
 import type { ClinicTransaction } from '../../database.js';
-import { IdentityError } from '../identity/index.js';
+
 export class ClinicalRepository {
   constructor(
     private readonly tx: ClinicTransaction,
@@ -53,7 +54,7 @@ export class ClinicalRepository {
       where: { clinicId_commandId: { clinicId: this.clinicId, commandId } },
     });
     if (old && (old.actorId !== actorId || old.payloadHash !== hash))
-      throw new IdentityError(409, 'Commande déjà utilisée.');
+      throw new AppError(409, 'Commande déjà utilisée.');
     return {
       hash,
       receipt: old?.receipt as unknown as ClinicalRecord<T> | undefined,

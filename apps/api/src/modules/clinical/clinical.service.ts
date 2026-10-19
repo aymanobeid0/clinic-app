@@ -1,3 +1,4 @@
+import { AppError } from '../../errors/app-error.js';
 import type { z } from 'zod';
 import type {
   clinicalDraftSchema,
@@ -6,11 +7,7 @@ import type {
   ClinicalRecord,
   ClinicalContent,
 } from '@clinic/contracts';
-import {
-  IdentityError,
-  type Actor,
-  type IdentityAccess,
-} from '../identity/index.js';
+import type { Actor, IdentityAccess } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
 import { ClinicalRepository } from './clinical.repository.js';
 function readable(
@@ -81,7 +78,7 @@ export class ClinicalService {
       async (c, tx) => {
         const r = new ClinicalRepository(tx, c.clinicId, id);
         if (!c.permissions.includes('clinical.read'))
-          throw new IdentityError(403, 'Accès en lecture clinique requis.');
+          throw new AppError(403, 'Accès en lecture clinique requis.');
         await r.lock();
         const replay = await r.replay(
           data.commandId,
@@ -100,16 +97,16 @@ export class ClinicalService {
         }
         const record = await r.record(kind);
         if (record.revision !== data.revision)
-          throw new IdentityError(
+          throw new AppError(
             409,
             'Ce dossier a changé. Rechargez et réconciliez votre saisie conservée.',
           );
         if (action === 'confirm' && !record.draft)
-          throw new IdentityError(409, 'Aucun brouillon à confirmer.');
+          throw new AppError(409, 'Aucun brouillon à confirmer.');
         const observedAt =
           'observedAt' in data ? data.observedAt : record.draft!.observedAt;
         if (Date.parse(observedAt) > this.now())
-          throw new IdentityError(
+          throw new AppError(
             400,
             'La date d’observation ne peut pas être future.',
           );

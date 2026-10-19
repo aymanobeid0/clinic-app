@@ -1,7 +1,8 @@
+import { AppError } from '../../errors/app-error.js';
 import { randomUUID, createHash } from 'node:crypto';
 import type { CatalogEntry, TreatmentVersion } from '@clinic/contracts';
 import type { ClinicTransaction } from '../../database.js';
-import { IdentityError } from '../identity/index.js';
+
 export class TreatmentRepository {
   constructor(
     readonly tx: ClinicTransaction,
@@ -19,7 +20,7 @@ export class TreatmentRepository {
       where: { clinicId_commandId: { clinicId: this.clinicId, commandId } },
     });
     if (old && (old.actorId !== actorId || old.payloadHash !== hash))
-      throw new IdentityError(409, 'Commande déjà utilisée.');
+      throw new AppError(409, 'Commande déjà utilisée.');
     return { hash, receipt: old?.receipt };
   }
   save(commandId: string, actorId: string, hash: string, receipt: object) {
@@ -51,7 +52,7 @@ export class TreatmentRepository {
       where: { clinicId_planId: { clinicId: this.clinicId, planId } },
     });
     if (old && old.patientId !== patientId)
-      throw new IdentityError(
+      throw new AppError(
         409,
         'Identifiant de proposition déjà lié à un autre patient.',
       );

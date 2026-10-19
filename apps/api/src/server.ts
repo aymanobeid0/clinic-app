@@ -1,4 +1,4 @@
-import pino from 'pino';
+import { logger as log } from './logger.js';
 import { createApplication } from './application.js';
 import { openDatabase } from './database.js';
 
@@ -9,7 +9,6 @@ if (!DATABASE_URL || !SESSION_SECRET || !APP_ORIGIN) {
 if (process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE === 'false') {
   throw new Error('Production requires secure cookies.');
 }
-const log = pino();
 const database = openDatabase(DATABASE_URL);
 await database.connect();
 await database.assertRuntimeRole();

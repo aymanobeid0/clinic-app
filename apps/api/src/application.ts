@@ -9,7 +9,7 @@ import { createIdentityRoutes, createIdentityAccess, type Mail } from './modules
 import { createPatientRoutes } from './modules/patients/index.js';
 import { browserSession, enforceSessionAge } from './middleware/session.js';
 import { requireBrowserWrite } from './middleware/csrf.js';
-import { handleErrors } from './middleware/errors.js';
+import { createErrorHandler } from './middleware/errors.js';
 import type { Database } from './database.js';
 import { ClinicUpdates } from './clinic-updates.js';
 
@@ -64,6 +64,6 @@ export function createApplication(options: Options) {
   app.use('/api', createClinicalRoutes(createIdentityAccess(config.database, config.now), config.updates, config.now));
   app.use('/api',createTreatmentRoutes(createIdentityAccess(config.database,config.now),config.updates,config.now));
   app.use('/api', createBillingRoutes(createIdentityAccess(config.database, config.now), config.updates, config.now));
-  app.use(handleErrors);
+  app.use(createErrorHandler());
   return app;
 }

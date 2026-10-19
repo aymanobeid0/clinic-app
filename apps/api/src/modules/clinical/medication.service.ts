@@ -1,13 +1,10 @@
+import { AppError } from '../../errors/app-error.js';
 import type { z } from "zod";
 import type {
   medicationCommandSchema,
   prescriptionTemplateSchema,
 } from "@clinic/contracts";
-import {
-  IdentityError,
-  type Actor,
-  type IdentityAccess,
-} from "../identity/index.js";
+import type { Actor, IdentityAccess } from "../identity/index.js";
 import type { ClinicUpdates } from "../../clinic-updates.js";
 import { PrescriptionRepository } from "./prescription.repository.js";
 export class MedicationService {
@@ -54,7 +51,7 @@ export class MedicationService {
         const r = new PrescriptionRepository(tx, c.clinicId),
           old = await r.medication(data.id);
         if ((old?.revision ?? 0) !== data.revision)
-          throw new IdentityError(
+          throw new AppError(
             409,
             "Cette référence a changé. Relisez avant de réessayer.",
           );
@@ -67,7 +64,7 @@ export class MedicationService {
             data.id,
           ))
         )
-          throw new IdentityError(409, "Cette référence existe déjà.");
+          throw new AppError(409, "Cette référence existe déjà.");
         const value = {
           id: data.id,
           name: data.name,
@@ -99,7 +96,7 @@ export class MedicationService {
       if (replay.receipt) return replay.receipt;
       const r = new PrescriptionRepository(tx, c.clinicId);
       if ((await r.template()).revision !== data.revision)
-        throw new IdentityError(409, "Le modèle a changé.");
+        throw new AppError(409, "Le modèle a changé.");
       const value = {
         revision: data.revision + 1,
         header: data.header,
