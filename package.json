@@ -21,9 +21,7 @@
     "dev:web": "npm run dev --workspace @clinic/web",
     "provision": "tsx apps/api/src/provision.ts",
     "test:browser": "npm run test:browser --workspace @clinic/web",
-    "test:db:prepare": "tsx apps/api/test/prepare.ts",
-    "dev:local": "node scripts/local-dev.ts",
-    "dev:local:stop": "node scripts/local-dev.ts --stop"
+    "test:db:prepare": "tsx apps/api/test/prepare.ts"
   },
   "devDependencies": {
     "typescript": "6.0.3",

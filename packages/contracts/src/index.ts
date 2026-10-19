@@ -845,38 +845,137 @@ export const chartSuggestionSchema = z
   })
   .strict();
 // Billing amounts are exact integer minor-unit strings on responses.
-export const openingBalanceSchema = z.object({
-  commandId: z.uuid().transform((v) => v.toLowerCase()),
-  id: z.uuid().transform((v) => v.toLowerCase()),
-  currency: currencyCodeSchema,
-  amount: exactAmountSchema,
-  provenance: z.string().trim().min(1).max(2000),
-  asOf: z.iso.datetime(),
-}).strict();
-export const reconcileChargeSchema = z.object({
-  commandId: z.uuid().transform((v) => v.toLowerCase()),
-  chargeId: z.uuid().transform((v) => v.toLowerCase()),
-  revision: z.number().int().nonnegative(),
-  acceptedRevision: z.number().int().positive(),
-  reason: z.string().trim().min(1).max(2000),
-}).strict();
+export const openingBalanceSchema = z
+  .object({
+    commandId: z.uuid().transform((v) => v.toLowerCase()),
+    id: z.uuid().transform((v) => v.toLowerCase()),
+    currency: currencyCodeSchema,
+    amount: exactAmountSchema,
+    provenance: z.string().trim().min(1).max(2000),
+    asOf: z.iso.datetime(),
+  })
+  .strict();
+export const reconcileChargeSchema = z
+  .object({
+    commandId: z.uuid().transform((v) => v.toLowerCase()),
+    chargeId: z.uuid().transform((v) => v.toLowerCase()),
+    revision: z.number().int().nonnegative(),
+    acceptedRevision: z.number().int().positive(),
+    reason: z.string().trim().min(1).max(2000),
+  })
+  .strict();
 export type BillingAdjustment = {
-  id: string; chargeId: string; revision: number; acceptedRevision: number;
-  amountMinor: string; targetMinor: string; reason: string; actorId: string; at: string;
+  id: string;
+  chargeId: string;
+  revision: number;
+  acceptedRevision: number;
+  amountMinor: string;
+  targetMinor: string;
+  reason: string;
+  actorId: string;
+  at: string;
 };
 export type OpeningBalance = {
-  id: string; currency: string; amountMinor: string; provenance: string;
-  asOf: string; actorId: string; at: string;
+  id: string;
+  currency: string;
+  amountMinor: string;
+  provenance: string;
+  asOf: string;
+  actorId: string;
+  at: string;
 };
 export type BillingWorkspace = {
   patientId: string;
+  settlements: Settlement[];
+  deposits: {settlementId: string; currency: string; amountMinor: string; availableMinor: string}[];
   charges: {
-    id: string; planId: string; itemId: string; currency: string; performedBy: string;
-    originalMinor: string; dueMinor: string; acceptedMinor: string; revision: number;
-    reconciliationRequired: boolean; adjustments: BillingAdjustment[];
-    at: string; name?: string; teeth?: string[];
+    id: string;
+    planId: string;
+    itemId: string;
+    currency: string;
+    performedBy: string;
+    originalMinor: string;
+    dueMinor: string;
+    chargedMinor: string;
+    paidMinor: string;
+    allocations: {settlementId: string; at: string; newMoneyMinor: string; creditMinor: string}[];
+    acceptedMinor: string;
+    revision: number;
+    reconciliationRequired: boolean;
+    adjustments: BillingAdjustment[];
+    at: string;
+    name?: string;
+    teeth?: string[];
   }[];
-  planned: { planId: string; itemId: string; currency: string; amountMinor: string; name?: string; teeth?: string[] }[];
+  planned: {
+    planId: string;
+    itemId: string;
+    currency: string;
+    amountMinor: string;
+    name?: string;
+    teeth?: string[];
+  }[];
   openingBalances: OpeningBalance[];
-  totals: {currency: string; plannedMinor: string; dueMinor: string; creditMinor: string}[];
+  totals: {
+    currency: string;
+    plannedMinor: string;
+    dueMinor: string;
+    creditMinor: string;
+  }[];
+};
+
+export const paymentMethodSchema = z
+  .object({
+    commandId: z.uuid().transform(v => v.toLowerCase()),
+    id: z.uuid().transform(v => v.toLowerCase()),
+    revision: z.number().int().nonnegative(),
+    name: z.string().trim().min(1).max(100),
+    active: z.boolean(),
+  })
+  .strict();
+export type PaymentMethod = {
+  id: string;
+  revision: number;
+  name: string;
+  active: boolean;
+};
+export const settlementSchema = z
+  .object({
+    commandId: z.uuid().transform(v => v.toLowerCase()),
+    currency: currencyCodeSchema,
+    methodId: z.uuid().transform(v => v.toLowerCase()).nullable(),
+    newMoney: exactAmountSchema,
+    deposit: exactAmountSchema,
+    allocations: z
+      .array(
+        z
+          .object({
+            chargeId: z.uuid().transform(v => v.toLowerCase()),
+            newMoney: exactAmountSchema,
+            credit: exactAmountSchema,
+          })
+          .strict(),
+      )
+      .max(100),
+  })
+  .strict();
+export type Settlement = {
+  identity: {patientName: string; patientNumber: number; clinicName: string};
+  id: string;
+  patientId: string;
+  currency: string;
+  actorId: string;
+  at: string;
+  receiptNumber: string | null;
+  methodId: string | null;
+  methodName: string | null;
+  newMoneyMinor: string;
+  depositMinor: string;
+  creditUsedMinor: string;
+  allocations: {
+    chargeId: string;
+    newMoneyMinor: string;
+    creditMinor: string;
+    sources: { settlementId: string; amountMinor: string }[];
+  }[];
 };

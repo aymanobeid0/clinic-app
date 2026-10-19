@@ -3,6 +3,8 @@ import type {
   ProcedureStart,
   BillingAdjustment,
   OpeningBalance,
+  PaymentMethod,
+  Settlement,
 } from "@clinic/contracts";
 import type { ClinicTransaction } from "../../database.js";
 import { IdentityError } from "../identity/index.js";
@@ -12,6 +14,72 @@ export class BillingRepository {
     readonly tx: ClinicTransaction,
     readonly clinicId: string,
   ) {}
+  async documentIdentity(patientId: string) {
+    const patient = await this.tx.patient.findFirstOrThrow({
+      where: { clinicId: this.clinicId, id: patientId },
+      select: { name: true, patientNumber: true },
+    });
+    const clinic = await this.tx.clinic.findUniqueOrThrow({
+      where: { id: this.clinicId },
+      select: { name: true },
+    });
+    return {
+      patientName: patient.name,
+      patientNumber: patient.patientNumber,
+      clinicName: clinic.name,
+    };
+  }
+  async methods(): Promise<PaymentMethod[]> {
+    const rows = await this.tx.billingMethod.findMany({
+      where: { clinicId: this.clinicId },
+      orderBy: { revision: "asc" },
+    });
+    return [
+      ...new Map(
+        rows.map((r) => [r.id, r.snapshot as unknown as PaymentMethod]),
+      ).values(),
+    ];
+  }
+  method(value: PaymentMethod) {
+    return this.tx.billingMethod.create({
+      data: {
+        clinicId: this.clinicId,
+        id: value.id,
+        revision: value.revision,
+        snapshot: value,
+      },
+    });
+  }
+  async nextReceipt(year: number) {
+    const rows = await this.tx.billingEntry.findMany({
+      where: { clinicId: this.clinicId, kind: "settlement" },
+      select: { snapshot: true },
+    });
+    const prefix = `REC-${year}-`;
+    const numbers = rows
+      .map((r) => (r.snapshot as unknown as Settlement).receiptNumber)
+      .filter((n): n is string => !!n?.startsWith(prefix));
+    const next =
+      numbers.reduce(
+        (n, value) => Math.max(n, Number(value.slice(prefix.length))),
+        0,
+      ) + 1;
+    return prefix + String(next).padStart(6, "0");
+  }
+  settlement(value: Settlement) {
+    return this.tx.billingEntry.create({
+      data: {
+        id: value.id,
+        clinicId: this.clinicId,
+        patientId: value.patientId,
+        kind: "settlement",
+        sourceId: value.id,
+        currency: value.currency,
+        amountMinor: value.newMoneyMinor,
+        snapshot: value,
+      },
+    });
+  }
   async entries(patientId: string) {
     return this.tx.billingEntry.findMany({
       where: { clinicId: this.clinicId, patientId },

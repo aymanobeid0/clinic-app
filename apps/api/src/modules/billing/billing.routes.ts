@@ -2,6 +2,11 @@ import { Router } from "express";
 import type { BillingController } from "./billing.controller.js";
 export function billingRoutes(c: BillingController) {
   const router = Router();
+  router.get("/billing/payment-methods", c.methods);
+  router.post("/billing/payment-methods", c.method);
+  router.post("/billing/:id/settlements", c.settle);
+  router.get("/billing/:id/settlements/:settlementId", c.settlement);
+  router.get("/billing/:id/settlements/:settlementId/:action", c.output);
   router.get("/billing/:id", c.state);
   router.post("/billing/:id/opening-balances", c.opening);
   router.post("/billing/:id/reconcile", c.reconcile);

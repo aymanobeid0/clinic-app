@@ -190,24 +190,28 @@ it("large accepted extra-work amounts survive starts, explicit reconciliation an
   }
 });
 
-async function manager() {
+async function manager(now?: number) {
   const code = `test-${randomUUID()}`.slice(0, 32);
 
   const email = `${code}@example.invalid`;
 
-  await provisionClinic(owner, {
-    clinicCode: code,
+  await provisionClinic(
+    owner,
+    {
+      clinicCode: code,
 
-    clinicName: "Clinique fictive",
+      clinicName: "Clinique fictive",
 
-    username: "manager",
+      username: "manager",
 
-    displayName: "Responsable",
+      displayName: "Responsable",
 
-    email,
+      email,
 
-    temporaryPassword: "Fictional-initial-pass-1",
-  });
+      temporaryPassword: "Fictional-initial-pass-1",
+    },
+    now,
+  );
 
   const browser = request.agent(app);
 
@@ -329,8 +333,8 @@ async function activateEmployee(code: string, username: string) {
   return { browser, post, identity, signIn };
 }
 
-async function scenario() {
-  const m = await manager();
+async function scenario(now?: number) {
+  const m = await manager(now);
 
   const ownId = (await m.browser.get("/api/identity")).body.accountId;
 
@@ -389,8 +393,8 @@ async function scenario() {
   return { m, patient, create };
 }
 
-async function treatmentScenario(currency = "MRU") {
-  const { m, patient, create } = await scenario();
+async function treatmentScenario(currency = "MRU", now?: number) {
+  const { m, patient, create } = await scenario(now);
   const own = (await m.browser.get("/api/identity")).body.accountId;
   await m.post(`/accounts/${own}/permissions`, {
     currentPassword: "Fictional-manager-pass-2",
@@ -872,4 +876,786 @@ it("opening amounts preserve enabled zero- and three-decimal currencies separate
     { currency: "KWD", plannedMinor: "0", dueMinor: "1234", creditMinor: "0" },
     { currency: "MRU", plannedMinor: "20000", dueMinor: "0", creditMinor: "0" },
   ]);
+});
+
+it("manager configures a payment method and records one explicit deposit receipt under concurrent retries", async () => {
+  const s = await treatmentScenario();
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  expect((await s.m.post("/billing/payment-methods", method)).status).toBe(200);
+  const path = `/billing/${s.patient.id}/settlements`;
+  const command = {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "120",
+    deposit: "120",
+    allocations: [],
+  };
+  const results = await Promise.all([
+    s.m.post(path, command),
+    s.m.post(path, command),
+  ]);
+  expect(results.map((r) => r.status)).toEqual([200, 200]);
+  expect(results[0].body).toEqual(results[1].body);
+  expect(results[0].body).toMatchObject({
+    newMoneyMinor: "12000",
+    depositMinor: "12000",
+    creditUsedMinor: "0",
+    methodName: "Espèces",
+  });
+  expect(results[0].body.receiptNumber).toMatch(/^REC-\d{4}-000001$/);
+  const state = (await s.m.browser.get(`/api/billing/${s.patient.id}`)).body;
+  expect(state.settlements).toHaveLength(1);
+  expect(state.deposits).toEqual([
+    {
+      settlementId: results[0].body.id,
+      currency: "MRU",
+      amountMinor: "12000",
+      availableMinor: "12000",
+    },
+  ]);
+  expect(state.totals).toEqual([
+    { currency: "MRU", plannedMinor: "0", dueMinor: "0", creditMinor: "12000" },
+  ]);
+});
+
+it("mixed and credit-only settlements preserve old funds, reconcile excess and cannot overspend under races", async () => {
+  const s = await visitScenario();
+  await s.doctor.post(s.path, s.start);
+  const base = `/billing/${s.patient.id}`;
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Virement",
+    active: true,
+  };
+  await s.m.post("/billing/payment-methods", method);
+  const deposit = await s.m.post(base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "120",
+    deposit: "120",
+    allocations: [],
+  });
+  const state = (await s.m.browser.get("/api" + base)).body;
+  const first = state.charges[0].id,
+    second = state.charges[1].id;
+  const command = {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "80",
+    deposit: "10",
+    allocations: [{ chargeId: first, newMoney: "70", credit: "30" }],
+  };
+  const mixed = await s.m.post(base + "/settlements", command);
+  expect(mixed.status).toBe(200);
+  expect(mixed.body).toMatchObject({
+    newMoneyMinor: "8000",
+    depositMinor: "1000",
+    creditUsedMinor: "3000",
+    receiptNumber: `REC-${new Date().getUTCFullYear()}-000002`,
+  });
+  expect(mixed.body.allocations[0].sources).toEqual([
+    { settlementId: deposit.body.id, amountMinor: "3000" },
+  ]);
+  const credit = {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: null,
+    newMoney: "0",
+    deposit: "0",
+    allocations: [{ chargeId: second, newMoney: "0", credit: "60" }],
+  };
+  const race = await Promise.all([
+    s.m.post(base + "/settlements", credit),
+    s.m.post(base + "/settlements", { ...credit, commandId: randomUUID() }),
+  ]);
+  expect(race.map((r) => r.status).sort()).toEqual([200, 409]);
+  expect(race.find((r) => r.status === 200)!.body.receiptNumber).toBeNull();
+  const after = (await s.m.browser.get("/api" + base)).body;
+  expect(after.totals).toEqual([
+    {
+      currency: "MRU",
+      plannedMinor: "0",
+      dueMinor: "4000",
+      creditMinor: "4000",
+    },
+  ]);
+  expect(
+    after.charges.find((c: { id: string }) => c.id === first),
+  ).toMatchObject({
+    paidMinor: "10000",
+    dueMinor: "0",
+    reconciliationRequired: false,
+  });
+  expect(
+    (await s.m.post(base + "/settlements", { ...command, newMoney: "81" }))
+      .status,
+  ).toBe(409);
+  const retained = await s.m.browser.get(
+    `/api${base}/settlements/${mixed.body.id}`,
+  );
+  expect(retained.status).toBe(200);
+  expect(retained.body).toEqual(mixed.body);
+});
+
+it("settlements enforce method revisions, exact currency, explicit excess and patient-scoped credit", async () => {
+  const s = await visitScenario();
+  await s.doctor.post(s.path, s.start);
+  const base = `/billing/${s.patient.id}`;
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Original",
+    active: true,
+  };
+  expect((await s.m.post("/billing/payment-methods", method)).status).toBe(200);
+  const deposit = {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "150",
+    deposit: "150",
+    allocations: [],
+  };
+  const received = await s.m.post(base + "/settlements", deposit);
+  expect(received.status).toBe(200);
+  const changed = {
+    ...method,
+    commandId: randomUUID(),
+    revision: 1,
+    name: "Renamed",
+    active: false,
+  };
+  expect((await s.m.post("/billing/payment-methods", changed)).status).toBe(
+    200,
+  );
+  expect(
+    (
+      await s.m.post("/billing/payment-methods", {
+        ...changed,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(409);
+  expect(
+    (
+      await s.m.post(base + "/settlements", {
+        ...deposit,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(400);
+  expect((await s.m.post(base + "/settlements", deposit)).body).toEqual(
+    received.body,
+  );
+  expect(
+    (await s.m.browser.get("/api" + base + "/settlements/" + received.body.id))
+      .body.methodName,
+  ).toBe("Original");
+  await s.m.post("/billing/payment-methods", {
+    ...changed,
+    commandId: randomUUID(),
+    revision: 2,
+    active: true,
+  });
+  const chargeId = (await s.m.browser.get("/api" + base)).body.charges[0].id;
+  const pay = {
+    ...deposit,
+    commandId: randomUUID(),
+    newMoney: "120",
+    deposit: "0",
+    allocations: [{ chargeId, newMoney: "100", credit: "0" }],
+  };
+  expect((await s.m.post(base + "/settlements", pay)).status).toBe(400);
+  expect(
+    (await s.m.post(base + "/settlements", { ...pay, newMoney: "100.001" }))
+      .status,
+  ).toBe(400);
+  expect(
+    (
+      await s.m.post(base + "/settlements", {
+        ...pay,
+        newMoney: "100",
+        allocations: [pay.allocations[0], pay.allocations[0]],
+      })
+    ).status,
+  ).toBe(400);
+  for (const code of ["JPY", "KWD"])
+    await s.m.post("/catalog/currencies", { commandId: randomUUID(), code });
+  expect(
+    (
+      await s.m.post(base + "/settlements", {
+        ...deposit,
+        commandId: randomUUID(),
+        currency: "JPY",
+        newMoney: "1.1",
+        deposit: "1.1",
+      })
+    ).status,
+  ).toBe(400);
+  expect(
+    (
+      await s.m.post(base + "/settlements", {
+        ...pay,
+        newMoney: "100",
+        currency: "JPY",
+      })
+    ).status,
+  ).toBe(400);
+  for (const [currency, amount] of [
+    ["JPY", "123"],
+    ["KWD", "1.234"],
+  ])
+    expect(
+      (
+        await s.m.post(base + "/settlements", {
+          ...deposit,
+          commandId: randomUUID(),
+          currency,
+          newMoney: amount,
+          deposit: amount,
+        })
+      ).status,
+    ).toBe(200);
+  const otherPatient = (
+    await s.m.post("/patients", {
+      commandId: randomUUID(),
+      name: "Autre fictif",
+      phone: "71111111",
+      contactKind: "patient",
+      contactName: "",
+    })
+  ).body.patient;
+  expect(
+    (
+      await s.m.post(`/billing/${otherPatient.id}/settlements`, {
+        ...deposit,
+        commandId: randomUUID(),
+        newMoney: "0",
+        deposit: "0",
+        methodId: null,
+        allocations: [{ chargeId, newMoney: "0", credit: "100" }],
+      })
+    ).status,
+  ).toBe(404);
+  expect(
+    (
+      await s.m.browser.get(
+        `/api/billing/${otherPatient.id}/settlements/${received.body.id}`,
+      )
+    ).status,
+  ).toBe(404);
+  expect((await s.m.browser.get("/api" + base)).body.totals).toEqual([
+    { currency: "JPY", plannedMinor: "0", dueMinor: "0", creditMinor: "123" },
+    { currency: "KWD", plannedMinor: "0", dueMinor: "0", creditMinor: "1234" },
+    {
+      currency: "MRU",
+      plannedMinor: "0",
+      dueMinor: "20000",
+      creditMinor: "15000",
+    },
+  ]);
+});
+
+it("settlement authorization checks current manager, staff and doctor own-work scope including retained receipts", async () => {
+  const s = await visitScenario();
+  await s.doctor.post(s.path, s.start);
+  const base = `/billing/${s.patient.id}`;
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  await s.m.post("/billing/payment-methods", method);
+  const staff = await s.create("finance", "staff", [
+    "billing.read",
+    "billing.edit",
+  ]);
+  const other = await s.create("other", "doctor", [
+    "clinical.read",
+    "billing.read",
+    "billing.edit",
+  ]);
+  const chargeId = (await s.m.browser.get("/api" + base)).body.charges[0].id;
+  const pay = {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "10",
+    deposit: "0",
+    allocations: [{ chargeId, newMoney: "10", credit: "0" }],
+  };
+  expect((await request(app).get("/api" + base)).status).toBe(401);
+  expect((await staff.post("/billing/payment-methods", method)).status).toBe(
+    403,
+  );
+  expect((await s.doctor.post(base + "/settlements", pay)).status).toBe(403);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read", "billing.edit"],
+  });
+  const own = await s.doctor.post(base + "/settlements", pay);
+  expect(own.status).toBe(200);
+  expect(
+    (await s.doctor.browser.get("/api" + base + "/settlements/" + own.body.id))
+      .body,
+  ).toEqual(own.body);
+  expect((await other.post(base + "/settlements", pay)).status).toBe(403);
+  await s.m.post(`/patient-access/${s.patient.id}/share`, {
+    commandId: randomUUID(),
+    revision: 1,
+    accountId: other.id,
+    kind: "shared",
+  });
+  expect(
+    (
+      await other.post(base + "/settlements", {
+        ...pay,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(404);
+  expect(
+    (await other.browser.get("/api" + base + "/settlements/" + own.body.id))
+      .status,
+  ).toBe(404);
+  const deposit = {
+    ...pay,
+    commandId: randomUUID(),
+    deposit: "10",
+    allocations: [],
+  };
+  expect((await s.doctor.post(base + "/settlements", deposit)).status).toBe(
+    403,
+  );
+  const recorded = await staff.post(base + "/settlements", deposit);
+  expect(recorded.status).toBe(200);
+  expect(
+    JSON.stringify((await staff.browser.get("/api" + base)).body),
+  ).not.toContain("Acte fictif");
+  expect(
+    (
+      await s.doctor.browser.get(
+        "/api" + base + "/settlements/" + recorded.body.id,
+      )
+    ).status,
+  ).toBe(404);
+  const foreign = await scenario();
+  expect((await foreign.m.post(base + "/settlements", pay)).status).toBe(404);
+  expect(
+    (await foreign.m.browser.get("/api" + base + "/settlements/" + own.body.id))
+      .status,
+  ).toBe(404);
+  expect(
+    (await foreign.m.browser.get("/api/billing/payment-methods")).body,
+  ).toEqual([]);
+  await s.m.post(`/accounts/${staff.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [],
+  });
+  expect((await staff.post(base + "/settlements", deposit)).status).toBe(403);
+  expect(
+    (
+      await staff.browser.get(
+        "/api" + base + "/settlements/" + recorded.body.id,
+      )
+    ).status,
+  ).toBe(403);
+  await s.m.post(`/patient-access/${s.patient.id}/remove`, {
+    commandId: randomUUID(),
+    revision: 2,
+    accountId: s.doctor.id,
+  });
+  expect((await s.doctor.post(base + "/settlements", pay)).status).toBe(403);
+  expect(
+    (await s.doctor.browser.get("/api" + base + "/settlements/" + own.body.id))
+      .status,
+  ).toBe(403);
+});
+
+it("competing allocations cannot spend the same deposit on different charges and failed commits retain no funds or number", async () => {
+  const s = await visitScenario();
+  await s.doctor.post(s.path, s.start);
+  const base = `/billing/${s.patient.id}`;
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  await s.m.post("/billing/payment-methods", method);
+  const deposit = {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "100",
+    deposit: "100",
+    allocations: [],
+  };
+  const fn = "settlement_fail_" + randomUUID().replaceAll("-", "");
+  await owner.pool.query(
+    `CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.receipt->>'patientId' = '${s.patient.id}' THEN RAISE EXCEPTION 'fictional command write failure'; END IF; RETURN NEW; END $$`,
+  );
+  await owner.pool.query(
+    `CREATE TRIGGER ${fn} BEFORE INSERT ON "BillingCommand" FOR EACH ROW EXECUTE FUNCTION ${fn}()`,
+  );
+  try {
+    expect((await s.m.post(base + "/settlements", deposit)).status).toBe(500);
+    const failed = (await s.m.browser.get("/api" + base)).body;
+    expect(failed.settlements).toEqual([]);
+    expect(failed.totals[0].creditMinor).toBe("0");
+  } finally {
+    await owner.pool.query(`DROP TRIGGER ${fn} ON "BillingCommand"`);
+    await owner.pool.query(`DROP FUNCTION ${fn}()`);
+  }
+  const saved = await s.m.post(base + "/settlements", deposit);
+  expect(saved.status).toBe(200);
+  expect(saved.body.receiptNumber).toMatch(/-000001$/);
+  const charges = (await s.m.browser.get("/api" + base)).body.charges;
+  const responses = await Promise.all(
+    charges.map((ch: { id: string }) =>
+      s.m.post(base + "/settlements", {
+        commandId: randomUUID(),
+        currency: "MRU",
+        methodId: null,
+        newMoney: "0",
+        deposit: "0",
+        allocations: [{ chargeId: ch.id, newMoney: "0", credit: "60" }],
+      }),
+    ),
+  );
+  expect(responses.map((r) => r.status).sort()).toEqual([200, 409]);
+  expect(responses.find((r) => r.status === 409)!.body.error).toContain(
+    "Crédit",
+  );
+  const final = (await s.m.browser.get("/api" + base)).body;
+  expect(final.totals[0]).toEqual({
+    currency: "MRU",
+    plannedMinor: "0",
+    dueMinor: "14000",
+    creditMinor: "4000",
+  });
+  expect(final.settlements).toHaveLength(2);
+});
+
+it("retained French receipt output requires separate financial output grants and distinguishes new funds from credit", async () => {
+  const s = await treatmentScenario();
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  await s.m.post("/billing/payment-methods", method);
+  const base = `/billing/${s.patient.id}`;
+  const saved = await s.m.post(base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "12.34",
+    deposit: "12.34",
+    allocations: [],
+  });
+  const url = "/api" + base + "/settlements/" + saved.body.id + "/print";
+  const staff = await s.create("printer", "staff", [
+    "billing.read",
+    "billing.edit",
+  ]);
+  expect((await staff.browser.get(url)).status).toBe(403);
+  await s.m.post(`/accounts/${staff.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read", "financial.print"],
+  });
+  const output = await staff.browser.get(url);
+  expect(output.status).toBe(200);
+  expect(output.body).toMatchObject({
+    title: "Reçu",
+    settlement: saved.body,
+    labels: {
+      newMoney: "Nouveaux fonds reçus",
+      creditUsed: "Crédit antérieurement reçu utilisé",
+      deposit: "Dépôt distinct",
+    },
+  });
+  expect(
+    (await staff.browser.get(url.replace("/print", "/download"))).status,
+  ).toBe(403);
+  expect((await s.m.browser.get(url)).body).toEqual(output.body);
+  await s.m.post(`/accounts/${staff.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["financial.print"],
+  });
+  expect((await staff.browser.get(url)).status).toBe(403);
+});
+
+it("receipt numbers are clinic-wide per UTC year and retries retain the original year and identity", async () => {
+  let clock = Date.UTC(2026, 11, 31, 23, 59);
+  app = createApplication({ ...options, now: () => clock });
+  const s = await treatmentScenario("MRU", clock);
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  await s.m.post("/billing/payment-methods", method);
+  const base = `/billing/${s.patient.id}`;
+  const command = {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "1",
+    deposit: "1",
+    allocations: [],
+  };
+  const first = await s.m.post(base + "/settlements", command);
+  expect(first.body.receiptNumber).toBe("REC-2026-000001");
+  const patient = (
+    await s.m.post("/patients", {
+      commandId: randomUUID(),
+      name: "Autre fictif",
+      phone: "72222222",
+      contactKind: "patient",
+      contactName: "",
+    })
+  ).body.patient;
+  const second = await s.m.post(`/billing/${patient.id}/settlements`, {
+    ...command,
+    commandId: randomUUID(),
+  });
+  expect(second.body.receiptNumber).toBe("REC-2026-000002");
+  clock += 120000;
+  const third = await s.m.post(base + "/settlements", {
+    ...command,
+    commandId: randomUUID(),
+  });
+  expect(third.body.receiptNumber).toBe("REC-2027-000001");
+  expect((await s.m.post(base + "/settlements", command)).body).toEqual(
+    first.body,
+  );
+});
+
+it("a mixed-doctor settlement hides the whole receipt but preserves each doctor's own allocation projection", async () => {
+  const s = await visitScenario();
+  expect(
+    (await s.doctor.post(s.path, { ...s.start, procedures: [s.selections[0]] }))
+      .status,
+  ).toBe(200);
+  const other = await s.create("second-performer", "doctor", [
+    "clinical.read",
+    "procedures.start",
+    "billing.read",
+    "billing.edit",
+  ]);
+  await s.m.post(`/patient-access/${s.patient.id}/share`, {
+    commandId: randomUUID(),
+    revision: 1,
+    accountId: other.id,
+    kind: "shared",
+  });
+  expect(
+    (
+      await other.post(s.path, {
+        ...s.start,
+        id: randomUUID(),
+        commandId: randomUUID(),
+        procedures: [{ ...s.selections[1], planRevision: 5 }],
+      })
+    ).status,
+  ).toBe(200);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read", "billing.edit", "financial.print"],
+  });
+  const base = `/billing/${s.patient.id}`;
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  await s.m.post("/billing/payment-methods", method);
+  const charges = (await s.m.browser.get("/api" + base)).body.charges;
+  const mixed = await s.m.post(base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "100",
+    deposit: "0",
+    allocations: charges.map((c: { id: string }) => ({
+      chargeId: c.id,
+      newMoney: "50",
+      credit: "0",
+    })),
+  });
+  expect(mixed.status).toBe(200);
+  for (const doctor of [s.doctor, other]) {
+    const own = (await doctor.browser.get("/api" + base)).body;
+    expect(own.charges).toHaveLength(1);
+    expect(own.charges[0]).toMatchObject({
+      performedBy: doctor.id,
+      paidMinor: "5000",
+      dueMinor: "5000",
+      allocations: [
+        {
+          settlementId: mixed.body.id,
+          newMoneyMinor: "5000",
+          creditMinor: "0",
+        },
+      ],
+    });
+    expect(own.settlements).toEqual([]);
+    expect(own.deposits).toEqual([]);
+    expect(
+      (
+        await doctor.browser.get(
+          "/api" + base + "/settlements/" + mixed.body.id,
+        )
+      ).status,
+    ).toBe(404);
+  }
+  expect(
+    (
+      await s.doctor.browser.get(
+        "/api" + base + "/settlements/" + mixed.body.id + "/print",
+      )
+    ).status,
+  ).toBe(404);
+});
+
+it("accepted price reconciliation preserves paid funds and rejects reductions below allocations", async () => {
+  const s = await visitScenario();
+  await s.doctor.post(s.path, s.start);
+  const base = `/billing/${s.patient.id}`;
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  await s.m.post("/billing/payment-methods", method);
+  const charge = (await s.m.browser.get("/api" + base)).body.charges[0];
+  const paid = await s.m.post(base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "50",
+    deposit: "0",
+    allocations: [{ chargeId: charge.id, newMoney: "50", credit: "0" }],
+  });
+  expect(paid.status).toBe(200);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "clinical.read",
+      "plans.draft",
+      "plans.finalize",
+      "plans.accept",
+      "acceptance.draft",
+      "prices.override",
+      "billing.edit",
+    ],
+  });
+  const revise = async (revision: number, price: string) => {
+    const path = `/treatment/${s.patient.id}/plans`;
+    expect(
+      (
+        await s.doctor.post(path, {
+          ...s.command,
+          commandId: randomUUID(),
+          revision,
+          items: s.selections.map((i) => ({
+            ...s.command.items[0],
+            id: i.itemId,
+            price,
+          })),
+        })
+      ).status,
+    ).toBe(200);
+    for (const [action, offset, extra] of [
+      ["present", 1, {}],
+      [
+        "evidence",
+        2,
+        {
+          acceptedBy: "Patient fictif",
+          acceptedAt: "2026-10-16T12:00:00.000Z",
+          method: "Oral",
+        },
+      ],
+      ["accept", 3, {}],
+    ] as const)
+      expect(
+        (
+          await s.doctor.post(path + "/lifecycle", {
+            commandId: randomUUID(),
+            id: s.command.id,
+            revision: revision + offset,
+            action,
+            ...extra,
+          })
+        ).status,
+      ).toBe(200);
+  };
+  await revise(5, "20");
+  const command = {
+    commandId: randomUUID(),
+    chargeId: charge.id,
+    revision: 0,
+    acceptedRevision: 9,
+    reason: "Accord révisé",
+  };
+  expect((await s.m.post(base + "/reconcile", command)).status).toBe(409);
+  expect(
+    (await s.m.browser.get("/api" + base)).body.charges.find(
+      (c: { id: string }) => c.id === charge.id,
+    ),
+  ).toMatchObject({
+    chargedMinor: "10000",
+    paidMinor: "5000",
+    dueMinor: "5000",
+    adjustments: [],
+  });
+  await revise(9, "80");
+  expect(
+    (
+      await s.m.post(base + "/reconcile", {
+        ...command,
+        commandId: randomUUID(),
+        acceptedRevision: 13,
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (await s.m.browser.get("/api" + base)).body.charges.find(
+      (c: { id: string }) => c.id === charge.id,
+    ),
+  ).toMatchObject({
+    chargedMinor: "8000",
+    paidMinor: "5000",
+    dueMinor: "3000",
+    reconciliationRequired: false,
+  });
+  expect(
+    (await s.m.browser.get("/api" + base + "/settlements/" + paid.body.id))
+      .body,
+  ).toEqual(paid.body);
 });
