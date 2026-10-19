@@ -323,7 +323,7 @@ model BillingEntry {
  sourceId String @db.Uuid
  performedBy String? @db.Uuid
  currency String
- amountMinor BigInt
+ amountMinor Decimal @db.Decimal(30,0)
  snapshot Json
  @@unique([clinicId,kind,sourceId])
  @@index([clinicId,patientId])

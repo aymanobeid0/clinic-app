@@ -28,7 +28,7 @@ export class BillingRepository {
         sourceId: event.id,
         performedBy: event.performedBy,
         currency: event.currency,
-        amountMinor: BigInt(event.agreedMinor),
+        amountMinor: event.agreedMinor,
         snapshot: event,
       },
     });
@@ -44,7 +44,7 @@ export class BillingRepository {
         kind: "opening",
         sourceId: value.id,
         currency: value.currency,
-        amountMinor: BigInt(value.amountMinor),
+        amountMinor: value.amountMinor,
         snapshot: value,
       },
     });
@@ -64,7 +64,7 @@ export class BillingRepository {
         sourceId: value.id,
         performedBy,
         currency,
-        amountMinor: BigInt(value.amountMinor),
+        amountMinor: value.amountMinor,
         snapshot: value,
       },
     });

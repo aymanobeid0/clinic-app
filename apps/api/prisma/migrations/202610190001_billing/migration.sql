@@ -2,7 +2,7 @@ CREATE TABLE "BillingEntry" (
  id uuid PRIMARY KEY, "clinicId" uuid NOT NULL, "patientId" uuid NOT NULL,
  kind text NOT NULL CHECK(kind IN ('charge','opening','adjustment')),
  "sourceId" uuid NOT NULL, "performedBy" uuid, currency text NOT NULL,
- "amountMinor" bigint NOT NULL, snapshot jsonb NOT NULL,
+ "amountMinor" numeric(30,0) NOT NULL, snapshot jsonb NOT NULL,
  UNIQUE("clinicId",kind,"sourceId"),
  FOREIGN KEY("clinicId","patientId") REFERENCES "Patient"("clinicId",id),
  FOREIGN KEY("clinicId",currency) REFERENCES "ClinicCurrency"("clinicId",code),
@@ -26,4 +26,4 @@ GRANT SELECT,INSERT ON "BillingEntry","BillingCommand" TO clinic_runtime;
 -- Migration uses the operator role (as all existing migrations do).
 INSERT INTO "BillingEntry"(id,"clinicId","patientId",kind,"sourceId","performedBy",currency,"amountMinor",snapshot)
 SELECT id,"clinicId","patientId",'charge',id,(snapshot->>'performedBy')::uuid,
- snapshot->>'currency',(snapshot->>'agreedMinor')::bigint,snapshot FROM "ProcedureStart";
+ snapshot->>'currency',(snapshot->>'agreedMinor')::numeric(30,0),snapshot FROM "ProcedureStart";

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 
 import request from "supertest";
 
@@ -54,6 +55,139 @@ afterAll(async () => {
   await runtime.close();
 
   await owner.close();
+});
+
+it("large accepted extra-work amounts survive starts, explicit reconciliation and retained-start migration without narrowing", async () => {
+  const s = await treatmentScenario("KWD");
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "clinical.read",
+      "plans.draft",
+      "plans.finalize",
+      "plans.accept",
+      "acceptance.draft",
+      "procedures.start",
+      "prices.override",
+      "billing.edit",
+    ],
+  });
+  const item = {
+    ...s.command.items[0]!,
+    price: "999999999999999.999",
+    extras: Array.from({ length: 50 }, () => ({
+      id: randomUUID(),
+      label: "Accepted extra work",
+      amount: "999999999999999.999",
+    })),
+  };
+  expect(
+    (await s.doctor.post(s.path, { ...s.command, items: [item] })).status,
+  ).toBe(200);
+  const accept = async (first: number) => {
+    for (const [action, revision, extra] of [
+      ["present", first, {}],
+      [
+        "evidence",
+        first + 1,
+        {
+          acceptedBy: "Patient fictif",
+          acceptedAt: "2026-10-16T12:00:00.000Z",
+          method: "Oral",
+        },
+      ],
+      ["accept", first + 2, {}],
+    ] as const)
+      expect(
+        (
+          await s.doctor.post(s.path + "/lifecycle", {
+            commandId: randomUUID(),
+            id: s.command.id,
+            action,
+            revision,
+            ...extra,
+          })
+        ).status,
+      ).toBe(200);
+  };
+  await accept(1);
+  const visitPath = `/treatment/${s.patient.id}/visits`;
+  expect(
+    (
+      await s.doctor.post(visitPath, {
+        commandId: randomUUID(),
+        id: randomUUID(),
+        appointmentId: null,
+        procedures: [
+          { planId: s.command.id, itemId: item.id, planRevision: 4 },
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  const charge = (await s.m.browser.get("/api/billing/" + s.patient.id)).body
+    .charges[0];
+  expect(charge.originalMinor).toBe("50999999999999999949");
+  expect(
+    (
+      await s.doctor.post(s.path, {
+        ...s.command,
+        commandId: randomUUID(),
+        revision: 5,
+        items: [{ ...item, price: "100", extras: [] }],
+      })
+    ).status,
+  ).toBe(200);
+  await accept(6);
+  const adjustment = await s.doctor.post(
+    "/billing/" + s.patient.id + "/reconcile",
+    {
+      commandId: randomUUID(),
+      chargeId: charge.id,
+      revision: 0,
+      acceptedRevision: 9,
+      reason: "Renewed exact price",
+    },
+  );
+  expect(adjustment.status).toBe(200);
+  expect(adjustment.body.amountMinor).toBe("-50999999999999899949");
+  expect(
+    (await s.m.browser.get("/api/billing/" + s.patient.id)).body.totals[0]
+      .dueMinor,
+  ).toBe("100000");
+
+  // Execute the shipped migration in a rollback-only scratch schema with a real retained start.
+  // SQL assertions here verify the migration's public persistence contract, not service internals.
+  const connection = await owner.pool.connect();
+  const schema = "billing_upgrade_" + randomUUID().replaceAll("-", "");
+  try {
+    await connection.query("BEGIN");
+    await connection.query(`CREATE SCHEMA ${schema}`);
+    await connection.query(`SET LOCAL search_path TO ${schema},public`);
+    await connection.query(
+      'CREATE TABLE "ProcedureStart" (LIKE public."ProcedureStart" INCLUDING ALL)',
+    );
+    await connection.query(
+      'INSERT INTO "ProcedureStart" SELECT * FROM public."ProcedureStart" WHERE id=$1',
+      [charge.id],
+    );
+    await connection.query(
+      await readFile(
+        new URL(
+          "../prisma/migrations/202610190001_billing/migration.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    const migrated = await connection.query(
+      'SELECT "amountMinor"::text FROM "BillingEntry" WHERE id=$1',
+      [charge.id],
+    );
+    expect(migrated.rows).toEqual([{ amountMinor: "50999999999999999949" }]);
+  } finally {
+    await connection.query("ROLLBACK");
+    connection.release();
+  }
 });
 
 async function manager() {
@@ -255,20 +389,23 @@ async function scenario() {
   return { m, patient, create };
 }
 
-async function treatmentScenario() {
+async function treatmentScenario(currency = "MRU") {
   const { m, patient, create } = await scenario();
   const own = (await m.browser.get("/api/identity")).body.accountId;
   await m.post(`/accounts/${own}/permissions`, {
     currentPassword: "Fictional-manager-pass-2",
     permissions: ["patients.create", "catalog.manage"],
   });
-  await m.post("/catalog/currencies", { commandId: randomUUID(), code: "MRU" });
+  await m.post("/catalog/currencies", {
+    commandId: randomUUID(),
+    code: currency,
+  });
   const procedureId = randomUUID();
   const catalog = {
     id: procedureId,
     revision: 0,
     name: "Acte fictif",
-    currency: "MRU",
+    currency,
     price: "100",
     durationMinutes: 40,
     active: true,
@@ -292,7 +429,7 @@ async function treatmentScenario() {
     id: randomUUID(),
     revision: 0,
     title: "Proposition fictive",
-    currency: "MRU",
+    currency,
     items: [
       {
         id: randomUUID(),
@@ -537,11 +674,33 @@ it("renewed price acceptance leaves original debt intact until an explicit retry
       })
     ).status,
   ).toBe(409);
-  expect((await get()).totals[0].plannedMinor).toBe('9000');
-  expect((await s.doctor.post(s.path+'/actions',{commandId:randomUUID(),id:s.start.id,revision:1,action:'end'})).status).toBe(200);
-  expect((await s.doctor.post(s.path,{commandId:randomUUID(),id:randomUUID(),appointmentId:null,procedures:[{planId:s.command.id,itemId:addedItem.id,planRevision:9}]})).status).toBe(200);
-  const starts=(await s.doctor.browser.get('/api'+s.path)).body.starts;
-  expect(starts.find((start: {itemId:string})=>start.itemId===addedItem.id)).toMatchObject({acceptedRevision:9,agreedMinor:'9000'});
+  expect((await get()).totals[0].plannedMinor).toBe("9000");
+  expect(
+    (
+      await s.doctor.post(s.path + "/actions", {
+        commandId: randomUUID(),
+        id: s.start.id,
+        revision: 1,
+        action: "end",
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.doctor.post(s.path, {
+        commandId: randomUUID(),
+        id: randomUUID(),
+        appointmentId: null,
+        procedures: [
+          { planId: s.command.id, itemId: addedItem.id, planRevision: 9 },
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  const starts = (await s.doctor.browser.get("/api" + s.path)).body.starts;
+  expect(
+    starts.find((start: { itemId: string }) => start.itemId === addedItem.id),
+  ).toMatchObject({ acceptedRevision: 9, agreedMinor: "9000" });
 });
 
 it("financial reads enforce manager authority, restricted staff fields and current doctor own-work scope", async () => {

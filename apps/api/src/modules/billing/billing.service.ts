@@ -79,7 +79,7 @@ export class BillingService {
         const item =
           accepted?.items.find((i) => i.id === start.itemId) ?? start.item;
         const due =
-          e.amountMinor +
+          BigInt(e.amountMinor.toFixed(0)) +
           adjustments.reduce((n, a) => n + BigInt(a.amountMinor), 0n);
         const acceptedMinor = agreed(item).toString();
         return {
@@ -88,7 +88,7 @@ export class BillingService {
           itemId: start.itemId,
           currency: e.currency,
           performedBy: start.performedBy,
-          originalMinor: e.amountMinor.toString(),
+          originalMinor: e.amountMinor.toFixed(0),
           dueMinor: due.toString(),
           acceptedMinor,
           revision: adjustments.length,
