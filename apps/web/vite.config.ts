@@ -4,10 +4,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: "127.0.0.1",
-    port: Number(process.env.CLINIC_WEB_PORT ?? 4173),
+    port: 4173,
     strictPort: true,
     proxy: {
-      "/api": "http://127.0.0.1:" + Number(process.env.CLINIC_API_PORT ?? 3000),
+      "/api": "http://127.0.0.1:3000",
     },
   },
 });

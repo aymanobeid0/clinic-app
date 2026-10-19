@@ -16,4 +16,4 @@ Review/handoff complete. [PR47](https://github.com/aymanobeid0/clinic-app/pull/4
 
 ## Local development workspace
 
-Owner-authorized persistent fictional dev launcher is implemented and independently reviewed on codex/local-dev-runner. npm run dev:local or Start-Clinic.cmd opens the app on http://127.0.0.1:5173; Stop-Clinic.cmd retains the database volume. FullAPI114/114 and type/lint/build passed; root independently verified actual logins/scopes, restart persistence and safety guards. See [implementation](local-dev-implementation.md) and [review](local-dev-review.md). [PR48](https://github.com/aymanobeid0/clinic-app/pull/48) is open and attached for human review/manual merge; no production operation or clinical ticket expansion.
+Removed at the owner’s request on 2026-10-19 because the setup did not let them test the app locally. The launcher, demo seed/mail helpers, dedicated clinic-local-dev database/volume and setup instructions are removed. Existing automated-test infrastructure remains.
