@@ -337,3 +337,10 @@ model BillingCommand {
  receipt Json
  @@id([clinicId,commandId])
 }
+model BillingMethod {
+ clinicId String @db.Uuid
+ id String @db.Uuid
+ revision Int
+ snapshot Json
+ @@id([clinicId,id,revision])
+}

@@ -26,7 +26,7 @@ export function openDatabase(connectionString: string) {
       const result = await pool.query<{ unsafe: boolean }>(`
         SELECT (r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb OR
           NOT pg_has_role(current_user, 'clinic_runtime', 'MEMBER') OR EXISTS (
-            SELECT 1 FROM pg_class c WHERE c.relname IN ('Clinic', 'Account', 'RecoveryCode', 'ReservedUsername', 'Patient', 'PatientHistory', 'PatientAccessState', 'PatientGrant', 'PatientAccessHistory', 'ClinicalRevision', 'MedicationReference', 'PrescriptionTemplate', 'PrescriptionCommand', 'ChartSuggestionDecision', 'ClinicCurrency', 'CatalogProcedure', 'TreatmentCommand', 'TreatmentPlanRevision', 'TreatmentPlanIdentity', 'TreatmentVisit', 'ProcedureStart', 'ProcedureCompletion', 'BillingEntry', 'BillingCommand', 'session')
+            SELECT 1 FROM pg_class c WHERE c.relname IN ('Clinic', 'Account', 'RecoveryCode', 'ReservedUsername', 'Patient', 'PatientHistory', 'PatientAccessState', 'PatientGrant', 'PatientAccessHistory', 'ClinicalRevision', 'MedicationReference', 'PrescriptionTemplate', 'PrescriptionCommand', 'ChartSuggestionDecision', 'ClinicCurrency', 'CatalogProcedure', 'TreatmentCommand', 'TreatmentPlanRevision', 'TreatmentPlanIdentity', 'TreatmentVisit', 'ProcedureStart', 'ProcedureCompletion', 'BillingEntry', 'BillingCommand', 'BillingMethod', 'session')
             AND c.relnamespace = 'public'::regnamespace AND pg_has_role(current_user, c.relowner, 'MEMBER')
           )) AS unsafe FROM pg_roles r WHERE r.rolname = current_user`);
       if (result.rows[0]?.unsafe !== false)

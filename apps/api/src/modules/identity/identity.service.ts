@@ -345,13 +345,15 @@ export class IdentityService {
   withFinancialPermission<T>(
     actor: Actor | undefined,
     patientId: string,
-    permission: 'billing.read' | 'billing.edit',
+    permission: 'billing.read' | 'billing.edit' | 'financial.print' | 'financial.download',
     action: (context: { clinicId: string; accountId: string; ownWork: boolean; clinical: boolean }, tx: import('../../database.js').ClinicTransaction) => Promise<T>,
   ) {
     return this.withReadyAccount(actor, (account, transaction) =>
       transaction.databaseTransaction(async (tx) => {
         if (!account.isManager && !account.permissions.includes(permission))
           throw new IdentityError(403, 'Autorisation financière requise.');
+        if (!account.isManager && permission.startsWith('financial.') && !account.permissions.includes('billing.read'))
+          throw new IdentityError(403, 'Lecture financière requise.');
         const patients = new PatientAccessRepository(tx, account.clinicId);
         const active = await patients.active(patientId, account.id);
         if (!account.isManager && account.kind === 'doctor' && !active)
