@@ -1,5 +1,5 @@
 import { AppError } from "../errors/app-error.js";
-import type { ErrorRequestHandler, Request } from "express";
+import type { ErrorRequestHandler, Express, Request } from "express";
 import type { Logger } from "pino";
 import { ZodError } from "zod";
 
@@ -18,6 +18,18 @@ const safeErrorNames = new Set([
   "PrismaClientValidationError",
   "PrismaClientRustPanicError",
 ]);
+
+export function installErrorHandling(
+  app: Express,
+  log: Pick<Logger, "error"> = logger,
+) {
+  app.use(createErrorHandler(log));
+  // The original error is already reported safely. Express's default handler
+  // would print its raw stack to stderr, so terminate failed streams here.
+  app.use(((_error, _req, res, _next) => {
+    res.destroy();
+  }) satisfies ErrorRequestHandler);
+}
 
 export function createErrorHandler(
   log: Pick<Logger, "error"> = logger,

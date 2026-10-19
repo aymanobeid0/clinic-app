@@ -21,3 +21,7 @@ Observed red/green: initial unexpected-error/logging test failed because createE
 ## Verification and provenance
 
 Builder targeted middleware run:7/7 PASS583ms. Typecheck/lint passed during implementation. Final complete PostgreSQL suite/build/type/lint results, reviewed/tested commit and independent review are recorded below once complete. No browser journey, live migration, production operation or real patient data is authorized or claimed.
+
+## Independent review correction
+
+The reviewer identified P2: forwarding a headers-sent error to Express's default terminal handler printed the raw original exception to stderr outside test mode. Builder reproduced a production-mode HTTP stream abort with a captured console.error containing the fictional sensitive exception. `installErrorHandling` now installs the main middleware and a safe terminal handler together; the main guard still forwards the original error, while the terminal handler destroys the response without passing that error to the socket/default raw logger. The production-pipeline regression captures external stderr and verifies stream termination, exactly one sanitized Pino event, and no raw exception. All8 middleware tests passed587ms after the fix. The earlier full-suite run was interrupted to apply this correction and supplies no final pass claim. Final full-suite/check/review evidence follows after completion. No new feature or response contract was introduced.

@@ -3,7 +3,10 @@ import express from "express";
 import pino from "pino";
 import request from "supertest";
 import { expect, it } from "vitest";
-import { createErrorHandler } from "../src/middleware/errors.js";
+import {
+  createErrorHandler,
+  installErrorHandling,
+} from "../src/middleware/errors.js";
 
 it("rejected async HTTP handlers return a safe 500 and log no request or exception secrets", async () => {
   const chunks: string[] = [];
@@ -135,3 +138,36 @@ it.each([
     expect(chunks).toEqual([]);
   },
 );
+
+it("the production error pipeline closes failed streams without leaking the original exception to stderr", async () => {
+  const { vi } = await import("vitest");
+  const chunks: string[] = [];
+  const log = pino(
+    new Writable({
+      write(chunk, _encoding, done) {
+        chunks.push(chunk.toString());
+        done();
+      },
+    }),
+  );
+  const app = express();
+  app.set("env", "production");
+  app.get("/stream", async (_req, res) => {
+    res.write("started");
+    await Promise.resolve();
+    throw new Error("fictional-secret patient data and database credentials");
+  });
+  installErrorHandling(app, log);
+  const stderr = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    await expect(request(app).get("/stream")).rejects.toThrow(
+      /aborted|socket hang up/,
+    );
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    expect(stderr).not.toHaveBeenCalled();
+    expect(chunks).toHaveLength(1);
+    expect(chunks.join("")).not.toContain("fictional-secret");
+  } finally {
+    stderr.mockRestore();
+  }
+});
