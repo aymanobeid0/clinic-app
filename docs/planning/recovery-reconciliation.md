@@ -78,3 +78,9 @@ Root is the tracker/docs builder; one separate reviewer covers standards and spe
 
 Verification must account for all 50 updated issue bodies (#7–#29 and #50–#76), unchanged states/parents, complete source ownership, active nonempty API criteria, required native edges and a cycle-free actual graph. Review includes the pinned local documentation diff and before/after tracker snapshots. API/browser suites are intentionally not rerun for this documentation/tracker-only change. See recovery-reconciliation-review.md for actual review findings and final verification provenance.
 
+### Published verification — 2026-10-19
+
+The owner merged the planning/reconciliation documents in PR #77 at main `317f844` before this continuation. Root then applied the independently reviewed 50 GitHub issue-body changes and native dependency additions, using read-before-write checks. Live readback matched every proposed body; all 23 original source archives remained present, every issue state was preserved, and parent bodies/states #1/#49 remained unchanged. The actual native graph contains 55 nodes and 112 edges, has all required original/recovery/new edges, and is acyclic. The verification script returned zero failures. No application code was changed or application/API/browser tests rerun by this continuation.
+
+Issue #50 stays open for human acceptance of the final publication evidence. No later implementation is automatically authorized. The user's unrelated local development-script edit was preserved. Final follow-up evidence is on `codex/recovery-tracker-verification`, based on merged main `317f844`.
+
