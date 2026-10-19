@@ -131,7 +131,7 @@ export class VisitService {
           await r.complete(event);
           const plan = (await plans.versions(patientId, data.planId)).at(-1)!;
           if (
-            plan.items.every(
+            plan.acceptance && ['accepted','in_progress'].includes(plan.status) && plan.items.every(
               (i) =>
                 i.id === data.itemId ||
                 state.completions.some(
@@ -268,9 +268,9 @@ export class VisitService {
               planId: plan.id,
               itemId: item.id,
               visitId: visit.id,
-              acceptedRevision: versions.findLast(
+              acceptedRevision: versions.find(
                 (v) =>
-                  v.status === 'accepted' &&
+                  v.acceptance?.proposalRevision === plan.acceptance!.proposalRevision &&
                   v.acceptance?.confirmedAt === plan.acceptance!.confirmedAt,
               )!.revision,
               acceptance: plan.acceptance,

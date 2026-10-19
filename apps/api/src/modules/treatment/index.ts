@@ -29,6 +29,17 @@ export async function procedureDurations(
 }
 
 export { recordProcedureStart } from './procedure-start.js';
+export { exactMinor } from './treatment.service.js';
+
+// Billing coordinates financial writes with the retained treatment agreement.
+export function treatmentBilling(tx: import('../../database.js').ClinicTransaction, clinicId: string) {
+  const repository = new TreatmentRepository(tx, clinicId);
+  return {
+    lock: () => repository.lock(),
+    versions: (patientId: string, planId?: string) => repository.versions(patientId, planId),
+    currency: (code: string) => repository.enabled(code),
+  };
+}
 
 // Clinical notes use this patient-scoped encounter projection, without pricing.
 export async function noteVisit(
