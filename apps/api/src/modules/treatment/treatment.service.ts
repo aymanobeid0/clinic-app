@@ -16,6 +16,7 @@ import {
 } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
 import { TreatmentRepository } from './treatment.repository.js';
+import { VisitRepository } from './visit.repository.js';
 export function exactMinor(value: string, precision: number) {
   const [whole, fraction = ''] = value.split('.');
   if (fraction.length > precision)
@@ -116,6 +117,8 @@ export class TreatmentService {
           recordedAt: at,
         };
         if (data.action === 'cancel') {
+          if ((await new VisitRepository(tx,c.clinicId).state(patientId)).starts.some(s=>s.planId===data.id))
+            throw new IdentityError(409,'Les soins commencés nécessitent un ajustement financier explicite.');
           if (!data.reason)
             throw new IdentityError(400, 'Motif d’annulation requis.');
           if (!['draft', 'presented', 'accepted'].includes(old.status))
@@ -176,6 +179,9 @@ export class TreatmentService {
               confirmedByName: name,
               confirmedAt: at,
             };
+            const care=await new VisitRepository(tx,c.clinicId).state(patientId);
+            if(care.starts.some(s=>s.planId===data.id))
+              version.status=version.items.every(i=>care.completions.some(e=>e.planId===data.id && e.itemId===i.id))?'completed':'in_progress';
           }
         }
         await r.append(patientId, version);
@@ -273,7 +279,7 @@ export class TreatmentService {
           );
         if (
           old &&
-          ['cancelled', 'completed', 'in_progress'].includes(old.status)
+          ['cancelled'].includes(old.status)
         )
           throw new IdentityError(
             409,
@@ -413,6 +419,13 @@ export class TreatmentService {
               }))
               .sort((a, b) => a.id.localeCompare(b.id)),
           });
+        // A price revision may not erase or relabel performed clinical work.
+        const starts=(await new VisitRepository(tx,c.clinicId).state(patientId)).starts.filter(s=>s.planId===data.id);
+        for(const start of starts) {
+          const item=items.find(i=>i.id===start.itemId);
+          if(!item || item.procedureId!==start.item.procedureId || item.scope!==start.item.scope || JSON.stringify([...item.teeth].sort())!==JSON.stringify([...start.item.teeth].sort()))
+            throw new IdentityError(409,'Conservez les références des actes déjà commencés.');
+        }
         const changed =
           !old || agreed(old) !== agreed({ title: data.title, items });
         const version: TreatmentVersion = {

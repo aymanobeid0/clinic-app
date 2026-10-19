@@ -342,6 +342,27 @@ export class IdentityService {
     );
   }
 
+  withFinancialPermission<T>(
+    actor: Actor | undefined,
+    patientId: string,
+    permission: 'billing.read' | 'billing.edit',
+    action: (context: { clinicId: string; accountId: string; ownWork: boolean; clinical: boolean }, tx: import('../../database.js').ClinicTransaction) => Promise<T>,
+  ) {
+    return this.withReadyAccount(actor, (account, transaction) =>
+      transaction.databaseTransaction(async (tx) => {
+        if (!account.isManager && !account.permissions.includes(permission))
+          throw new IdentityError(403, 'Autorisation financière requise.');
+        const patients = new PatientAccessRepository(tx, account.clinicId);
+        const active = await patients.active(patientId, account.id);
+        if (!account.isManager && account.kind === 'doctor' && !active)
+          throw new IdentityError(403, 'Accès financier patient non autorisé.');
+        if (!(await patients.exists(patientId))) throw new IdentityError(404, 'Patient introuvable.');
+        return action({clinicId: account.clinicId, accountId: account.id,
+          ownWork: !account.isManager && account.kind === 'doctor',
+          clinical: account.isManager || (active && clinicalEligible(account, 'clinical.read'))}, tx);
+      }),
+    );
+  }
   withManager<T>(
     actor: Actor | undefined,
     action: (

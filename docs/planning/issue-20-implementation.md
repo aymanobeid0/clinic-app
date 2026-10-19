@@ -1,0 +1,33 @@
+# Issue #20 — procedure charges and opening balances (backend/API)
+
+Authorized 2026-10-19 by the owner continuation selecting #20 after accepting/closing #50. Base/main-at-start: `ddd123889d777cf209ea14725be8f70380bd5a76` (PR78). Branch: `codex/issue-20-backend`. Current GitHub #20 body and native blockers #4/#15/#50 were read directly; all blockers are closed. Financial planning was accepted through PR30; visit PR45 and plan PR44 merge commits are ancestors of the pinned base. Decision issues #2–#6 are closed. Spec49 and the reconciled contract govern backend-first scope.
+
+## Transport contract
+
+All routes require a ready, current authenticated session. Writes require existing Origin/CSRF checks. UUIDs for new billing routes/commands are canonicalized. Zod schemas and response types live in `packages/contracts/src/index.ts`.
+
+| Route | Request | Result |
+| --- | --- | --- |
+| `GET /api/billing/:patientId` | Patient UUID | `BillingWorkspace`: charges, planned items, documented opening balances, totals separated by currency. |
+| `POST /api/billing/:patientId/opening-balances` | `commandId`, `id`, enabled `currency`, exact decimal `amount`, nonempty `provenance`, past/present ISO `asOf` | Retained `OpeningBalance`, including exact `amountMinor`, actor and recorded time. Positive debt only; no payment, receipt or invoice is created. |
+| `POST /api/billing/:patientId/reconcile` | `commandId`, `chargeId`, current charge adjustment `revision`, current accepted plan `acceptedRevision`, nonempty `reason` | Retained `BillingAdjustment` with signed delta, target, agreement revision, actor/time. Original charge remains unchanged. |
+
+Missing session returns 401. Missing capability, doctor patient scope or historical-only access returns 403. Missing in-clinic patient/visible charge returns 404. Invalid provenance/date/amount/precision/currency returns 400. Reused command with changed payload/actor, reused opening ID, stale financial/agreement revision, unaccepted change or already reconciled amount returns 409. Unexpected persistence failure returns 500 and rolls the transaction back. Retry the identical command after an uncertain response; successful retries return the retained result, with authorization rechecked first. A reconciliation replay also rechecks visible own-work charge scope.
+
+Managers have full clinic financial authority without a clinical grant. Ordinary doctors require the billing capability and active patient access and see/mutate only their own performed charges. Their aggregates exclude other doctors, future unperformed care and unassigned opening debt. Staff require explicit billing capabilities and see clinic-wide restricted references/amounts/dates; procedure names/teeth appear only with separate active clinical read access. Manager billing names/teeth do not grant access to clinical records. Historical cutoff snapshots remain #18 (dependent on #23); historical-only actors cannot use these current-state/edit endpoints.
+
+`originalMinor` is the start amount; `dueMinor` currently sums it and explicit accepted-price adjustments. `acceptedMinor` reports the latest confirmed agreement; a pending draft never changes debt. `reconciliationRequired` flags a difference. Every total is a minor-unit string in its own currency; there is no combined/cross-currency payable amount. `creditMinor` is separately returned as zero in this slice: no payments/deposits/allocations exist yet. #21 owns those funds and must extend this projection without double counting. #22/#23 own issued documents and broader correction/refund/reversal behavior; this slice issues no financial documents and cannot rewrite them.
+
+## Persistence and treatment coordination
+
+The existing authorized procedure-start transaction inserts the immutable start event and full agreed charge together, before committing visit/plan progress and command receipt. Existing clinic treatment locks and unique start/source constraints serialize competing starts and financial commands. Failed writes roll everything back. The migration backfills charges only from retained starts, preserving their accepted snapshot, amount, performer and date; it invents no care, money or receipts. No live migration was run. New tables use FORCE RLS and SELECT/INSERT-only runtime grants; runtime owner-role checks include them.
+
+Started/completed plans can retain a new price revision with renewed acceptance. Already started items cannot be removed or relabelled as different clinical work; original start/charge snapshots remain immutable. Renewed acceptance restores actual in-progress/completed status; explicit reconciliation is still required to change debt. Finishing care while a revision is pending does not bypass acceptance. Later first starts retain the confirmed source revision even when acceptance restored in-progress status. Cancellation of started care stays blocked here: broader reasoned cancellation/settlement corrections remain #23.
+
+## Verification and scope
+
+Builder directly observed initial billing HTTP test fail with 404, then pass with planned 20000/due 0 before start and due 20000/exactly two charges after concurrent retries. Renewed price test failed with 409 before implementation and passed after; later newly accepted item start failed with 500 before the source-revision fix and passed after. Regression matrices cover provenance/precision/currency/retry conflicts, manager/staff/doctor/revoked/cross-clinic access, and a real test-only PostgreSQL trigger failure during the second charge insert, proving all-or-nothing rollback and successful identical retry. These use real isolated PostgreSQL through authenticated HTTP, no internal collaborator mocks. Currency examples include MRU, JPY and KWD with separate exact totals.
+
+Targeted billing+visit run: 19/19 passed (49.26s), followed by the expanded renewed-acceptance regression passing. Final complete suite and type/lint/build evidence, tested revision and independent review are recorded below and in HANDOFF.md once complete. Initial sandbox GitHub/network, Git metadata, Docker-pipe and PostgreSQL socket denials were resolved through supported escalation; these were environmental, not invalid credentials.
+
+No frontend logic/UI/scaffold expansion. Backend acceptance is separate from #57 frontend logic, #69 billing UI, #60 shared UI and #76 integrated coverage/scaffold retirement. Do not close the product feature or advance tickets automatically. Human review/merge remains required. Browser/product design/production/legal/restore/real-data validation is not established by this backend slice.

@@ -314,3 +314,26 @@ model ChartSuggestionDecision {
  at DateTime @db.Timestamptz(6)
  @@id([clinicId,completionId])
 }
+
+model BillingEntry {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ kind String
+ sourceId String @db.Uuid
+ performedBy String? @db.Uuid
+ currency String
+ amountMinor BigInt
+ snapshot Json
+ @@unique([clinicId,kind,sourceId])
+ @@index([clinicId,patientId])
+}
+
+model BillingCommand {
+ clinicId String @db.Uuid
+ commandId String @db.Uuid
+ actorId String @db.Uuid
+ payloadHash String
+ receipt Json
+ @@id([clinicId,commandId])
+}

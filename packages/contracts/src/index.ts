@@ -844,3 +844,39 @@ export const chartSuggestionSchema = z
     targets: z.array(chartContentSchema.shape.teeth.element).max(52),
   })
   .strict();
+// Billing amounts are exact integer minor-unit strings on responses.
+export const openingBalanceSchema = z.object({
+  commandId: z.uuid().transform((v) => v.toLowerCase()),
+  id: z.uuid().transform((v) => v.toLowerCase()),
+  currency: currencyCodeSchema,
+  amount: exactAmountSchema,
+  provenance: z.string().trim().min(1).max(2000),
+  asOf: z.iso.datetime(),
+}).strict();
+export const reconcileChargeSchema = z.object({
+  commandId: z.uuid().transform((v) => v.toLowerCase()),
+  chargeId: z.uuid().transform((v) => v.toLowerCase()),
+  revision: z.number().int().nonnegative(),
+  acceptedRevision: z.number().int().positive(),
+  reason: z.string().trim().min(1).max(2000),
+}).strict();
+export type BillingAdjustment = {
+  id: string; chargeId: string; revision: number; acceptedRevision: number;
+  amountMinor: string; targetMinor: string; reason: string; actorId: string; at: string;
+};
+export type OpeningBalance = {
+  id: string; currency: string; amountMinor: string; provenance: string;
+  asOf: string; actorId: string; at: string;
+};
+export type BillingWorkspace = {
+  patientId: string;
+  charges: {
+    id: string; planId: string; itemId: string; currency: string; performedBy: string;
+    originalMinor: string; dueMinor: string; acceptedMinor: string; revision: number;
+    reconciliationRequired: boolean; adjustments: BillingAdjustment[];
+    at: string; name?: string; teeth?: string[];
+  }[];
+  planned: { planId: string; itemId: string; currency: string; amountMinor: string; name?: string; teeth?: string[] }[];
+  openingBalances: OpeningBalance[];
+  totals: {currency: string; plannedMinor: string; dueMinor: string; creditMinor: string}[];
+};
