@@ -1,6 +1,6 @@
 # Recovery reconciliation independent review
 
-Date: 2026-10-18. Reviewer role is independent from the root tracker/document builder. Scope: owner-authorized reconciliation under #50, Spec #49, proposed issue bodies #7–#29/#50–#76 and local ownership/execution documents. No application implementation reviewed or certified here.
+Date: 2026-10-19. Reviewer role is independent from the root tracker/document builder. Scope: owner-authorized reconciliation under #50, Spec #49, proposed issue bodies #7–#29/#50–#76 and local ownership/execution documents. No application implementation reviewed or certified here.
 
 ## Comparison and sources
 
@@ -22,8 +22,13 @@ Resolved review findings: initial generated #18–#27 active domain checklists w
 
 Independent Python assertions against the frozen local proposal passed: 50 distinct bodies and preserved intended states; 23/23 original-body archives exactly match captured originals after CR normalization/outer trim; #18–#27 all have nonempty active criteria; all mapped source-to-logic/page relationships appear reciprocally in proposed destination tickets; required native additions #18→#23, #18–#27→#50 and #29→#76 are present; combined original readable/recovery dependencies plus additions form an acyclic graph. Read the ten active backend checklists and reconciliation report in full. Git comparison refs resolve and pre-existing commit diff is nonempty.
 
-This supports publication of the reviewed proposal. Remote post-publication body/state/parent/native-graph checks are still pending and must be recorded below before claiming successful reconciliation. No API/browser suite was run: there is no application change. Existing backend, frontend logic, designed UI, restoration and pilot remain unaccepted by this review. #50 stays open for human acceptance; no subsequent ticket implementation is authorized.
+This supports publication of the reviewed proposal. Remote post-publication checks are complete as recorded below. No API/browser suite was run: there is no application change. Existing backend, frontend logic, designed UI, restoration and pilot remain unaccepted by this review. #50 stays open for human acceptance; no subsequent ticket implementation is authorized.
 
 ## Post-publication verification
 
-Pending root publication and independent readback of actual bodies/states/native graph. This report does not yet certify that GitHub matches the proposal.
+Completed 2026-10-19 after root publication. Root directly ran `verify.mjs`: 50 body matches, original archives and unchanged states; parents #1/#49 unchanged; actual native graph 55 nodes/112 edges, cycle-free, failures empty. Root-captured evidence: `.local-dev/reconciliation/issues-after.json`, `graph-after.json`, `verification.json`.
+
+Reviewer independently fetched the current issue list through GitHub CLI into `.local-dev/reconciliation/reviewer-live-readback.json` and asserted all 50 current bodies match the frozen proposal, all states match the original snapshot, 23 archives remain present, active criteria are nonempty, parents remain unchanged and #50 remains open. Independently checked every original/recovery/new dependency against the root-fetched graph and recomputed cycle freedom. Direct additional live native-edge reads for #18/#19/#29 match that captured graph, including the historical-finance/reconciliation/pilot additions. The full 55-node network fetch was root-executed; graph analysis and these live readbacks were reviewer-executed. Initial reviewer harness invocation used an unsupported CLI output flag and an incorrect encoding alias; corrected harness completed with assertions passing. No connection/authentication problem or tracker defect was established by those local harness errors.
+
+Final disposition: zero residual material standards findings and zero residual material specification findings within this reconciliation scope. GitHub now matches the reviewed contract. No application/backend/UI completion, deployment, restoration or pilot acceptance is implied. #50 remains open pending human acceptance of final remote verification; no next implementation is authorized. PR #77 documentation was human-merged before this remote-readback result; this report update records the later evidence only.
+Reviewed the final publication/status additions in `recovery-reconciliation.md`, `delivery-status.md` and `delivery-status.json` on `codex/recovery-tracker-verification` based on merged main `317f844`: wording accurately separates verified tracker publication, open #50 human acceptance and unstarted application scope. No material finding. Scoped `git diff --check` passed; unrelated `scripts/local-dev.ts` changes were observed but excluded from this review and must remain unstaged.

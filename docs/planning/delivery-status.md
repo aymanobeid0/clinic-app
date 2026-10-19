@@ -2,6 +2,8 @@
 
 ## Recovery correction — 2026-10-18
 
+Publication completed 2026-10-19: 50 live issue bodies verified, original archives and all issue states preserved, parents #1/#49 unchanged; actual dependency graph 55 nodes/112 edges with zero cycles or verification failures. PR #77 already merged the planning documents; final evidence review is recorded in recovery-reconciliation-review.md. #50 remains open for human acceptance; no application implementation is started.
+
 Existing feature evidence below establishes implemented behavior and historical checks, not the approved final Dentara UI or a completed backend. The owner authorized tracker reconciliation under #50, following Spec #49. Current order: remaining backend/API (#18–#27) → backend evidence gate (#51) → separate frontend business logic (#52–#59) → separately authorized components/pages/routing/main app (#60–#75) → connected verification/scaffold retirement (#76). See [the requirement ownership map](recovery-reconciliation.md). The current scaffold is an internal development consumer. No application/UI implementation, deletion, deployment, pilot start or automatic progression is authorized by this reconciliation. #50 remains open for human acceptance; operational and real-data gates remain separate.
 
 As of 2026-10-18 (Africa/Bamako). Planning #2–#6 owner-approved/closed. PR46 is merged in main cd678de; earlier evidence remains in the per-ticket reports.
