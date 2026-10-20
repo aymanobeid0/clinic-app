@@ -1,8 +1,9 @@
+import { AppError } from '../../errors/app-error.js';
 import { accountOnboardingStage } from '../identity/index.js';
 import { randomUUID, createHash } from 'node:crypto';
 import type { Appointment, AppointmentStatus, SchedulingSettings } from '@clinic/contracts';
 import type { ClinicTransaction } from '../../database.js';
-import { IdentityError } from '../identity/index.js';
+
 export class SchedulingRepository {
   constructor(
     private readonly tx: ClinicTransaction,
@@ -42,7 +43,7 @@ export class SchedulingRepository {
       where: { clinicId_commandId: { clinicId: this.clinicId, commandId } },
     });
     if (old && (old.actorId !== this.actorId || old.payloadHash !== hash))
-      throw new IdentityError(409, 'Cette demande a déjà été utilisée.');
+      throw new AppError(409, 'Cette demande a déjà été utilisée.');
     return { hash, previous: old?.receipt };
   }
   async saveReceipt(
@@ -64,7 +65,7 @@ export class SchedulingRepository {
     const a = await this.tx.appointment.findFirst({
       where: { clinicId: this.clinicId, id },
     });
-    if (!a) throw new IdentityError(404, 'Rendez-vous introuvable.');
+    if (!a) throw new AppError(404, 'Rendez-vous introuvable.');
     const [p, d] = await Promise.all([
       this.tx.patient.findFirstOrThrow({
         where: { clinicId: this.clinicId, id: a.patientId },
@@ -149,7 +150,7 @@ export class SchedulingRepository {
     const patient = await this.tx.patient.findFirst({
       where: { clinicId: this.clinicId, id: data.patientId, archived: false },
     });
-    if (!patient) throw new IdentityError(409, 'Patient indisponible ou archivé.');
+    if (!patient) throw new AppError(409, 'Patient indisponible ou archivé.');
     const d = await this.tx.account.findFirst({
       where: {
         clinicId: this.clinicId,
@@ -161,10 +162,10 @@ export class SchedulingRepository {
       },
     });
     if (!d || accountOnboardingStage(d) !== 'ready')
-      throw new IdentityError(409, 'Dentiste indisponible.');
+      throw new AppError(409, 'Dentiste indisponible.');
     const settings = await this.settings();
     if (data.chairId !== null && !settings.chairs.includes(data.chairId))
-      throw new IdentityError(400, 'Fauteuil indisponible.');
+      throw new AppError(400, 'Fauteuil indisponible.');
     const end = new Date(new Date(data.startsAt).getTime() + data.durationMinutes * 60000);
     const rows = await this.tx.appointment.findMany({
       where: {

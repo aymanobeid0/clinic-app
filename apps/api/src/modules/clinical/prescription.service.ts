@@ -1,3 +1,4 @@
+import { AppError } from '../../errors/app-error.js';
 import type { z } from "zod";
 import type {
   PrescriptionContent,
@@ -6,11 +7,7 @@ import type {
   prescriptionDraftSchema,
   clinicalConfirmSchema,
 } from "@clinic/contracts";
-import {
-  IdentityError,
-  type Actor,
-  type IdentityAccess,
-} from "../identity/index.js";
+import type { Actor, IdentityAccess } from "../identity/index.js";
 import type { ClinicUpdates } from "../../clinic-updates.js";
 import { ClinicalRepository } from "./clinical.repository.js";
 import { PrescriptionRepository } from "./prescription.repository.js";
@@ -82,7 +79,7 @@ export class PrescriptionService {
       "clinical.print",
       async (c, tx) => {
         if (!c.permissions.includes("clinical.read"))
-          throw new IdentityError(403, "Lecture clinique requise.");
+          throw new AppError(403, "Lecture clinique requise.");
         const record = await new ClinicalRepository(
           tx,
           c.clinicId,
@@ -92,12 +89,12 @@ export class PrescriptionService {
           (v) => v.revision === revision && v.status === "final",
         );
         if (!version)
-          throw new IdentityError(404, "Ordonnance émise introuvable.");
+          throw new AppError(404, "Ordonnance émise introuvable.");
         if (
           record.current?.revision !== revision &&
           !c.permissions.includes("clinical.history")
         )
-          throw new IdentityError(
+          throw new AppError(
             403,
             "Historique clinique requis pour une ancienne version.",
           );
@@ -128,7 +125,7 @@ export class PrescriptionService {
       action === "draft" ? "prescriptions.draft" : "prescriptions.sign",
       async (c, tx) => {
         if (!c.permissions.includes("clinical.read"))
-          throw new IdentityError(403, "Lecture clinique requise.");
+          throw new AppError(403, "Lecture clinique requise.");
         const r = new ClinicalRepository(tx, c.clinicId, patientId),
           kind = "prescription:" + id;
         await r.lock(kind);
@@ -148,7 +145,7 @@ export class PrescriptionService {
             ),
           };
         if (record.revision !== data.revision)
-          throw new IdentityError(
+          throw new AppError(
             409,
             "Cette ordonnance a changé. Comparez le serveur avec votre saisie conservée.",
           );
@@ -157,7 +154,7 @@ export class PrescriptionService {
         let authorId = c.accountId;
         if ("content" in data) {
           if (record.current && !data.reason)
-            throw new IdentityError(400, "Motif de correction requis.");
+            throw new AppError(400, "Motif de correction requis.");
           content = {
             ...data.content,
             reason: data.reason,
@@ -165,7 +162,7 @@ export class PrescriptionService {
           };
         } else {
           if (!record.draft)
-            throw new IdentityError(409, "Un brouillon est requis.");
+            throw new AppError(409, "Un brouillon est requis.");
           authorId = record.draft.authorId;
           const [identity, template] = await Promise.all([
             new PrescriptionRepository(tx, c.clinicId).printIdentity(patientId),

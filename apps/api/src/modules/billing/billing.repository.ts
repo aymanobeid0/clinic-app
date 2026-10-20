@@ -1,3 +1,4 @@
+import { AppError } from '../../errors/app-error.js';
 import { createHash } from "node:crypto";
 import type {
   ProcedureStart,
@@ -7,7 +8,6 @@ import type {
   Settlement,
 } from "@clinic/contracts";
 import type { ClinicTransaction } from "../../database.js";
-import { IdentityError } from "../identity/index.js";
 
 export class BillingRepository {
   constructor(
@@ -103,7 +103,7 @@ export class BillingRepository {
   }
   async opening(patientId: string, value: OpeningBalance) {
     if (await this.tx.billingEntry.findUnique({ where: { id: value.id } }))
-      throw new IdentityError(409, "Identifiant de solde déjà utilisé.");
+      throw new AppError(409, "Identifiant de solde déjà utilisé.");
     await this.tx.billingEntry.create({
       data: {
         id: value.id,
@@ -145,7 +145,7 @@ export class BillingRepository {
       where: { clinicId_commandId: { clinicId: this.clinicId, commandId } },
     });
     if (old && (old.actorId !== actorId || old.payloadHash !== hash))
-      throw new IdentityError(409, "Commande déjà utilisée.");
+      throw new AppError(409, "Commande déjà utilisée.");
     return { hash, receipt: old?.receipt };
   }
   save(commandId: string, actorId: string, hash: string, receipt: object) {

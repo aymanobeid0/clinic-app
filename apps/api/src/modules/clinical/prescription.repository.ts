@@ -1,5 +1,6 @@
+import { AppError } from '../../errors/app-error.js';
 import { createHash } from "node:crypto";
-import { IdentityError } from "../identity/index.js";
+
 import type { ClinicTransaction } from "../../database.js";
 import type { MedicationEntry, PrescriptionTemplate } from "@clinic/contracts";
 export class PrescriptionRepository {
@@ -19,7 +20,7 @@ export class PrescriptionRepository {
       where: { clinicId_commandId: { clinicId: this.clinicId, commandId } },
     });
     if (old && (old.actorId !== actorId || old.payloadHash !== hash))
-      throw new IdentityError(409, "Commande déjà utilisée.");
+      throw new AppError(409, "Commande déjà utilisée.");
     return { hash, receipt: old?.receipt };
   }
   save(
