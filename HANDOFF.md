@@ -14,6 +14,8 @@ Final builder verification on `5eb95ba`: `npm test` alone **146/146 tests, 13/13
 
 Suggested skills for continuation: repository implement/TDD at the same approved seam if human review requires code, same independent code-review worker for substantive recheck, handoff and installed PR skill for publication updates. Human review/manual merge is the next step after a verified PR; no further ticket is authorized.
 
+Published [PR82](https://github.com/aymanobeid0/clinic-app/pull/82): OPEN, non-draft, GitHub merge state CLEAN at publication; attached to this chat. Review/evidence commit `ee0b3c9` follows tested runtime `5eb95ba`; this publication note is documentation-only. Human review/manual merge pending; no automatic merge, next ticket, production operation or real-data use. No unresolved connection blocker.
+
 # Clinic app handoff — 2026-10-15
 
 ## Current state
