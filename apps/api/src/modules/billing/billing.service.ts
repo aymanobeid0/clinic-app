@@ -133,14 +133,18 @@ export class BillingService {
     const entries = await new BillingRepository(tx, c.clinicId).entries(
       patientId,
     );
-    return projectFunds(
-      entries
-        .filter((e) => e.kind === "settlement")
-        .map((e) => e.snapshot as unknown as Settlement),
-      entries
-        .filter((e) => e.kind === "correction")
-        .map((e) => e.snapshot as unknown as FinancialCorrection),
-    );
+    const corrections = entries
+      .filter((e) => e.kind === "correction")
+      .map((e) => e.snapshot as unknown as FinancialCorrection);
+    return {
+      ...projectFunds(
+        entries
+          .filter((e) => e.kind === "settlement")
+          .map((e) => e.snapshot as unknown as Settlement),
+        corrections,
+      ),
+      corrections,
+    };
   }
   private async reduce(
     tx: ClinicTransaction,
@@ -281,10 +285,7 @@ export class BillingService {
           amountMinor: amount.toString(),
           settlementIds: [lot.rootSettlementId],
         });
-        if (lot.performedBy)
-          v.chargeIds = state.corrections
-            .filter((x) => x.credits.some((l) => l.id === lot.id))
-            .flatMap((x) => x.chargeIds);
+        v.chargeIds = lot.chargeId ? [lot.chargeId] : [];
       },
     );
   }
@@ -364,7 +365,7 @@ export class BillingService {
           (l) => l.rootSettlementId === receipt.id,
         );
         if (
-          state.corrections.some(
+          funds.corrections.some(
             (x) => x.kind === "refund" && lots.some((l) => l.id === x.sourceId),
           )
         )
@@ -372,6 +373,18 @@ export class BillingService {
             409,
             "Des fonds ont été rendus; une contrepassation ne peut les effacer.",
           );
+        if (
+          c.ownWork &&
+          lots.some(
+            (l) =>
+              BigInt(l.availableMinor) > 0n && l.performedBy !== c.accountId,
+          )
+        )
+          throw new AppError(403, "Périmètre financier non autorisé.");
+        // Original attribution survives even when every allocation was released.
+        v.chargeIds = receipt.allocations
+          .filter((a) => BigInt(a.newMoneyMinor) > 0n)
+          .map((a) => a.chargeId);
         for (const a of funds.allocations) {
           const fresh = a.settlementId === receipt.id ? a.newMoneyMinor : "0";
           const sources = a.sources.filter(
@@ -388,7 +401,7 @@ export class BillingService {
             newMoneyMinor: fresh,
             sources,
           });
-          v.chargeIds.push(a.chargeId);
+          if (!v.chargeIds.includes(a.chargeId)) v.chargeIds.push(a.chargeId);
         }
         Object.assign(v, {
           currency: receipt.currency,
@@ -793,6 +806,12 @@ export class BillingService {
           0n,
         );
         const acceptedMinor = agreed(item).toString();
+        const lastAdjustment = adjustments.at(-1);
+        const adjustmentAgreement = versions.find(
+          (v) =>
+            v.id === start.planId &&
+            v.revision === lastAdjustment?.acceptedRevision,
+        )?.acceptance;
         return {
           id: e.id,
           planId: start.planId,
@@ -813,8 +832,10 @@ export class BillingService {
           reconciliationRequired:
             current?.status !== "cancelled" &&
             !(
-              adjustments.at(-1)?.correctionId &&
-              adjustments.at(-1)?.acceptedRevision === accepted?.revision
+              lastAdjustment?.correctionId &&
+              adjustmentAgreement &&
+              adjustmentAgreement.proposalRevision ===
+                accepted?.acceptance?.proposalRevision
             ) &&
             acceptedMinor !== due.toString(),
           adjustments,

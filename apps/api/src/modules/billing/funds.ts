@@ -21,6 +21,7 @@ export function projectFunds(
       .filter((s) => BigInt(s.depositMinor) > 0n)
       .map((s) => ({
         id: s.id,
+        chargeId: null,
         currency: s.currency,
         rootSettlementId: s.id,
         performedBy: null,
@@ -106,6 +107,7 @@ export function releaseFunds(
     if (fresh > 0n)
       credits.push({
         id: id(),
+        chargeId,
         currency,
         rootSettlementId: a.settlementId,
         performedBy,
@@ -126,6 +128,7 @@ export function releaseFunds(
       });
       credits.push({
         id: id(),
+        chargeId,
         currency,
         rootSettlementId: lot.rootSettlementId,
         performedBy,

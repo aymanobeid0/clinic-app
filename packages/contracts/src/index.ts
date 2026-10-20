@@ -1049,18 +1049,20 @@ const correctionCommand = z.object({
   commandId: z.uuid().transform((v) => v.toLowerCase()),
   reason: z.string().trim().min(1).max(2000),
 });
+// Final charges and releases can cover the aggregate of base price plus extras.
+const correctionAmountSchema = z.string().regex(/^\d{1,30}(?:\.\d{1,3})?$/);
 export const creditAdjustmentSchema = correctionCommand
   .extend({
     chargeId: z.uuid().transform((v) => v.toLowerCase()),
     revision: z.number().int().nonnegative(),
-    finalCharge: exactAmountSchema,
+    finalCharge: correctionAmountSchema,
   })
   .strict();
 export const releaseAllocationSchema = correctionCommand
   .extend({
     settlementId: z.uuid().transform((v) => v.toLowerCase()),
     chargeId: z.uuid().transform((v) => v.toLowerCase()),
-    amount: exactAmountSchema,
+    amount: correctionAmountSchema,
   })
   .strict();
 export const reversePaymentSchema = correctionCommand
@@ -1071,7 +1073,7 @@ export const reversePaymentSchema = correctionCommand
 export const refundRequestSchema = correctionCommand
   .extend({
     sourceId: z.uuid().transform((v) => v.toLowerCase()),
-    amount: exactAmountSchema,
+    amount: correctionAmountSchema,
   })
   .strict();
 export const refundActionSchema = correctionCommand
@@ -1091,6 +1093,7 @@ export const cancelChargedPlanSchema = correctionCommand
   .strict();
 export type CreditSource = {
   id: string;
+  chargeId: string | null;
   currency: string;
   rootSettlementId: string;
   performedBy: string | null;
