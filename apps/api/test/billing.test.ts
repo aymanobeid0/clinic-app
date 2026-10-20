@@ -458,8 +458,8 @@ async function treatmentScenario(currency = "MRU", now?: number) {
   };
 }
 
-async function visitScenario() {
-  const s = await treatmentScenario();
+async function visitScenario(currency = "MRU", now?: number, count = 2) {
+  const s = await treatmentScenario(currency, now);
   await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
     currentPassword: "Fictional-manager-pass-2",
     permissions: [
@@ -473,10 +473,10 @@ async function visitScenario() {
       "procedures.complete",
     ],
   });
-  const items = [
-    s.command.items[0]!,
-    { ...s.command.items[0]!, id: randomUUID() },
-  ];
+  const items = Array.from({ length: count }, () => ({
+    ...s.command.items[0]!,
+    id: randomUUID(),
+  }));
   await s.doctor.post(s.path, { ...s.command, items });
   const change = (action: string, revision: number, extra: object = {}) =>
     s.doctor.post(`${s.path}/lifecycle`, {
@@ -1658,4 +1658,916 @@ it("accepted price reconciliation preserves paid funds and rejects reductions be
     (await s.m.browser.get("/api" + base + "/settlements/" + paid.body.id))
       .body,
   ).toEqual(paid.body);
+});
+
+it("manual invoices require completed fully paid procedures and retain one invoice under concurrent retries", async () => {
+  const s = await visitScenario();
+  expect((await s.doctor.post(s.path, s.start)).status).toBe(200);
+  const base = `/billing/${s.patient.id}`;
+  const charges = (await s.m.browser.get("/api" + base)).body.charges as {
+    id: string;
+    itemId: string;
+  }[];
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  await s.m.post("/billing/payment-methods", method);
+  const command = {
+    commandId: randomUUID(),
+    chargeIds: charges.map((c) => c.id),
+  };
+  expect((await s.m.post(base + "/invoices", command)).status).toBe(409);
+  await s.m.post(base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "200",
+    deposit: "0",
+    allocations: charges.map((c) => ({
+      chargeId: c.id,
+      newMoney: "100",
+      credit: "0",
+    })),
+  });
+  expect((await s.m.post(base + "/invoices", command)).status).toBe(409);
+  for (const [i, selection] of s.selections.entries())
+    expect(
+      (
+        await s.doctor.post(s.path + "/actions", {
+          commandId: randomUUID(),
+          id: s.start.id,
+          revision: i + 1,
+          action: "complete",
+          planId: selection.planId,
+          itemId: selection.itemId,
+        })
+      ).status,
+    ).toBe(200);
+  const issued = await Promise.all([
+    s.m.post(base + "/invoices", command),
+    s.m.post(base + "/invoices", command),
+  ]);
+  expect(issued.map((r) => r.status)).toEqual([200, 200]);
+  expect(issued[1].body).toEqual(issued[0].body);
+  expect(issued[0].body).toMatchObject({
+    number: "INV-2026-000001",
+    currency: "MRU",
+    totalMinor: "20000",
+    identity: {
+      patientName: "Patient confidentiel fictif",
+      clinicName: "Clinique fictive",
+    },
+  });
+  expect(issued[0].body.items).toHaveLength(2);
+  expect(
+    (
+      await s.m.post(base + "/invoices", {
+        ...command,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(409);
+  expect((await s.m.browser.get("/api" + base + "/invoices")).body).toEqual([
+    issued[0].body,
+  ]);
+  expect(
+    (
+      await s.m.browser.get(
+        "/api" + base + "/invoices/" + issued[0].body.id + "/print",
+      )
+    ).body.invoice,
+  ).toEqual(issued[0].body);
+});
+
+it("completed-plan summaries show paid and unpaid procedures with existing document references without creating debt", async () => {
+  const s = await visitScenario();
+  await s.doctor.post(s.path, s.start);
+  const base = `/billing/${s.patient.id}`,
+    url = base + "/plans/" + s.command.id + "/summary";
+  expect((await s.m.browser.get("/api" + url)).status).toBe(409);
+  const charges = (await s.m.browser.get("/api" + base)).body.charges as {
+    id: string;
+    itemId: string;
+  }[];
+  for (const [i, p] of s.selections.entries())
+    expect(
+      (
+        await s.doctor.post(s.path + "/actions", {
+          commandId: randomUUID(),
+          id: s.start.id,
+          revision: i + 1,
+          action: "complete",
+          planId: p.planId,
+          itemId: p.itemId,
+        })
+      ).status,
+    ).toBe(200);
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  await s.m.post("/billing/payment-methods", method);
+  const receipt = await s.m.post(base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "120",
+    deposit: "0",
+    allocations: [
+      { chargeId: charges[0]!.id, newMoney: "100", credit: "0" },
+      { chargeId: charges[1]!.id, newMoney: "20", credit: "0" },
+    ],
+  });
+  const invoice = await s.m.post(base + "/invoices", {
+    commandId: randomUUID(),
+    chargeIds: [charges[0]!.id],
+  });
+  expect(invoice.status).toBe(200);
+  expect(
+    (
+      await s.m.post(base + "/invoices", {
+        commandId: randomUUID(),
+        chargeIds: [charges[1]!.id],
+      })
+    ).status,
+  ).toBe(409);
+  const before = (await s.m.browser.get("/api" + base)).body;
+  const summary = await s.m.browser.get("/api" + url);
+  expect(summary.status).toBe(200);
+  expect(summary.body).toMatchObject({
+    planId: s.command.id,
+    currency: "MRU",
+    chargedMinor: "20000",
+    paidMinor: "12000",
+    dueMinor: "8000",
+    scope: "whole_plan",
+  });
+  expect(summary.body.procedures).toHaveLength(2);
+  expect(
+    summary.body.procedures.find(
+      (p: { chargeId: string }) => p.chargeId === charges[0]!.id,
+    ),
+  ).toMatchObject({
+    invoice: { id: invoice.body.id, number: invoice.body.number },
+    payments: [
+      {
+        settlementId: receipt.body.id,
+        receiptNumber: receipt.body.receiptNumber,
+        amountMinor: "10000",
+      },
+    ],
+  });
+  expect((await s.m.browser.get("/api" + url + "/print")).body).toEqual({
+    title: "Récapitulatif du plan terminé",
+    summary: summary.body,
+  });
+  expect((await s.m.browser.get("/api" + base)).body).toEqual(before);
+});
+
+async function completedBillingScenario(currency = "MRU", now?: number) {
+  const s = await visitScenario(currency, now);
+  expect((await s.doctor.post(s.path, s.start)).status).toBe(200);
+  for (const [i, p] of s.selections.entries())
+    expect(
+      (
+        await s.doctor.post(s.path + "/actions", {
+          commandId: randomUUID(),
+          id: s.start.id,
+          revision: i + 1,
+          action: "complete",
+          planId: p.planId,
+          itemId: p.itemId,
+        })
+      ).status,
+    ).toBe(200);
+  const base = `/billing/${s.patient.id}`;
+  const charges = (await s.m.browser.get("/api" + base)).body.charges as {
+    id: string;
+    itemId: string;
+  }[];
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  expect((await s.m.post("/billing/payment-methods", method)).status).toBe(200);
+  const receipt = await s.m.post(base + "/settlements", {
+    commandId: randomUUID(),
+    currency,
+    methodId: method.id,
+    newMoney: "200",
+    deposit: "0",
+    allocations: charges.map((ch) => ({
+      chargeId: ch.id,
+      newMoney: "100",
+      credit: "0",
+    })),
+  });
+  expect(receipt.status).toBe(200);
+  return { ...s, base, charges, receipt };
+}
+
+it("issued invoices require a linked correction before new price reconciliation while prior commands remain retryable", async () => {
+  const s = await completedBillingScenario();
+  const issued = await s.m.post(s.base + "/invoices", {
+    commandId: randomUUID(),
+    chargeIds: [s.charges[0]!.id],
+  });
+  expect(issued.status).toBe(200);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "clinical.read",
+      "plans.draft",
+      "plans.finalize",
+      "plans.accept",
+      "acceptance.draft",
+      "prices.override",
+    ],
+  });
+  const planPath = `/treatment/${s.patient.id}/plans`;
+  expect(
+    (
+      await s.doctor.post(planPath, {
+        ...s.command,
+        commandId: randomUUID(),
+        revision: 6,
+        items: s.selections.map((p) => ({
+          ...s.command.items[0]!,
+          id: p.itemId,
+          price: "120",
+        })),
+      })
+    ).status,
+  ).toBe(200);
+  for (const [action, revision, extra] of [
+    ["present", 7, {}],
+    [
+      "evidence",
+      8,
+      {
+        acceptedBy: "Patient fictif",
+        acceptedAt: "2026-10-16T12:00:00.000Z",
+        method: "Oral",
+      },
+    ],
+    ["accept", 9, {}],
+  ] as const)
+    expect(
+      (
+        await s.doctor.post(planPath + "/lifecycle", {
+          commandId: randomUUID(),
+          id: s.command.id,
+          revision,
+          action,
+          ...extra,
+        })
+      ).status,
+    ).toBe(200);
+  const reconciliation = {
+    commandId: randomUUID(),
+    chargeId: s.charges[0]!.id,
+    revision: 0,
+    acceptedRevision: 10,
+    reason: "Accord renouvelé",
+  };
+  expect((await s.m.post(s.base + "/reconcile", reconciliation)).status).toBe(
+    409,
+  );
+  const after = (await s.m.browser.get("/api" + s.base)).body;
+  expect(
+    after.charges.find((c: { id: string }) => c.id === s.charges[0]!.id),
+  ).toMatchObject({
+    originalMinor: "10000",
+    chargedMinor: "10000",
+    paidMinor: "10000",
+    dueMinor: "0",
+    adjustments: [],
+  });
+  expect(
+    (await s.m.browser.get(`/api${s.base}/invoices/${issued.body.id}/print`))
+      .body.invoice,
+  ).toEqual(issued.body);
+  const allowed = {
+    ...reconciliation,
+    commandId: randomUUID(),
+    chargeId: s.charges[1]!.id,
+  };
+  const adjustment = await s.m.post(s.base + "/reconcile", allowed);
+  expect(adjustment.status).toBe(200);
+  expect(
+    (
+      await s.m.post(s.base + "/settlements", {
+        commandId: randomUUID(),
+        currency: "MRU",
+        methodId: s.receipt.body.methodId,
+        newMoney: "20",
+        deposit: "0",
+        allocations: [
+          { chargeId: s.charges[1]!.id, newMoney: "20", credit: "0" },
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.m.post(s.base + "/invoices", {
+        commandId: randomUUID(),
+        chargeIds: [s.charges[1]!.id],
+      })
+    ).body.totalMinor,
+  ).toBe("12000");
+  expect((await s.m.post(s.base + "/reconcile", allowed)).body).toEqual(
+    adjustment.body,
+  );
+});
+
+it("doctors issue only own completed work and mixed invoices never expose another performer through reads, totals or outputs", async () => {
+  const s = await visitScenario("MRU", undefined, 3);
+  expect(
+    (
+      await s.doctor.post(s.path, {
+        ...s.start,
+        procedures: s.selections.slice(0, 2),
+      })
+    ).status,
+  ).toBe(200);
+  const other = await s.create("other-invoice-doctor", "doctor", [
+    "clinical.read",
+    "procedures.start",
+    "procedures.complete",
+    "billing.read",
+    "invoices.issue",
+    "financial.print",
+  ]);
+  await s.m.post(`/patient-access/${s.patient.id}/share`, {
+    commandId: randomUUID(),
+    revision: 1,
+    accountId: other.id,
+    kind: "shared",
+  });
+  const otherVisit = randomUUID();
+  expect(
+    (
+      await other.post(s.path, {
+        ...s.start,
+        commandId: randomUUID(),
+        id: otherVisit,
+        procedures: [{ ...s.selections[2], planRevision: 5 }],
+      })
+    ).status,
+  ).toBe(200);
+  for (const [i, p] of s.selections.slice(0, 2).entries())
+    expect(
+      (
+        await s.doctor.post(s.path + "/actions", {
+          commandId: randomUUID(),
+          id: s.start.id,
+          revision: i + 1,
+          action: "complete",
+          planId: p.planId,
+          itemId: p.itemId,
+        })
+      ).status,
+    ).toBe(200);
+  expect(
+    (
+      await other.post(s.path + "/actions", {
+        commandId: randomUUID(),
+        id: otherVisit,
+        revision: 1,
+        action: "complete",
+        planId: s.command.id,
+        itemId: s.selections[2]!.itemId,
+      })
+    ).status,
+  ).toBe(200);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read", "invoices.issue", "financial.print"],
+  });
+  const base = `/billing/${s.patient.id}`;
+  const charges = (await s.m.browser.get("/api" + base)).body.charges as {
+    id: string;
+    performedBy: string;
+  }[];
+  const own = charges.filter((c) => c.performedBy === s.doctor.id),
+    foreign = charges.find((c) => c.performedBy === other.id)!;
+  const method = {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  };
+  await s.m.post("/billing/payment-methods", method);
+  await s.m.post(base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: method.id,
+    newMoney: "300",
+    deposit: "0",
+    allocations: charges.map((c) => ({
+      chargeId: c.id,
+      newMoney: "100",
+      credit: "0",
+    })),
+  });
+  expect(
+    (
+      await s.doctor.post(base + "/invoices", {
+        commandId: randomUUID(),
+        chargeIds: [foreign.id],
+      })
+    ).status,
+  ).toBe(404);
+  const command = { commandId: randomUUID(), chargeIds: [own[0]!.id] };
+  const issued = await s.doctor.post(base + "/invoices", command);
+  expect(issued.status).toBe(200);
+  const mixed = await s.m.post(base + "/invoices", {
+    commandId: randomUUID(),
+    chargeIds: [own[1]!.id, foreign.id],
+  });
+  expect(mixed.status).toBe(200);
+  expect(
+    (await s.doctor.browser.get("/api" + base + "/invoices")).body,
+  ).toEqual([issued.body]);
+  expect(
+    (
+      await s.doctor.browser.get(
+        "/api" + base + "/invoices/" + mixed.body.id + "/print",
+      )
+    ).status,
+  ).toBe(404);
+  const summary = (
+    await s.doctor.browser.get(`/api${base}/plans/${s.command.id}/summary`)
+  ).body;
+  expect(summary).toMatchObject({
+    scope: "own_work",
+    chargedMinor: "20000",
+    paidMinor: "20000",
+    dueMinor: "0",
+  });
+  expect(summary.procedures).toHaveLength(2);
+  expect(
+    summary.procedures.find(
+      (p: { chargeId: string }) => p.chargeId === own[1]!.id,
+    ).invoice,
+  ).toBeNull();
+  expect((await other.browser.get("/api" + base + "/invoices")).body).toEqual(
+    [],
+  );
+  expect(
+    (await other.browser.get(`/api${base}/plans/${s.command.id}/summary/print`))
+      .body.summary,
+  ).toMatchObject({
+    scope: "own_work",
+    chargedMinor: "10000",
+    paidMinor: "10000",
+  });
+  expect(
+    (
+      await s.m.post(`/patient-access/${s.patient.id}/remove`, {
+        commandId: randomUUID(),
+        revision: 2,
+        accountId: s.doctor.id,
+      })
+    ).status,
+  ).toBe(200);
+  expect((await s.doctor.post(base + "/invoices", command)).status).toBe(403);
+  expect(
+    (
+      await s.doctor.browser.get(
+        "/api" + base + "/invoices/" + issued.body.id + "/print",
+      )
+    ).status,
+  ).toBe(403);
+  expect(
+    (await s.doctor.browser.get(`/api${base}/plans/${s.command.id}/summary`))
+      .status,
+  ).toBe(403);
+});
+
+it("invoice issue, reads, replays and summary outputs enforce current staff, patient and clinic authorization", async () => {
+  const s = await completedBillingScenario();
+  const command = {
+    commandId: randomUUID(),
+    chargeIds: s.charges.map((ch) => ch.id),
+  };
+  const staff = await s.create("invoice-staff", "staff", [
+    "billing.read",
+    "billing.edit",
+    "financial.print",
+  ]);
+  expect((await staff.post(s.base + "/invoices", command)).status).toBe(403);
+  await s.m.post(`/accounts/${staff.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["invoices.issue", "billing.read"],
+  });
+  const issued = await staff.post(s.base + "/invoices", command);
+  expect(issued.status).toBe(200);
+  const eligible = (await staff.browser.get("/api" + s.base)).body.charges;
+  expect(eligible[0].completedAt).toMatch(/^2026-/);
+  expect(eligible[0]).not.toHaveProperty("name");
+  expect(issued.body.items[0]).not.toHaveProperty("name");
+  expect(issued.body.items[0]).not.toHaveProperty("teeth");
+  const url = s.base + "/invoices/" + issued.body.id;
+  const summary = s.base + "/plans/" + s.command.id + "/summary";
+  expect((await staff.browser.get("/api" + url + "/print")).status).toBe(403);
+  expect((await staff.browser.get("/api" + summary + "/print")).status).toBe(
+    403,
+  );
+  await s.m.post(`/accounts/${staff.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["invoices.issue", "billing.read", "financial.print"],
+  });
+  expect(
+    (await staff.browser.get("/api" + url + "/print")).body.invoice,
+  ).toEqual(issued.body);
+  const restricted = (await staff.browser.get("/api" + summary + "/print")).body
+    .summary;
+  expect(restricted).not.toHaveProperty("title");
+  expect(restricted.procedures[0]).not.toHaveProperty("name");
+  expect((await staff.browser.get("/api" + url + "/download")).status).toBe(
+    403,
+  );
+  expect((await staff.browser.get("/api" + summary + "/download")).status).toBe(
+    403,
+  );
+  const full = (await s.m.browser.get("/api" + url)).body;
+  expect(full.items[0].name).toBe("Acte fictif");
+  expect(full).not.toHaveProperty("allocations");
+  expect(full.items[0]).not.toHaveProperty("payments");
+  expect(full.items[0]).not.toHaveProperty("creditMinor");
+  const otherPatient = (
+    await s.m.post("/patients", {
+      commandId: randomUUID(),
+      name: "Autre fictif",
+      phone: "73333333",
+      contactKind: "patient",
+      contactName: "",
+    })
+  ).body.patient;
+  expect(
+    (
+      await s.m.browser.get(
+        `/api/billing/${otherPatient.id}/invoices/${full.id}`,
+      )
+    ).status,
+  ).toBe(404);
+  expect(
+    (
+      await s.m.post(`/billing/${otherPatient.id}/invoices`, {
+        commandId: randomUUID(),
+        chargeIds: command.chargeIds,
+      })
+    ).status,
+  ).toBe(404);
+  expect(
+    (
+      await s.m.browser.get(
+        `/api/billing/${otherPatient.id}/plans/${s.command.id}/summary`,
+      )
+    ).status,
+  ).toBe(404);
+  const foreign = await manager();
+  expect((await foreign.browser.get("/api" + url)).status).toBe(404);
+  expect((await foreign.browser.get("/api" + summary)).status).toBe(404);
+  expect((await foreign.post(s.base + "/invoices", command)).status).toBe(404);
+  expect((await request(app).get("/api" + url)).status).toBe(401);
+  expect(
+    (await staff.browser.post("/api" + s.base + "/invoices").send(command))
+      .status,
+  ).toBe(403);
+  expect(
+    (
+      await staff.post(s.base + "/invoices", {
+        ...command,
+        chargeIds: [command.chargeIds[0]],
+      })
+    ).status,
+  ).toBe(409);
+  await s.m.post(`/accounts/${staff.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read"],
+  });
+  expect((await staff.post(s.base + "/invoices", command)).status).toBe(403);
+  await s.m.post(`/accounts/${staff.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["financial.print"],
+  });
+  expect((await staff.browser.get("/api" + url + "/print")).status).toBe(403);
+  expect((await staff.browser.get("/api" + summary)).status).toBe(403);
+});
+
+it("invoice failures roll back the document, number and charge reservation; overlapping new commands issue once", async () => {
+  const s = await completedBillingScenario();
+  const command = {
+    commandId: randomUUID(),
+    chargeIds: s.charges.map((ch) => ch.id),
+  };
+  const before = (await s.m.browser.get("/api" + s.base)).body;
+  const fn = "invoice_fail_" + randomUUID().replaceAll("-", "");
+  await owner.pool.query(
+    `CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.receipt->>'patientId' = '${s.patient.id}' THEN RAISE EXCEPTION 'fictional invoice commit failure'; END IF; RETURN NEW; END $$`,
+  );
+  await owner.pool.query(
+    `CREATE TRIGGER ${fn} BEFORE INSERT ON "BillingCommand" FOR EACH ROW EXECUTE FUNCTION ${fn}()`,
+  );
+  try {
+    expect((await s.m.post(s.base + "/invoices", command)).status).toBe(500);
+    expect((await s.m.browser.get("/api" + s.base + "/invoices")).body).toEqual(
+      [],
+    );
+    expect((await s.m.browser.get("/api" + s.base)).body).toEqual(before);
+  } finally {
+    await owner.pool.query(`DROP TRIGGER ${fn} ON "BillingCommand"`);
+    await owner.pool.query(`DROP FUNCTION ${fn}()`);
+  }
+  const responses = await Promise.all([
+    s.m.post(s.base + "/invoices", command),
+    s.m.post(s.base + "/invoices", { ...command, commandId: randomUUID() }),
+  ]);
+  expect(responses.map((r) => r.status).sort()).toEqual([200, 409]);
+  const invoice = responses.find((r) => r.status === 200)!.body;
+  expect(invoice.number).toBe("INV-2026-000001");
+  expect((await s.m.browser.get("/api" + s.base + "/invoices")).body).toEqual([
+    invoice,
+  ]);
+  expect((await s.m.browser.get("/api" + s.base)).body).toEqual(before);
+});
+
+async function additionalCompletedPlan(
+  s: Awaited<ReturnType<typeof completedBillingScenario>>,
+  currency: string,
+  price: string,
+) {
+  expect(
+    (
+      await s.m.post("/catalog/currencies", {
+        commandId: randomUUID(),
+        code: currency,
+      })
+    ).status,
+  ).toBe(200);
+  const procedureId = randomUUID();
+  expect(
+    (
+      await s.m.post("/catalog", {
+        commandId: randomUUID(),
+        id: procedureId,
+        revision: 0,
+        name: "Autre acte fictif",
+        currency,
+        price,
+        durationMinutes: 30,
+        active: true,
+      })
+    ).status,
+  ).toBe(200);
+  const plan = {
+    ...s.command,
+    commandId: randomUUID(),
+    id: randomUUID(),
+    currency,
+    items: [{ ...s.command.items[0]!, id: randomUUID(), procedureId, price }],
+  };
+  const path = `/treatment/${s.patient.id}/plans`;
+  expect((await s.doctor.post(path, plan)).status).toBe(200);
+  for (const [action, revision, extra] of [
+    ["present", 1, {}],
+    [
+      "evidence",
+      2,
+      {
+        acceptedBy: "Patient fictif",
+        acceptedAt: "2026-10-16T12:00:00.000Z",
+        method: "Oral",
+      },
+    ],
+    ["accept", 3, {}],
+  ] as const)
+    expect(
+      (
+        await s.doctor.post(path + "/lifecycle", {
+          commandId: randomUUID(),
+          id: plan.id,
+          revision,
+          action,
+          ...extra,
+        })
+      ).status,
+    ).toBe(200);
+  const visitId = randomUUID();
+  expect(
+    (
+      await s.doctor.post(s.path, {
+        commandId: randomUUID(),
+        id: visitId,
+        appointmentId: null,
+        procedures: [
+          { planId: plan.id, itemId: plan.items[0]!.id, planRevision: 4 },
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.doctor.post(s.path + "/actions", {
+        commandId: randomUUID(),
+        id: visitId,
+        revision: 1,
+        action: "complete",
+        planId: plan.id,
+        itemId: plan.items[0]!.id,
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.doctor.post(s.path + "/actions", {
+        commandId: randomUUID(),
+        id: visitId,
+        revision: 2,
+        action: "end",
+      })
+    ).status,
+  ).toBe(200);
+  const state = (await s.m.browser.get("/api" + s.base)).body;
+  const charge = state.charges.find(
+    (ch: { planId: string }) => ch.planId === plan.id,
+  ) as { id: string };
+  expect(
+    (
+      await s.m.post(s.base + "/settlements", {
+        commandId: randomUUID(),
+        currency,
+        methodId: s.receipt.body.methodId,
+        newMoney: price,
+        deposit: "0",
+        allocations: [{ chargeId: charge.id, newMoney: price, credit: "0" }],
+      })
+    ).status,
+  ).toBe(200);
+  return { charge, plan };
+}
+
+it("invoices group whole procedures across plans only within one currency, with exact independent totals and unique concurrent numbers", async () => {
+  const s = await completedBillingScenario();
+  expect(
+    (
+      await s.doctor.post(s.path + "/actions", {
+        commandId: randomUUID(),
+        id: s.start.id,
+        revision: 3,
+        action: "end",
+      })
+    ).status,
+  ).toBe(200);
+  const second = await additionalCompletedPlan(s, "MRU", "100");
+  const kwd = await additionalCompletedPlan(s, "KWD", "100.001");
+  const jpy = await additionalCompletedPlan(s, "JPY", "100");
+  expect(
+    (
+      await s.m.post(s.base + "/invoices", {
+        commandId: randomUUID(),
+        chargeIds: [kwd.charge.id, jpy.charge.id],
+      })
+    ).status,
+  ).toBe(400);
+  expect(
+    (
+      await s.m.post(s.base + "/invoices", {
+        commandId: randomUUID(),
+        chargeIds: [kwd.charge.id, kwd.charge.id],
+      })
+    ).status,
+  ).toBe(400);
+  expect(
+    (
+      await s.m.post(s.base + "/invoices", {
+        commandId: randomUUID(),
+        chargeIds: [],
+      })
+    ).status,
+  ).toBe(400);
+  const commands = [
+    {
+      commandId: randomUUID(),
+      chargeIds: [s.charges[0]!.id, second.charge.id],
+    },
+    { commandId: randomUUID(), chargeIds: [s.charges[1]!.id] },
+  ];
+  const invoices = await Promise.all(
+    commands.map((c) => s.m.post(s.base + "/invoices", c)),
+  );
+  expect(invoices.map((r) => r.status)).toEqual([200, 200]);
+  expect(invoices.map((r) => r.body.number).sort()).toEqual([
+    "INV-2026-000001",
+    "INV-2026-000002",
+  ]);
+  expect(invoices[0]!.body.totalMinor).toBe("20000");
+  expect(
+    invoices[0]!.body.items.map((i: { planId: string }) => i.planId).sort(),
+  ).toEqual([s.command.id, second.plan.id].sort());
+  const a = await s.m.post(s.base + "/invoices", {
+    commandId: randomUUID(),
+    chargeIds: [kwd.charge.id],
+  });
+  const b = await s.m.post(s.base + "/invoices", {
+    commandId: randomUUID(),
+    chargeIds: [jpy.charge.id],
+  });
+  expect(a.body).toMatchObject({
+    currency: "KWD",
+    totalMinor: "100001",
+    number: "INV-2026-000003",
+  });
+  expect(b.body).toMatchObject({
+    currency: "JPY",
+    totalMinor: "100",
+    number: "INV-2026-000004",
+  });
+  const summary = (
+    await s.m.browser.get(`/api${s.base}/plans/${kwd.plan.id}/summary`)
+  ).body;
+  expect(summary).toMatchObject({
+    currency: "KWD",
+    paidMinor: "100001",
+    dueMinor: "0",
+    chargedMinor: "100001",
+  });
+});
+
+it("invoice reprints retain identity and content across patient/catalog changes and UTC year rollover", async () => {
+  let clock = Date.UTC(2026, 11, 31, 23, 59);
+  app = createApplication({ ...options, now: () => clock });
+  const s = await completedBillingScenario("MRU", clock);
+  const command = { commandId: randomUUID(), chargeIds: [s.charges[0]!.id] };
+  const first = await s.m.post(s.base + "/invoices", command);
+  expect(first.body.number).toBe("INV-2026-000001");
+  const own = (await s.m.browser.get("/api/identity")).body.accountId;
+  await s.m.post(`/accounts/${own}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "patients.create",
+      "patients.read",
+      "patients.edit",
+      "catalog.manage",
+    ],
+  });
+  const patient = (await s.m.browser.get("/api/patients/" + s.patient.id)).body;
+  expect(
+    (
+      await s.m.post(`/patients/${s.patient.id}/contact`, {
+        commandId: randomUUID(),
+        revision: patient.revision,
+        name: "Nom modifié fictif",
+        phone: "75555555",
+        contactKind: "patient",
+        contactName: "",
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.m.post("/catalog", {
+        ...s.catalog,
+        commandId: randomUUID(),
+        revision: 1,
+        name: "Nouveau tarif fictif",
+        price: "900",
+      })
+    ).status,
+  ).toBe(200);
+  clock += 120000;
+  const second = await s.m.post(s.base + "/invoices", {
+    commandId: randomUUID(),
+    chargeIds: [s.charges[1]!.id],
+  });
+  expect(second.body.number).toBe("INV-2027-000001");
+  expect(second.body.identity.patientName).toBe("Nom modifié fictif");
+  expect((await s.m.post(s.base + "/invoices", command)).body).toEqual(
+    first.body,
+  );
+  expect(
+    (await s.m.browser.get(`/api${s.base}/invoices/${first.body.id}/download`))
+      .body.invoice,
+  ).toEqual(first.body);
+  expect(
+    (
+      await s.m.browser.get(
+        `/api${s.base}/settlements/${s.receipt.body.id}/print`,
+      )
+    ).body.settlement,
+  ).toEqual(s.receipt.body);
 });

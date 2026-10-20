@@ -36,6 +36,7 @@ export function treatmentBilling(tx: import('../../database.js').ClinicTransacti
   const repository = new TreatmentRepository(tx, clinicId);
   return {
     lock: () => repository.lock(),
+    completions: (patientId: string) => new VisitRepository(tx, clinicId).completions(patientId),
     versions: (patientId: string, planId?: string) => repository.versions(patientId, planId),
     currency: (code: string) => repository.enabled(code),
   };

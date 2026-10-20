@@ -344,3 +344,20 @@ model BillingMethod {
  snapshot Json
  @@id([clinicId,id,revision])
 }
+
+model BillingInvoice {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ number String
+ snapshot Json
+ @@unique([clinicId,number])
+ @@unique([clinicId,id])
+ @@index([clinicId,patientId])
+}
+model BillingInvoiceCharge {
+ clinicId String @db.Uuid
+ chargeId String @db.Uuid
+ invoiceId String @db.Uuid
+ @@id([clinicId,chargeId])
+}
