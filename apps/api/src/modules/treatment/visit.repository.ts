@@ -2,8 +2,8 @@ import type {
   Visit,
   ProcedureStart,
   ProcedureCompletion,
-} from '@clinic/contracts';
-import type { ClinicTransaction } from '../../database.js';
+} from "@clinic/contracts";
+import type { ClinicTransaction } from "../../database.js";
 export class VisitRepository {
   constructor(
     readonly tx: ClinicTransaction,
@@ -40,6 +40,12 @@ export class VisitRepository {
         (s) => s.snapshot as unknown as ProcedureCompletion,
       ),
     };
+  }
+  async completions(patientId: string): Promise<ProcedureCompletion[]> {
+    const rows = await this.tx.procedureCompletion.findMany({
+      where: { clinicId: this.clinicId, patientId },
+    });
+    return rows.map((row) => row.snapshot as unknown as ProcedureCompletion);
   }
   async update(visit: Visit) {
     await this.tx.treatmentVisit.update({

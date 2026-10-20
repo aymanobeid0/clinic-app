@@ -894,6 +894,7 @@ export type BillingWorkspace = {
     itemId: string;
     currency: string;
     performedBy: string;
+    completedAt: string | null;
     originalMinor: string;
     dueMinor: string;
     chargedMinor: string;

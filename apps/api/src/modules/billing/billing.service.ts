@@ -104,17 +104,13 @@ export class BillingService {
         }
         if (new Set(data.chargeIds).size !== data.chargeIds.length)
           throw new AppError(400, "Charge répétée.");
-        const state = await this.project(tx, c, patientId),
-          completions = await plans.completions(patientId);
+        const state = await this.project(tx, c, patientId);
         const issued = await r.invoices(patientId);
         const items: Invoice["items"] = data.chargeIds.map((id) => {
           const charge = state.charges.find((ch) => ch.id === id);
           if (!charge) throw new AppError(404, "Charge introuvable.");
-          const completion = completions.find(
-            (v) => v.planId === charge.planId && v.itemId === charge.itemId,
-          );
           if (
-            !completion ||
+            !charge.completedAt ||
             charge.dueMinor !== "0" ||
             charge.reconciliationRequired
           )
@@ -130,7 +126,7 @@ export class BillingService {
             itemId: charge.itemId,
             performedBy: charge.performedBy,
             amountMinor: charge.chargedMinor,
-            completedAt: completion.at,
+            completedAt: charge.completedAt,
             ...(charge.name !== undefined
               ? { name: charge.name, teeth: charge.teeth }
               : {}),
@@ -200,7 +196,6 @@ export class BillingService {
           throw new AppError(404, "Plan introuvable.");
         if (plan.status !== "completed")
           throw new AppError(409, "Plan terminé requis.");
-        const completions = await plans.completions(patientId);
         const invoices = (await r.invoices(patientId)).flatMap((v) => {
           const visible = this.visibleInvoice(v, c);
           return visible ? [visible] : [];
@@ -217,15 +212,13 @@ export class BillingService {
             const invoice = invoices.find((v) =>
               v.items.some((i) => i.chargeId === ch.id),
             );
-            const completion = completions.find(
-              (v) => v.planId === planId && v.itemId === ch.itemId,
-            );
-            if (!completion) throw new AppError(409, "Acte terminé requis.");
+            if (!ch.completedAt)
+              throw new AppError(409, "Acte terminé requis.");
             return {
               chargeId: ch.id,
               itemId: ch.itemId,
               performedBy: ch.performedBy,
-              completedAt: completion.at,
+              completedAt: ch.completedAt,
               chargedMinor: ch.chargedMinor,
               paidMinor: ch.paidMinor,
               dueMinor: ch.dueMinor,
@@ -354,6 +347,9 @@ export class BillingService {
       .filter((e) => e.kind === "settlement")
       .map((e) => e.snapshot as unknown as Settlement);
     const versions = await treatmentBilling(tx, c.clinicId).versions(patientId);
+    const completions = await treatmentBilling(tx, c.clinicId).completions(
+      patientId,
+    );
     const latest = [...new Set(versions.map((v) => v.id))].map((id) =>
       versions.filter((v) => v.id === id).at(-1)!,
     );
@@ -400,6 +396,10 @@ export class BillingService {
           itemId: start.itemId,
           currency: e.currency,
           performedBy: start.performedBy,
+          completedAt:
+            completions.find(
+              (v) => v.planId === start.planId && v.itemId === start.itemId,
+            )?.at ?? null,
           originalMinor: e.amountMinor.toFixed(0),
           dueMinor: (due - paid).toString(),
           chargedMinor: due.toString(),
@@ -734,6 +734,15 @@ export class BillingService {
         ]);
         if (replay.receipt)
           return { clinicId: c.clinicId, value: replay.receipt };
+        if (
+          (await r.invoices(patientId)).some((v) =>
+            v.items.some((i) => i.chargeId === charge.id),
+          )
+        )
+          throw new AppError(
+            409,
+            "Une correction liée à la facture est requise.",
+          );
         const versions = await plans.versions(patientId, charge.planId),
           plan = versions.at(-1);
         if (
@@ -752,8 +761,7 @@ export class BillingService {
             409,
             "Les fonds alloués nécessitent une correction explicite avant réduction.",
           );
-        if (delta === 0n)
-          throw new AppError(409, "Charge déjà réconciliée.");
+        if (delta === 0n) throw new AppError(409, "Charge déjà réconciliée.");
         const value: BillingAdjustment = {
           id: randomUUID(),
           chargeId: charge.id,

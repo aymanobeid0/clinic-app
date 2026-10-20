@@ -1876,6 +1876,121 @@ async function completedBillingScenario(currency = "MRU", now?: number) {
   return { ...s, base, charges, receipt };
 }
 
+it("issued invoices require a linked correction before new price reconciliation while prior commands remain retryable", async () => {
+  const s = await completedBillingScenario();
+  const issued = await s.m.post(s.base + "/invoices", {
+    commandId: randomUUID(),
+    chargeIds: [s.charges[0]!.id],
+  });
+  expect(issued.status).toBe(200);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "clinical.read",
+      "plans.draft",
+      "plans.finalize",
+      "plans.accept",
+      "acceptance.draft",
+      "prices.override",
+    ],
+  });
+  const planPath = `/treatment/${s.patient.id}/plans`;
+  expect(
+    (
+      await s.doctor.post(planPath, {
+        ...s.command,
+        commandId: randomUUID(),
+        revision: 6,
+        items: s.selections.map((p) => ({
+          ...s.command.items[0]!,
+          id: p.itemId,
+          price: "120",
+        })),
+      })
+    ).status,
+  ).toBe(200);
+  for (const [action, revision, extra] of [
+    ["present", 7, {}],
+    [
+      "evidence",
+      8,
+      {
+        acceptedBy: "Patient fictif",
+        acceptedAt: "2026-10-16T12:00:00.000Z",
+        method: "Oral",
+      },
+    ],
+    ["accept", 9, {}],
+  ] as const)
+    expect(
+      (
+        await s.doctor.post(planPath + "/lifecycle", {
+          commandId: randomUUID(),
+          id: s.command.id,
+          revision,
+          action,
+          ...extra,
+        })
+      ).status,
+    ).toBe(200);
+  const reconciliation = {
+    commandId: randomUUID(),
+    chargeId: s.charges[0]!.id,
+    revision: 0,
+    acceptedRevision: 10,
+    reason: "Accord renouvelé",
+  };
+  expect((await s.m.post(s.base + "/reconcile", reconciliation)).status).toBe(
+    409,
+  );
+  const after = (await s.m.browser.get("/api" + s.base)).body;
+  expect(
+    after.charges.find((c: { id: string }) => c.id === s.charges[0]!.id),
+  ).toMatchObject({
+    originalMinor: "10000",
+    chargedMinor: "10000",
+    paidMinor: "10000",
+    dueMinor: "0",
+    adjustments: [],
+  });
+  expect(
+    (await s.m.browser.get(`/api${s.base}/invoices/${issued.body.id}/print`))
+      .body.invoice,
+  ).toEqual(issued.body);
+  const allowed = {
+    ...reconciliation,
+    commandId: randomUUID(),
+    chargeId: s.charges[1]!.id,
+  };
+  const adjustment = await s.m.post(s.base + "/reconcile", allowed);
+  expect(adjustment.status).toBe(200);
+  expect(
+    (
+      await s.m.post(s.base + "/settlements", {
+        commandId: randomUUID(),
+        currency: "MRU",
+        methodId: s.receipt.body.methodId,
+        newMoney: "20",
+        deposit: "0",
+        allocations: [
+          { chargeId: s.charges[1]!.id, newMoney: "20", credit: "0" },
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.m.post(s.base + "/invoices", {
+        commandId: randomUUID(),
+        chargeIds: [s.charges[1]!.id],
+      })
+    ).body.totalMinor,
+  ).toBe("12000");
+  expect((await s.m.post(s.base + "/reconcile", allowed)).body).toEqual(
+    adjustment.body,
+  );
+});
+
 it("doctors issue only own completed work and mixed invoices never expose another performer through reads, totals or outputs", async () => {
   const s = await visitScenario("MRU", undefined, 3);
   expect(
@@ -2060,6 +2175,9 @@ it("invoice issue, reads, replays and summary outputs enforce current staff, pat
   });
   const issued = await staff.post(s.base + "/invoices", command);
   expect(issued.status).toBe(200);
+  const eligible = (await staff.browser.get("/api" + s.base)).body.charges;
+  expect(eligible[0].completedAt).toMatch(/^2026-/);
+  expect(eligible[0]).not.toHaveProperty("name");
   expect(issued.body.items[0]).not.toHaveProperty("name");
   expect(issued.body.items[0]).not.toHaveProperty("teeth");
   const url = s.base + "/invoices/" + issued.body.id;
