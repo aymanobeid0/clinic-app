@@ -338,8 +338,8 @@ export class IdentityService {
   withFinancialPermission<T>(
     actor: Actor | undefined,
     patientId: string,
-    permission: 'invoices.issue' | 'billing.read' | 'billing.edit' | 'financial.print' | 'financial.download',
-    action: (context: { clinicId: string; accountId: string; ownWork: boolean; clinical: boolean }, tx: import('../../database.js').ClinicTransaction) => Promise<T>,
+    permission: 'refunds' | 'reversals' | 'discounts' | 'invoices.issue' | 'billing.read' | 'billing.edit' | 'financial.print' | 'financial.download',
+    action: (context: { clinicId: string; accountId: string; ownWork: boolean; clinical: boolean; canApprove: boolean; canCancelClinical: boolean }, tx: import('../../database.js').ClinicTransaction) => Promise<T>,
   ) {
     return this.withReadyAccount(actor, (account, transaction) =>
       transaction.databaseTransaction(async (tx) => {
@@ -353,6 +353,8 @@ export class IdentityService {
           throw new AppError(403, 'Accès financier patient non autorisé.');
         if (!(await patients.exists(patientId))) throw new AppError(404, 'Patient introuvable.');
         return action({clinicId: account.clinicId, accountId: account.id,
+          canApprove: account.isManager || account.kind === 'doctor',
+          canCancelClinical: account.kind === 'doctor' && active && clinicalEligible(account, 'plans.finalize') && account.permissions.includes('clinical.read'),
           ownWork: !account.isManager && account.kind === 'doctor',
           clinical: account.isManager || (active && clinicalEligible(account, 'clinical.read'))}, tx);
       }),

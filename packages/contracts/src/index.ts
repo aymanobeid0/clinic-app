@@ -874,6 +874,7 @@ export type BillingAdjustment = {
   reason: string;
   actorId: string;
   at: string;
+  correctionId?: string;
 };
 export type OpeningBalance = {
   id: string;
@@ -886,6 +887,8 @@ export type OpeningBalance = {
 };
 export type BillingWorkspace = {
   patientId: string;
+  corrections: FinancialCorrection[];
+  creditSources: CreditSource[];
   settlements: Settlement[];
   deposits: {settlementId: string; currency: string; amountMinor: string; availableMinor: string}[];
   charges: {
@@ -1041,3 +1044,93 @@ export type PlanSummary = {
 };
 export type InvoiceOutput = { title: string; invoice: Invoice };
 export type PlanSummaryOutput = { title: string; summary: PlanSummary };
+
+const correctionCommand = z.object({
+  commandId: z.uuid().transform((v) => v.toLowerCase()),
+  reason: z.string().trim().min(1).max(2000),
+});
+// Final charges and releases can cover the aggregate of base price plus extras.
+const correctionAmountSchema = z.string().regex(/^\d{1,30}(?:\.\d{1,3})?$/);
+export const creditAdjustmentSchema = correctionCommand
+  .extend({
+    chargeId: z.uuid().transform((v) => v.toLowerCase()),
+    revision: z.number().int().nonnegative(),
+    finalCharge: correctionAmountSchema,
+  })
+  .strict();
+export const releaseAllocationSchema = correctionCommand
+  .extend({
+    settlementId: z.uuid().transform((v) => v.toLowerCase()),
+    chargeId: z.uuid().transform((v) => v.toLowerCase()),
+    amount: correctionAmountSchema,
+  })
+  .strict();
+export const reversePaymentSchema = correctionCommand
+  .extend({
+    settlementId: z.uuid().transform((v) => v.toLowerCase()),
+  })
+  .strict();
+export const refundRequestSchema = correctionCommand
+  .extend({
+    sourceId: z.uuid().transform((v) => v.toLowerCase()),
+    amount: correctionAmountSchema,
+  })
+  .strict();
+export const refundActionSchema = correctionCommand
+  .extend({
+    requestId: z.uuid().transform((v) => v.toLowerCase()),
+  })
+  .strict();
+export const cancelChargedPlanSchema = correctionCommand
+  .extend({
+    planId: z.uuid().transform((v) => v.toLowerCase()),
+    revision: z.number().int().positive(),
+    charges: z
+      .array(creditAdjustmentSchema.omit({ commandId: true, reason: true }))
+      .min(1)
+      .max(100),
+  })
+  .strict();
+export type CreditSource = {
+  id: string;
+  chargeId: string | null;
+  currency: string;
+  rootSettlementId: string;
+  performedBy: string | null;
+  amountMinor: string;
+  availableMinor: string;
+};
+export type AllocationRelease = {
+  settlementId: string;
+  chargeId: string;
+  newMoneyMinor: string;
+  sources: { settlementId: string; amountMinor: string }[];
+};
+export type FinancialCorrection = {
+  id: string;
+  patientId: string;
+  currency: string;
+  actorId: string;
+  at: string;
+  reason: string;
+  kind:
+    | "credit"
+    | "release"
+    | "reversal"
+    | "refund_request"
+    | "refund_approval"
+    | "refund"
+    | "cancellation"
+    | "reconciliation";
+  chargeIds: string[];
+  invoiceIds: string[];
+  settlementIds: string[];
+  releases: AllocationRelease[];
+  credits: CreditSource[];
+  sourceId?: string;
+  amountMinor?: string;
+  requestId?: string;
+  approvalId?: string;
+  reversedSettlementId?: string;
+  planId?: string;
+};

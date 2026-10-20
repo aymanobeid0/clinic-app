@@ -57,6 +57,1043 @@ afterAll(async () => {
   await owner.close();
 });
 
+async function mixedCorrectionScenario() {
+  const s = await visitScenario();
+  expect(
+    (
+      await s.doctor.post(s.path, {
+        ...s.start,
+        procedures: s.selections.slice(0, 1),
+      })
+    ).status,
+  ).toBe(200);
+  const other = await s.create("other-correction-doctor", "doctor", [
+    "clinical.read",
+    "procedures.start",
+    "plans.finalize",
+    "billing.read",
+    "billing.edit",
+    "refunds",
+    "discounts",
+  ]);
+  expect(
+    (
+      await s.m.post(`/patient-access/${s.patient.id}/share`, {
+        commandId: randomUUID(),
+        revision: 1,
+        accountId: other.id,
+        kind: "shared",
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await other.post(s.path, {
+        ...s.start,
+        commandId: randomUUID(),
+        id: randomUUID(),
+        procedures: [{ ...s.selections[1], planRevision: 5 }],
+      })
+    ).status,
+  ).toBe(200);
+  const base = "/billing/" + s.patient.id;
+  const charges = (await s.m.browser.get("/api" + base)).body.charges as {
+    id: string;
+    performedBy: string;
+  }[];
+  const own = charges.find((ch) => ch.performedBy === s.doctor.id)!;
+  const foreign = charges.find((ch) => ch.performedBy === other.id)!;
+  const methodId = randomUUID();
+  expect(
+    (
+      await s.m.post("/billing/payment-methods", {
+        commandId: randomUUID(),
+        id: methodId,
+        revision: 0,
+        name: "Cash",
+        active: true,
+      })
+    ).status,
+  ).toBe(200);
+  return { ...s, base, charges, own, foreign, other, methodId };
+}
+
+it("doctor reversal checks foreign available and refunded funding descendants beyond scoped history", async () => {
+  const s = await mixedCorrectionScenario();
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read", "reversals"],
+  });
+  const receipt = await s.m.post(s.base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: s.methodId,
+    newMoney: "100",
+    deposit: "0",
+    allocations: [{ chargeId: s.own.id, newMoney: "100", credit: "0" }],
+  });
+  expect(receipt.status).toBe(200);
+  expect(
+    (
+      await s.m.post(s.base + "/allocation-releases", {
+        commandId: randomUUID(),
+        settlementId: receipt.body.id,
+        chargeId: s.own.id,
+        amount: "100",
+        reason: "Move",
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.m.post(s.base + "/settlements", {
+        commandId: randomUUID(),
+        currency: "MRU",
+        methodId: null,
+        newMoney: "0",
+        deposit: "0",
+        allocations: [{ chargeId: s.foreign.id, newMoney: "0", credit: "100" }],
+      })
+    ).status,
+  ).toBe(200);
+  const credit = await s.m.post(s.base + "/credits", {
+    commandId: randomUUID(),
+    chargeId: s.foreign.id,
+    revision: 0,
+    finalCharge: "0",
+    reason: "Foreign care correction",
+  });
+  expect(credit.status).toBe(200);
+  const command = {
+    commandId: randomUUID(),
+    settlementId: receipt.body.id,
+    reason: "Mistaken payment",
+  };
+  expect((await s.doctor.post(s.base + "/reversals", command)).status).toBe(
+    403,
+  );
+  const proposed = await s.other.post(s.base + "/refund-requests", {
+    commandId: randomUUID(),
+    sourceId: credit.body.credits[0].id,
+    amount: "100",
+    reason: "Return own care funds",
+  });
+  expect(proposed.status).toBe(200);
+  expect(
+    (
+      await s.other.post(s.base + "/refund-approvals", {
+        commandId: randomUUID(),
+        requestId: proposed.body.id,
+        reason: "Concerned doctor",
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.other.post(s.base + "/refunds", {
+        commandId: randomUUID(),
+        requestId: proposed.body.id,
+        reason: "Returned",
+      })
+    ).status,
+  ).toBe(200);
+  expect((await s.doctor.post(s.base + "/reversals", command)).status).toBe(
+    409,
+  );
+  expect((await s.m.browser.get("/api" + s.base)).body.totals[0]).toMatchObject(
+    { dueMinor: "10000", creditMinor: "0" },
+  );
+});
+
+it("fully released own payment reversal retains own history and identical retry", async () => {
+  const s = await completedBillingScenario();
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read", "reversals"],
+  });
+  for (const ch of s.charges)
+    expect(
+      (
+        await s.m.post(s.base + "/allocation-releases", {
+          commandId: randomUUID(),
+          settlementId: s.receipt.body.id,
+          chargeId: ch.id,
+          amount: "100",
+          reason: "Release",
+        })
+      ).status,
+    ).toBe(200);
+  const command = {
+    commandId: randomUUID(),
+    settlementId: s.receipt.body.id,
+    reason: "Error",
+  };
+  const reversed = await s.doctor.post(s.base + "/reversals", command);
+  expect(reversed.status).toBe(200);
+  expect((await s.doctor.post(s.base + "/reversals", command)).body).toEqual(
+    reversed.body,
+  );
+  expect(
+    (await s.doctor.browser.get("/api" + s.base)).body.corrections,
+  ).toContainEqual(reversed.body);
+});
+
+it("own credit from mixed-performer cancellation supports concerned-doctor refund request retry and approval", async () => {
+  const s = await mixedCorrectionScenario();
+  expect(
+    (
+      await s.m.post(s.base + "/settlements", {
+        commandId: randomUUID(),
+        currency: "MRU",
+        methodId: s.methodId,
+        newMoney: "200",
+        deposit: "0",
+        allocations: s.charges.map((ch) => ({
+          chargeId: ch.id,
+          newMoney: "100",
+          credit: "0",
+        })),
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.m.post(`/accounts/${s.doctor.id}/manager`, {
+        isManager: true,
+        currentPassword: "Fictional-manager-pass-2",
+      })
+    ).status,
+  ).toBe(200);
+  expect((await s.doctor.signIn("Fictional-employee-pass-2")).status).toBe(200);
+  await s.doctor.post("/onboarding/email", {
+    email: `correction-${s.m.code}@example.invalid`,
+  });
+  const verified = await s.doctor.post("/onboarding/verify-email", { token });
+  expect(
+    (
+      await s.doctor.post("/onboarding/codes-saved", {
+        saved: true,
+        batchId: verified.body.batchId,
+      })
+    ).status,
+  ).toBe(204);
+  const cancelled = await s.doctor.post(s.base + "/cancel-plan", {
+    commandId: randomUUID(),
+    planId: s.command.id,
+    revision: 5,
+    charges: s.charges.map((ch) => ({
+      chargeId: ch.id,
+      revision: 0,
+      finalCharge: "60",
+    })),
+    reason: "Explicit partial final charges",
+  });
+  expect(cancelled.status).toBe(200);
+  const own = (await s.other.browser.get("/api" + s.base)).body;
+  expect(own.corrections).toEqual([]);
+  expect(own.creditSources).toHaveLength(1);
+  const command = {
+    commandId: randomUUID(),
+    sourceId: own.creditSources[0].id,
+    amount: "40",
+    reason: "Own performed work",
+  };
+  const proposed = await s.other.post(s.base + "/refund-requests", command);
+  expect(proposed.status).toBe(200);
+  expect(
+    (await s.other.post(s.base + "/refund-requests", command)).body,
+  ).toEqual(proposed.body);
+  expect(
+    (
+      await s.other.post(s.base + "/refund-approvals", {
+        commandId: randomUUID(),
+        requestId: proposed.body.id,
+        reason: "Concerned approval",
+      })
+    ).status,
+  ).toBe(200);
+});
+
+it("explicit credit survives routine clinical completion and remains invoice eligible", async () => {
+  const s = await visitScenario();
+  expect((await s.doctor.post(s.path, s.start)).status).toBe(200);
+  const base = "/billing/" + s.patient.id;
+  const charges = (await s.m.browser.get("/api" + base)).body.charges as {
+    id: string;
+    itemId: string;
+  }[];
+  expect(
+    (
+      await s.m.post(base + "/credits", {
+        commandId: randomUUID(),
+        chargeId: charges[0]!.id,
+        revision: 0,
+        finalCharge: "60",
+        reason: "Credit before completion",
+      })
+    ).status,
+  ).toBe(200);
+  for (const [i, p] of s.selections.entries())
+    expect(
+      (
+        await s.doctor.post(s.path + "/actions", {
+          commandId: randomUUID(),
+          id: s.start.id,
+          revision: i + 1,
+          action: "complete",
+          planId: p.planId,
+          itemId: p.itemId,
+        })
+      ).status,
+    ).toBe(200);
+  const state = (await s.m.browser.get("/api" + base)).body;
+  expect(
+    state.charges.find((ch: { id: string }) => ch.id === charges[0]!.id),
+  ).toMatchObject({ chargedMinor: "6000", reconciliationRequired: false });
+  const methodId = randomUUID();
+  await s.m.post("/billing/payment-methods", {
+    commandId: randomUUID(),
+    id: methodId,
+    revision: 0,
+    name: "Cash",
+    active: true,
+  });
+  expect(
+    (
+      await s.m.post(base + "/settlements", {
+        commandId: randomUUID(),
+        currency: "MRU",
+        methodId,
+        newMoney: "60",
+        deposit: "0",
+        allocations: [
+          { chargeId: charges[0]!.id, newMoney: "60", credit: "0" },
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.m.post(base + "/invoices", {
+        commandId: randomUUID(),
+        chargeIds: [charges[0]!.id],
+      })
+    ).status,
+  ).toBe(200);
+});
+
+it("aggregate final charges preserve the accepted base-plus-extras range without narrowing", async () => {
+  const s = await treatmentScenario("KWD");
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "clinical.read",
+      "plans.draft",
+      "plans.finalize",
+      "plans.accept",
+      "acceptance.draft",
+      "procedures.start",
+      "prices.override",
+    ],
+  });
+  const item = {
+    ...s.command.items[0]!,
+    price: "999999999999999.999",
+    extras: Array.from({ length: 50 }, () => ({
+      id: randomUUID(),
+      label: "Extra",
+      amount: "999999999999999.999",
+    })),
+  };
+  expect(
+    (await s.doctor.post(s.path, { ...s.command, items: [item] })).status,
+  ).toBe(200);
+  for (const [action, revision, extra] of [
+    ["present", 1, {}],
+    [
+      "evidence",
+      2,
+      {
+        acceptedBy: "Fictional patient",
+        acceptedAt: "2026-10-16T12:00:00.000Z",
+        method: "Oral",
+      },
+    ],
+    ["accept", 3, {}],
+  ] as const)
+    expect(
+      (
+        await s.doctor.post(s.path + "/lifecycle", {
+          commandId: randomUUID(),
+          id: s.command.id,
+          action,
+          revision,
+          ...extra,
+        })
+      ).status,
+    ).toBe(200);
+  expect(
+    (
+      await s.doctor.post(`/treatment/${s.patient.id}/visits`, {
+        commandId: randomUUID(),
+        id: randomUUID(),
+        appointmentId: null,
+        procedures: [
+          { planId: s.command.id, itemId: item.id, planRevision: 4 },
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  const base = "/billing/" + s.patient.id;
+  const charge = (await s.m.browser.get("/api" + base)).body.charges[0];
+  const corrected = await s.m.post(base + "/credits", {
+    commandId: randomUUID(),
+    chargeId: charge.id,
+    revision: 0,
+    finalCharge: "50000000000000000.000",
+    reason: "Exact aggregate final charge",
+  });
+  expect(corrected.status).toBe(200);
+  expect((await s.m.browser.get("/api" + base)).body.charges[0]).toMatchObject({
+    originalMinor: "50999999999999999949",
+    chargedMinor: "50000000000000000000",
+    dueMinor: "50000000000000000000",
+  });
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["clinical.read", "plans.finalize", "discounts"],
+  });
+  expect(
+    (
+      await s.doctor.post(base + "/cancel-plan", {
+        commandId: randomUUID(),
+        planId: s.command.id,
+        revision: 5,
+        charges: [
+          {
+            chargeId: charge.id,
+            revision: 1,
+            finalCharge: "49000000000000000.000",
+          },
+        ],
+        reason: "Exact aggregate cancellation",
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (await s.m.browser.get("/api" + base)).body.charges[0].chargedMinor,
+  ).toBe("49000000000000000000");
+});
+
+it("refund execution and credit reuse compete for the same funds atomically", async () => {
+  const s = await completedBillingScenario();
+  const release = await s.m.post(s.base + "/allocation-releases", {
+    commandId: randomUUID(),
+    settlementId: s.receipt.body.id,
+    chargeId: s.charges[0]!.id,
+    amount: "40",
+    reason: "Reallocation",
+  });
+  const proposed = await s.m.post(s.base + "/refund-requests", {
+    commandId: randomUUID(),
+    sourceId: release.body.credits[0].id,
+    amount: "40",
+    reason: "Return",
+  });
+  expect(
+    (
+      await s.m.post(s.base + "/refund-approvals", {
+        commandId: randomUUID(),
+        requestId: proposed.body.id,
+        reason: "Approved",
+      })
+    ).status,
+  ).toBe(200);
+  const results = await Promise.all([
+    s.m.post(s.base + "/refunds", {
+      commandId: randomUUID(),
+      requestId: proposed.body.id,
+      reason: "Returned",
+    }),
+    s.m.post(s.base + "/settlements", {
+      commandId: randomUUID(),
+      currency: "MRU",
+      methodId: null,
+      newMoney: "0",
+      deposit: "0",
+      allocations: [
+        { chargeId: s.charges[0]!.id, newMoney: "0", credit: "40" },
+      ],
+    }),
+  ]);
+  expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+  const after = (await s.m.browser.get("/api" + s.base)).body;
+  expect(after.totals[0].creditMinor).toBe("0");
+  expect(after.totals[0].dueMinor).toBe(
+    results[0]!.status === 200 ? "4000" : "0",
+  );
+});
+it("correction capabilities, own-work approval, current access and clinic/patient boundaries are enforced", async () => {
+  const s = await completedBillingScenario();
+  const command = {
+    commandId: randomUUID(),
+    chargeId: s.charges[0]!.id,
+    revision: 0,
+    finalCharge: "60",
+    reason: "Correction",
+  };
+  expect((await s.doctor.post(s.base + "/credits", command)).status).toBe(403);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read", "discounts", "refunds", "reversals"],
+  });
+  const credit = await s.doctor.post(s.base + "/credits", command);
+  expect(credit.status).toBe(200);
+  const sourceId = credit.body.credits[0].id;
+  const other = await s.create("other-refund-doctor", "doctor", [
+    "clinical.read",
+    "billing.read",
+    "discounts",
+    "refunds",
+    "reversals",
+  ]);
+  await s.m.post(`/patient-access/${s.patient.id}/share`, {
+    commandId: randomUUID(),
+    revision: 1,
+    accountId: other.id,
+    kind: "shared",
+  });
+  expect(
+    (
+      await other.post(s.base + "/credits", {
+        ...command,
+        commandId: randomUUID(),
+        revision: 1,
+      })
+    ).status,
+  ).toBe(404);
+  expect(
+    (
+      await other.post(s.base + "/refund-requests", {
+        commandId: randomUUID(),
+        sourceId,
+        amount: "40",
+        reason: "Non autorisé",
+      })
+    ).status,
+  ).toBe(404);
+  const request = await s.doctor.post(s.base + "/refund-requests", {
+    commandId: randomUUID(),
+    sourceId,
+    amount: "40",
+    reason: "Retour",
+  });
+  const action = {
+    commandId: randomUUID(),
+    requestId: request.body.id,
+    reason: "Approbation propre travail",
+  };
+  expect((await other.post(s.base + "/refund-approvals", action)).status).toBe(
+    404,
+  );
+  expect(
+    (await s.doctor.post(s.base + "/refund-approvals", action)).status,
+  ).toBe(200);
+  const staff = await s.create("restricted-corrections", "staff", [
+    "billing.read",
+    "refunds",
+  ]);
+  const restricted = (await staff.browser.get("/api" + s.base)).body;
+  expect(restricted.charges[0]).not.toHaveProperty("name");
+  expect(restricted.charges[0]).not.toHaveProperty("teeth");
+  expect(
+    (
+      await staff.post(s.base + "/credits", {
+        ...command,
+        commandId: randomUUID(),
+        revision: 1,
+      })
+    ).status,
+  ).toBe(403);
+  const foreign = await manager();
+  expect((await foreign.post(s.base + "/credits", command)).status).toBe(404);
+  const secondPatient = (
+    await s.m.post("/patients", {
+      commandId: randomUUID(),
+      name: "Autre patient fictif",
+      phone: "70000001",
+      contactKind: "patient",
+      contactName: "",
+    })
+  ).body.patient;
+  expect(
+    (
+      await s.m.post("/billing/" + secondPatient.id + "/credits", {
+        ...command,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(404);
+  expect(
+    (await staff.browser.post("/api" + s.base + "/refunds").send(action))
+      .status,
+  ).toBe(403);
+  expect(
+    (
+      await s.m.post(s.base + "/credits", {
+        ...command,
+        commandId: randomUUID(),
+        reason: " ",
+      })
+    ).status,
+  ).toBe(400);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read"],
+  });
+  expect((await s.doctor.post(s.base + "/credits", command)).status).toBe(403);
+  expect(
+    (await s.doctor.post(s.base + "/refund-approvals", action)).status,
+  ).toBe(403);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read", "discounts", "refunds"],
+  });
+  expect(
+    (
+      await s.m.post(`/patient-access/${s.patient.id}/remove`, {
+        commandId: randomUUID(),
+        revision: 2,
+        accountId: s.doctor.id,
+      })
+    ).status,
+  ).toBe(200);
+  expect((await s.doctor.post(s.base + "/credits", command)).status).toBe(403);
+  expect(
+    (await s.doctor.post(s.base + "/refund-approvals", action)).status,
+  ).toBe(403);
+});
+it("unassigned deposits need manager approval and competing refunds cannot overspend", async () => {
+  const s = await completedBillingScenario();
+  const deposited = await s.m.post(s.base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: s.receipt.body.methodId,
+    newMoney: "40",
+    deposit: "40",
+    allocations: [],
+  });
+  expect(deposited.status).toBe(200);
+  const staff = await s.create("deposit-staff", "staff", ["refunds"]);
+  const requests = await Promise.all(
+    [1, 2].map(() =>
+      staff.post(s.base + "/refund-requests", {
+        commandId: randomUUID(),
+        sourceId: deposited.body.id,
+        amount: "40",
+        reason: "Retour dépôt",
+      }),
+    ),
+  );
+  expect(requests.map((r) => r.status)).toEqual([200, 200]);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["refunds", "billing.read"],
+  });
+  expect(
+    (
+      await s.doctor.post(s.base + "/refund-approvals", {
+        commandId: randomUUID(),
+        requestId: requests[0]!.body.id,
+        reason: "Dépôt sans attribution",
+      })
+    ).status,
+  ).toBe(404);
+  for (const r of requests)
+    expect(
+      (
+        await s.m.post(s.base + "/refund-approvals", {
+          commandId: randomUUID(),
+          requestId: r.body.id,
+          reason: "Responsable",
+        })
+      ).status,
+    ).toBe(200);
+  const refunded = await Promise.all(
+    requests.map((r) =>
+      staff.post(s.base + "/refunds", {
+        commandId: randomUUID(),
+        requestId: r.body.id,
+        reason: "Fonds rendus",
+      }),
+    ),
+  );
+  expect(refunded.map((r) => r.status).sort()).toEqual([200, 409]);
+  expect(
+    (await s.m.browser.get("/api" + s.base)).body.totals[0].creditMinor,
+  ).toBe("0");
+  expect(
+    (
+      await s.m.post(s.base + "/refund-requests", {
+        commandId: randomUUID(),
+        sourceId: deposited.body.id,
+        amount: "1",
+        reason: "Épuisé",
+      })
+    ).status,
+  ).toBe(409);
+});
+it("corrections keep exact KWD precision and reject stale competing credits", async () => {
+  const s = await completedBillingScenario("KWD");
+  const command = {
+    commandId: randomUUID(),
+    chargeId: s.charges[0]!.id,
+    revision: 0,
+    finalCharge: "60.001",
+    reason: "Prix exact",
+  };
+  expect(
+    (
+      await s.m.post(s.base + "/credits", {
+        ...command,
+        finalCharge: "60.0001",
+      })
+    ).status,
+  ).toBe(400);
+  const results = await Promise.all([
+    s.m.post(s.base + "/credits", command),
+    s.m.post(s.base + "/credits", { ...command, commandId: randomUUID() }),
+  ]);
+  expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+  const state = (await s.m.browser.get("/api" + s.base)).body;
+  expect(state.totals[0]).toMatchObject({
+    currency: "KWD",
+    dueMinor: "0",
+    creditMinor: "39999",
+  });
+  expect(
+    state.charges.find((ch: { id: string }) => ch.id === command.chargeId)
+      .chargedMinor,
+  ).toBe("60001");
+  const credit = results.find((r) => r.status === 200)!.body;
+  expect(
+    (
+      await s.m.post(s.base + "/refund-requests", {
+        commandId: randomUUID(),
+        sourceId: credit.credits[0].id,
+        amount: "39.9991",
+        reason: "Précision",
+      })
+    ).status,
+  ).toBe(400);
+  expect(
+    (await s.m.post(s.base + "/credits", { ...command, finalCharge: "50" }))
+      .status,
+  ).toBe(409);
+  const request = await s.m.post(s.base + "/refund-requests", {
+    commandId: randomUUID(),
+    sourceId: credit.credits[0].id,
+    amount: "39.999",
+    reason: "Exact",
+  });
+  const action = {
+    commandId: randomUUID(),
+    requestId: request.body.id,
+    reason: "Exact approuvé",
+  };
+  expect((await s.m.post(s.base + "/refund-approvals", action)).status).toBe(
+    200,
+  );
+  expect(
+    (
+      await s.m.post(s.base + "/refunds", {
+        ...action,
+        commandId: randomUUID(),
+      })
+    ).body.amountMinor,
+  ).toBe("39999");
+});
+it("late correction persistence failure rolls back charge, releases and command so identical retry succeeds", async () => {
+  const s = await completedBillingScenario();
+  const command = {
+    commandId: randomUUID(),
+    chargeId: s.charges[0]!.id,
+    revision: 0,
+    finalCharge: "50",
+    reason: "Correction atomique",
+  };
+  const fn = "correction_fail_" + randomUUID().replaceAll("-", "");
+  await owner.pool.query(
+    `CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.receipt->>'patientId' = '${s.patient.id}' THEN RAISE EXCEPTION 'fictional correction commit failure'; END IF; RETURN NEW; END $$`,
+  );
+  await owner.pool.query(
+    `CREATE TRIGGER ${fn} BEFORE INSERT ON "BillingCommand" FOR EACH ROW EXECUTE FUNCTION ${fn}()`,
+  );
+  try {
+    expect((await s.m.post(s.base + "/credits", command)).status).toBe(500);
+    const state = (await s.m.browser.get("/api" + s.base)).body;
+    expect(state.corrections).toEqual([]);
+    expect(state.totals[0]).toMatchObject({ creditMinor: "0", dueMinor: "0" });
+    expect(
+      state.charges.find((ch: { id: string }) => ch.id === command.chargeId),
+    ).toMatchObject({ chargedMinor: "10000", paidMinor: "10000", revision: 0 });
+  } finally {
+    await owner.pool.query(`DROP TRIGGER ${fn} ON "BillingCommand"`);
+    await owner.pool.query(`DROP FUNCTION ${fn}()`);
+  }
+  expect((await s.m.post(s.base + "/credits", command)).status).toBe(200);
+});
+it("refunds need explicit approval, return only available credit once, and retain approval evidence", async () => {
+  const s = await completedBillingScenario();
+  const credit = await s.m.post(s.base + "/credits", {
+    commandId: randomUUID(),
+    chargeId: s.charges[0]!.id,
+    revision: 0,
+    finalCharge: "60",
+    reason: "Correction",
+  });
+  const staff = await s.create("refund-staff", "staff", [
+    "refunds",
+    "billing.read",
+  ]);
+  const requestCommand = {
+    commandId: randomUUID(),
+    sourceId: credit.body.credits[0].id,
+    amount: "40",
+    reason: "Retour demandé",
+  };
+  const proposed = await staff.post(
+    s.base + "/refund-requests",
+    requestCommand,
+  );
+  expect(proposed.status).toBe(200);
+  const action = {
+    commandId: randomUUID(),
+    requestId: proposed.body.id,
+    reason: "Retour validé",
+  };
+  expect((await staff.post(s.base + "/refunds", action)).status).toBe(409);
+  expect((await staff.post(s.base + "/refund-approvals", action)).status).toBe(
+    403,
+  );
+  const approval = await s.m.post(s.base + "/refund-approvals", action);
+  expect(approval.status).toBe(200);
+  const execute = { ...action, commandId: randomUUID() };
+  const results = await Promise.all([
+    staff.post(s.base + "/refunds", execute),
+    staff.post(s.base + "/refunds", execute),
+  ]);
+  expect(results.map((r) => r.status)).toEqual([200, 200]);
+  expect(results[0]!.body).toEqual(results[1]!.body);
+  expect(results[0]!.body.approvalId).toBe(approval.body.id);
+  expect(
+    (
+      await staff.post(s.base + "/refunds", {
+        ...execute,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(409);
+  expect((await s.m.browser.get("/api" + s.base)).body.totals[0]).toMatchObject(
+    { dueMinor: "0", creditMinor: "0" },
+  );
+  expect(
+    (
+      await s.m.post(s.base + "/reversals", {
+        commandId: randomUUID(),
+        settlementId: s.receipt.body.id,
+        reason: "Erreur",
+      })
+    ).status,
+  ).toBe(409);
+});
+it("releases preserve fund provenance through credit reuse and reversal restores debt without returning money", async () => {
+  const s = await completedBillingScenario();
+  const issued = await s.m.post(s.base + "/invoices", {
+    commandId: randomUUID(),
+    chargeIds: s.charges.map((c) => c.id),
+  });
+  const release = await s.m.post(s.base + "/allocation-releases", {
+    commandId: randomUUID(),
+    settlementId: s.receipt.body.id,
+    chargeId: s.charges[0]!.id,
+    amount: "40",
+    reason: "Réaffectation",
+  });
+  expect(release.status).toBe(200);
+  const state = () => s.m.browser.get("/api" + s.base);
+  expect((await state()).body.totals[0]).toMatchObject({
+    dueMinor: "4000",
+    creditMinor: "4000",
+  });
+  const reused = await s.m.post(s.base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: null,
+    newMoney: "0",
+    deposit: "0",
+    allocations: [{ chargeId: s.charges[0]!.id, newMoney: "0", credit: "40" }],
+  });
+  expect(reused.status).toBe(200);
+  expect(reused.body.receiptNumber).toBeNull();
+  const releaseAgain = await s.m.post(s.base + "/allocation-releases", {
+    commandId: randomUUID(),
+    settlementId: reused.body.id,
+    chargeId: s.charges[0]!.id,
+    amount: "20",
+    reason: "Nouvelle affectation",
+  });
+  expect(releaseAgain.status).toBe(200);
+  expect((await state()).body.totals[0]).toMatchObject({
+    dueMinor: "2000",
+    creditMinor: "2000",
+  });
+  const command = {
+    commandId: randomUUID(),
+    settlementId: s.receipt.body.id,
+    reason: "Paiement saisi par erreur",
+  };
+  const reversed = await Promise.all([
+    s.m.post(s.base + "/reversals", command),
+    s.m.post(s.base + "/reversals", command),
+  ]);
+  expect(reversed.map((r) => r.status)).toEqual([200, 200]);
+  expect(reversed[0]!.body).toEqual(reversed[1]!.body);
+  expect((await state()).body.totals[0]).toMatchObject({
+    dueMinor: "20000",
+    creditMinor: "0",
+  });
+  expect(
+    (await s.m.browser.get(`/api${s.base}/settlements/${s.receipt.body.id}`))
+      .body,
+  ).toEqual(s.receipt.body);
+  expect(
+    (await s.m.browser.get(`/api${s.base}/invoices/${issued.body.id}/print`))
+      .body.invoice,
+  ).toEqual(issued.body);
+  expect(
+    (
+      await s.m.post(s.base + "/reversals", {
+        ...command,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(409);
+});
+it("partial-care cancellation requires every explicit final charge and preserves performed care without automatic refund", async () => {
+  const s = await visitScenario();
+  expect((await s.doctor.post(s.path, s.start)).status).toBe(200);
+  const base = "/billing/" + s.patient.id;
+  const before = (await s.m.browser.get("/api" + base)).body;
+  const methodId = randomUUID();
+  expect(
+    (
+      await s.m.post("/billing/payment-methods", {
+        commandId: randomUUID(),
+        id: methodId,
+        revision: 0,
+        name: "Espèces",
+        active: true,
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.m.post(base + "/settlements", {
+        commandId: randomUUID(),
+        currency: "MRU",
+        methodId,
+        newMoney: "200",
+        deposit: "0",
+        allocations: before.charges.map((ch: { id: string }) => ({
+          chargeId: ch.id,
+          newMoney: "100",
+          credit: "0",
+        })),
+      })
+    ).status,
+  ).toBe(200);
+  const command = {
+    commandId: randomUUID(),
+    planId: s.command.id,
+    revision: 5,
+    reason: "Soins partiels arrêtés",
+    charges: before.charges.map((ch: { id: string }) => ({
+      chargeId: ch.id,
+      revision: 0,
+      finalCharge: "30",
+    })),
+  };
+  expect((await s.m.post(base + "/cancel-plan", command)).status).toBe(403);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "clinical.read",
+      "plans.finalize",
+      "discounts",
+      "billing.read",
+    ],
+  });
+  expect(
+    (
+      await s.doctor.post(base + "/cancel-plan", {
+        ...command,
+        charges: command.charges.slice(0, 1),
+      })
+    ).status,
+  ).toBe(409);
+  const cancelled = await s.doctor.post(base + "/cancel-plan", command);
+  expect(cancelled.status).toBe(200);
+  expect((await s.doctor.post(base + "/cancel-plan", command)).body).toEqual(
+    cancelled.body,
+  );
+  const after = (await s.m.browser.get("/api" + base)).body;
+  expect(after.charges).toHaveLength(2);
+  expect(after.totals[0]).toMatchObject({
+    dueMinor: "0",
+    creditMinor: "14000",
+  });
+  expect(
+    after.corrections.filter((v: { kind: string }) => v.kind === "refund"),
+  ).toEqual([]);
+  const visits = (await s.doctor.browser.get("/api" + s.path)).body;
+  expect(visits.starts).toHaveLength(2);
+});
+it("reasoned credits release paid funds without refunding or changing issued invoices", async () => {
+  const s = await completedBillingScenario();
+  const invoice = await s.m.post(s.base + "/invoices", {
+    commandId: randomUUID(),
+    chargeIds: [s.charges[0]!.id],
+  });
+  const command = {
+    commandId: randomUUID(),
+    chargeId: s.charges[0]!.id,
+    revision: 0,
+    finalCharge: "60",
+    reason: "Correction explicite",
+  };
+  const result = await s.m.post(s.base + "/credits", command);
+  expect(result.status).toBe(200);
+  const state = (await s.m.browser.get("/api" + s.base)).body;
+  expect(
+    state.charges.find((c: { id: string }) => c.id === command.chargeId),
+  ).toMatchObject({
+    originalMinor: "10000",
+    chargedMinor: "6000",
+    paidMinor: "6000",
+    dueMinor: "0",
+  });
+  expect(state.totals[0].creditMinor).toBe("4000");
+  expect(result.body.invoiceIds).toEqual([invoice.body.id]);
+  expect((await s.m.post(s.base + "/credits", command)).body).toEqual(
+    result.body,
+  );
+  expect(
+    (await s.m.browser.get(`/api${s.base}/invoices/${invoice.body.id}/print`))
+      .body.invoice,
+  ).toEqual(invoice.body);
+});
+
 it("large accepted extra-work amounts survive starts, explicit reconciliation and retained-start migration without narrowing", async () => {
   const s = await treatmentScenario("KWD");
   await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
@@ -1876,7 +2913,7 @@ async function completedBillingScenario(currency = "MRU", now?: number) {
   return { ...s, base, charges, receipt };
 }
 
-it("issued invoices require a linked correction before new price reconciliation while prior commands remain retryable", async () => {
+it("issued invoices retain linked corrections on new price reconciliation while prior commands remain retryable", async () => {
   const s = await completedBillingScenario();
   const issued = await s.m.post(s.base + "/invoices", {
     commandId: randomUUID(),
@@ -1940,19 +2977,23 @@ it("issued invoices require a linked correction before new price reconciliation 
     acceptedRevision: 10,
     reason: "Accord renouvelé",
   };
-  expect((await s.m.post(s.base + "/reconcile", reconciliation)).status).toBe(
-    409,
-  );
+  const linked = await s.m.post(s.base + "/reconcile", reconciliation);
+  expect(linked.status).toBe(200);
+  expect(linked.body.correctionId).toBeTruthy();
   const after = (await s.m.browser.get("/api" + s.base)).body;
   expect(
     after.charges.find((c: { id: string }) => c.id === s.charges[0]!.id),
   ).toMatchObject({
     originalMinor: "10000",
-    chargedMinor: "10000",
+    chargedMinor: "12000",
     paidMinor: "10000",
-    dueMinor: "0",
-    adjustments: [],
+    dueMinor: "2000",
   });
+  expect(
+    after.corrections.find(
+      (c: { id: string }) => c.id === linked.body.correctionId,
+    ).invoiceIds,
+  ).toEqual([issued.body.id]);
   expect(
     (await s.m.browser.get(`/api${s.base}/invoices/${issued.body.id}/print`))
       .body.invoice,
@@ -2134,6 +3175,35 @@ it("doctors issue only own completed work and mixed invoices never expose anothe
     chargedMinor: "10000",
     paidMinor: "10000",
   });
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "billing.read",
+      "invoices.issue",
+      "financial.print",
+      "discounts",
+    ],
+  });
+  const correctionCommand = {
+    commandId: randomUUID(),
+    chargeId: own[1]!.id,
+    revision: 0,
+    finalCharge: "60",
+    reason: "Own work correction",
+  };
+  const ownCredit = await s.doctor.post(base + "/credits", correctionCommand);
+  expect(ownCredit.status).toBe(200);
+  expect(ownCredit.body.invoiceIds).toEqual([]);
+  expect(
+    (await s.doctor.post(base + "/credits", correctionCommand)).body,
+  ).toEqual(ownCredit.body);
+  expect((await s.doctor.browser.get("/api" + base)).body.corrections).toEqual([
+    ownCredit.body,
+  ]);
+  expect(
+    (await s.m.browser.get("/api" + base)).body.corrections[0].invoiceIds,
+  ).toEqual([mixed.body.id]);
+  expect((await other.browser.get("/api" + base)).body.corrections).toEqual([]);
   expect(
     (
       await s.m.post(`/patient-access/${s.patient.id}/remove`, {

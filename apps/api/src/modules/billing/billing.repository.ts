@@ -7,6 +7,7 @@ import type {
   PaymentMethod,
   Settlement,
   Invoice,
+  FinancialCorrection,
 } from "@clinic/contracts";
 import type { ClinicTransaction } from "../../database.js";
 
@@ -15,6 +16,20 @@ export class BillingRepository {
     readonly tx: ClinicTransaction,
     readonly clinicId: string,
   ) {}
+  async correction(value: FinancialCorrection) {
+    await this.tx.billingEntry.create({
+      data: {
+        id: value.id,
+        clinicId: this.clinicId,
+        patientId: value.patientId,
+        kind: "correction",
+        sourceId: value.id,
+        currency: value.currency,
+        amountMinor: "0",
+        snapshot: value,
+      },
+    });
+  }
   async invoices(patientId?: string): Promise<Invoice[]> {
     const rows = await this.tx.billingInvoice.findMany({
       where: { clinicId: this.clinicId, ...(patientId ? { patientId } : {}) },
