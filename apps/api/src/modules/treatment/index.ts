@@ -1,4 +1,5 @@
 import { VisitRepository } from './visit.repository.js';
+import { cancelChargedPlan } from './cancel-charged-plan.js';
 import { VisitService } from './visit.service.js';
 import { TreatmentRepository } from './treatment.repository.js';
 import type { IdentityAccess } from '../identity/index.js';
@@ -39,6 +40,9 @@ export function treatmentBilling(tx: import('../../database.js').ClinicTransacti
     completions: (patientId: string) => new VisitRepository(tx, clinicId).completions(patientId),
     versions: (patientId: string, planId?: string) => repository.versions(patientId, planId),
     currency: (code: string) => repository.enabled(code),
+    cancel: async (patientId: string, planId: string, revision: number, actorId: string, reason: string, at: string) => {
+      await cancelChargedPlan(tx,clinicId,patientId,planId,revision,actorId,reason,at);
+    },
   };
 }
 

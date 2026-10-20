@@ -6,11 +6,82 @@ import {
   paymentMethodSchema,
   settlementSchema,
   issueInvoiceSchema,
+  creditAdjustmentSchema,
+  releaseAllocationSchema,
+  reversePaymentSchema,
+  refundRequestSchema,
+  refundActionSchema,
+  cancelChargedPlanSchema,
 } from "@clinic/contracts";
 import type { BillingService } from "./billing.service.js";
 const patientId = (value: unknown) => z.uuid().parse(value).toLowerCase();
 export class BillingController {
   constructor(readonly service: BillingService) {}
+  credit: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.credit(
+        req.session.actor,
+        patientId(req.params.id),
+        creditAdjustmentSchema.parse(req.body),
+      ),
+    );
+  };
+  release: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.release(
+        req.session.actor,
+        patientId(req.params.id),
+        releaseAllocationSchema.parse(req.body),
+      ),
+    );
+  };
+  reverse: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.reverse(
+        req.session.actor,
+        patientId(req.params.id),
+        reversePaymentSchema.parse(req.body),
+      ),
+    );
+  };
+  refundRequest: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.refundRequest(
+        req.session.actor,
+        patientId(req.params.id),
+        refundRequestSchema.parse(req.body),
+      ),
+    );
+  };
+  refundApprove: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.refundAction(
+        req.session.actor,
+        patientId(req.params.id),
+        refundActionSchema.parse(req.body),
+        true,
+      ),
+    );
+  };
+  refundExecute: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.refundAction(
+        req.session.actor,
+        patientId(req.params.id),
+        refundActionSchema.parse(req.body),
+        false,
+      ),
+    );
+  };
+  cancel: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.cancel(
+        req.session.actor,
+        patientId(req.params.id),
+        cancelChargedPlanSchema.parse(req.body),
+      ),
+    );
+  };
   summary: RequestHandler = async (req, res) => {
     res.json(
       await this.service.summary(

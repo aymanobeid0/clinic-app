@@ -16,11 +16,19 @@ import type {
   Invoice,
   PlanSummary,
   issueInvoiceSchema,
+  FinancialCorrection,
+  creditAdjustmentSchema,
+  releaseAllocationSchema,
+  refundRequestSchema,
+  refundActionSchema,
+  reversePaymentSchema,
+  cancelChargedPlanSchema,
 } from "@clinic/contracts";
 import type { Actor, IdentityAccess } from "../identity/index.js";
 import { treatmentBilling, exactMinor } from "../treatment/index.js";
 import type { ClinicTransaction } from "../../database.js";
 import type { ClinicUpdates } from "../../clinic-updates.js";
+import { projectFunds, releaseFunds } from "./funds.js";
 import { BillingRepository } from "./billing.repository.js";
 
 const agreed = (item: TreatmentItem) =>
@@ -40,6 +48,399 @@ export class BillingService {
     readonly updates: ClinicUpdates,
     readonly now: () => number,
   ) {}
+  private async correct(
+    actor: Actor | undefined,
+    patientId: string,
+    permission: "discounts" | "billing.edit" | "refunds" | "reversals",
+    kind: FinancialCorrection["kind"],
+    data: { commandId: string; reason: string },
+    perform: (
+      c: Scope & { canApprove: boolean; canCancelClinical: boolean },
+      tx: ClinicTransaction,
+      state: BillingWorkspace,
+      value: FinancialCorrection,
+    ) => Promise<void>,
+  ) {
+    const result = await this.identity.withFinancialPermission(
+      actor,
+      patientId,
+      permission,
+      async (c, tx) => {
+        await treatmentBilling(tx, c.clinicId).lock();
+        const r = new BillingRepository(tx, c.clinicId);
+        const state = await this.project(tx, c, patientId);
+        const replay = await r.replay(data.commandId, c.accountId, [
+          kind,
+          patientId,
+          data,
+        ]);
+        if (replay.receipt) {
+          const prior = replay.receipt as unknown as FinancialCorrection;
+          if (
+            !state.corrections.some((v) => v.id === prior.id) ||
+            (kind === "refund_approval" && !c.canApprove) ||
+            (kind === "cancellation" && !c.canCancelClinical)
+          )
+            throw new AppError(403, "Périmètre de correction non autorisé.");
+          return {
+            clinicId: c.clinicId,
+            value: state.corrections.find((v) => v.id === prior.id)!,
+          };
+        }
+        const value: FinancialCorrection = {
+          id: randomUUID(),
+          patientId,
+          currency: "",
+          actorId: c.accountId,
+          at: new Date(this.now()).toISOString(),
+          reason: data.reason,
+          kind,
+          chargeIds: [],
+          invoiceIds: [],
+          settlementIds: [],
+          releases: [],
+          credits: [],
+        };
+        await perform(c, tx, state, value);
+        const invoices = await r.invoices(patientId);
+        value.invoiceIds = invoices
+          .filter((i) =>
+            i.items.some((it) => value.chargeIds.includes(it.chargeId)),
+          )
+          .map((i) => i.id);
+        await r.correction(value);
+        await r.save(data.commandId, c.accountId, replay.hash, value);
+        return {
+          clinicId: c.clinicId,
+          value: {
+            ...value,
+            invoiceIds: invoices
+              .filter(
+                (i) =>
+                  value.invoiceIds.includes(i.id) &&
+                  (!c.ownWork ||
+                    i.items.every((it) => it.performedBy === c.accountId)),
+              )
+              .map((i) => i.id),
+          },
+        };
+      },
+    );
+    this.updates.publish(result.clinicId);
+    return result.value;
+  }
+  private async funds(tx: ClinicTransaction, c: Scope, patientId: string) {
+    const entries = await new BillingRepository(tx, c.clinicId).entries(
+      patientId,
+    );
+    return projectFunds(
+      entries
+        .filter((e) => e.kind === "settlement")
+        .map((e) => e.snapshot as unknown as Settlement),
+      entries
+        .filter((e) => e.kind === "correction")
+        .map((e) => e.snapshot as unknown as FinancialCorrection),
+    );
+  }
+  private async reduce(
+    tx: ClinicTransaction,
+    c: Scope,
+    state: BillingWorkspace,
+    value: FinancialCorrection,
+    data: { chargeId: string; revision: number; finalCharge: string },
+  ) {
+    const charge = state.charges.find((ch) => ch.id === data.chargeId);
+    if (!charge) throw new AppError(404, "Charge introuvable.");
+    if (charge.revision !== data.revision)
+      throw new AppError(409, "Relisez la charge.");
+    const plans = treatmentBilling(tx, c.clinicId);
+    const currency = await plans.currency(charge.currency);
+    const target = exactMinor(data.finalCharge, currency!.precision);
+    if (
+      target > BigInt(charge.chargedMinor) ||
+      (target === BigInt(charge.chargedMinor) && value.kind !== "cancellation")
+    )
+      throw new AppError(409, "Une réduction explicite est requise.");
+    value.currency = charge.currency;
+    value.chargeIds.push(charge.id);
+    const excess = BigInt(charge.paidMinor) - target;
+    if (excess > 0n) {
+      const released = releaseFunds(
+        await this.funds(tx, c, state.patientId),
+        charge.id,
+        excess,
+        charge.performedBy,
+        charge.currency,
+        randomUUID,
+      );
+      if (released.remaining)
+        throw new AppError(409, "Fonds alloués insuffisants.");
+      value.releases.push(...released.releases);
+      value.credits.push(...released.credits);
+      value.settlementIds.push(...released.releases.map((r) => r.settlementId));
+    }
+    const plan = (await plans.versions(state.patientId, charge.planId))
+      .filter((v) => v.acceptance)
+      .at(-1);
+    await new BillingRepository(tx, c.clinicId).adjust(
+      state.patientId,
+      charge.currency,
+      charge.performedBy,
+      {
+        id: randomUUID(),
+        chargeId: charge.id,
+        revision: charge.revision + 1,
+        acceptedRevision: plan?.revision ?? 1,
+        amountMinor: (target - BigInt(charge.chargedMinor)).toString(),
+        targetMinor: target.toString(),
+        reason: value.reason,
+        actorId: c.accountId,
+        at: value.at,
+        correctionId: value.id,
+      },
+    );
+  }
+  credit(
+    actor: Actor | undefined,
+    patientId: string,
+    data: z.infer<typeof creditAdjustmentSchema>,
+  ) {
+    return this.correct(
+      actor,
+      patientId,
+      "discounts",
+      "credit",
+      data,
+      (c, tx, state, v) => this.reduce(tx, c, state, v, data),
+    );
+  }
+  release(
+    actor: Actor | undefined,
+    patientId: string,
+    data: z.infer<typeof releaseAllocationSchema>,
+  ) {
+    return this.correct(
+      actor,
+      patientId,
+      "billing.edit",
+      "release",
+      data,
+      async (c, tx, state, v) => {
+        const charge = state.charges.find((ch) => ch.id === data.chargeId);
+        if (!charge) throw new AppError(404, "Charge introuvable.");
+        const currency = await treatmentBilling(tx, c.clinicId).currency(
+          charge.currency,
+        );
+        const amount = exactMinor(data.amount, currency!.precision);
+        if (amount <= 0n) throw new AppError(400, "Montant positif requis.");
+        const released = releaseFunds(
+          await this.funds(tx, c, patientId),
+          charge.id,
+          amount,
+          charge.performedBy,
+          charge.currency,
+          randomUUID,
+          data.settlementId,
+        );
+        if (released.remaining)
+          throw new AppError(409, "Allocation disponible insuffisante.");
+        Object.assign(v, {
+          currency: charge.currency,
+          chargeIds: [charge.id],
+          settlementIds: [data.settlementId],
+          releases: released.releases,
+          credits: released.credits,
+        });
+      },
+    );
+  }
+  refundRequest(
+    actor: Actor | undefined,
+    patientId: string,
+    data: z.infer<typeof refundRequestSchema>,
+  ) {
+    return this.correct(
+      actor,
+      patientId,
+      "refunds",
+      "refund_request",
+      data,
+      async (c, tx, state, v) => {
+        const lot = state.creditSources.find((l) => l.id === data.sourceId);
+        if (!lot) throw new AppError(404, "Source de crédit introuvable.");
+        const currency = await treatmentBilling(tx, c.clinicId).currency(
+          lot.currency,
+        );
+        const amount = exactMinor(data.amount, currency!.precision);
+        if (amount <= 0n) throw new AppError(400, "Montant positif requis.");
+        if (amount > BigInt(lot.availableMinor))
+          throw new AppError(409, "Crédit disponible insuffisant.");
+        Object.assign(v, {
+          currency: lot.currency,
+          sourceId: lot.id,
+          amountMinor: amount.toString(),
+          settlementIds: [lot.rootSettlementId],
+        });
+        if (lot.performedBy)
+          v.chargeIds = state.corrections
+            .filter((x) => x.credits.some((l) => l.id === lot.id))
+            .flatMap((x) => x.chargeIds);
+      },
+    );
+  }
+  refundAction(
+    actor: Actor | undefined,
+    patientId: string,
+    data: z.infer<typeof refundActionSchema>,
+    approve: boolean,
+  ) {
+    return this.correct(
+      actor,
+      patientId,
+      "refunds",
+      approve ? "refund_approval" : "refund",
+      data,
+      async (c, _tx, state, v) => {
+        const request = state.corrections.find(
+          (x) => x.id === data.requestId && x.kind === "refund_request",
+        );
+        if (!request) throw new AppError(404, "Demande introuvable.");
+        const source = state.creditSources.find(
+          (l) => l.id === request.sourceId,
+        );
+        if (!source) throw new AppError(404, "Source introuvable.");
+        if (approve && !c.canApprove)
+          throw new AppError(
+            403,
+            "Approbation du responsable ou du praticien concerné requise.",
+          );
+        const approval = state.corrections.find(
+          (x) => x.requestId === request.id && x.kind === "refund_approval",
+        );
+        if (
+          state.corrections.some(
+            (x) => x.requestId === request.id && x.kind === "refund",
+          )
+        )
+          throw new AppError(409, "Remboursement déjà exécuté.");
+        if (approve && approval)
+          throw new AppError(409, "Demande déjà approuvée.");
+        if (!approve && !approval)
+          throw new AppError(409, "Approbation requise.");
+        if (BigInt(source.availableMinor) < BigInt(request.amountMinor!))
+          throw new AppError(409, "Crédit disponible insuffisant.");
+        Object.assign(v, {
+          currency: request.currency,
+          sourceId: source.id,
+          amountMinor: request.amountMinor,
+          requestId: request.id,
+          chargeIds: request.chargeIds,
+          settlementIds: request.settlementIds,
+          ...(!approve ? { approvalId: approval!.id } : {}),
+        });
+      },
+    );
+  }
+  reverse(
+    actor: Actor | undefined,
+    patientId: string,
+    data: z.infer<typeof reversePaymentSchema>,
+  ) {
+    return this.correct(
+      actor,
+      patientId,
+      "reversals",
+      "reversal",
+      data,
+      async (c, tx, state, v) => {
+        const receipt = state.settlements.find(
+          (s) => s.id === data.settlementId && s.receiptNumber,
+        );
+        if (!receipt) throw new AppError(404, "Paiement introuvable.");
+        const funds = await this.funds(tx, c, patientId);
+        if (funds.reversed.has(receipt.id))
+          throw new AppError(409, "Paiement déjà contrepassé.");
+        const lots = funds.lots.filter(
+          (l) => l.rootSettlementId === receipt.id,
+        );
+        if (
+          state.corrections.some(
+            (x) => x.kind === "refund" && lots.some((l) => l.id === x.sourceId),
+          )
+        )
+          throw new AppError(
+            409,
+            "Des fonds ont été rendus; une contrepassation ne peut les effacer.",
+          );
+        for (const a of funds.allocations) {
+          const fresh = a.settlementId === receipt.id ? a.newMoneyMinor : "0";
+          const sources = a.sources.filter(
+            (src) =>
+              lots.some((l) => l.id === src.settlementId) &&
+              BigInt(src.amountMinor) > 0n,
+          );
+          if (fresh === "0" && !sources.length) continue;
+          if (!state.charges.some((ch) => ch.id === a.chargeId))
+            throw new AppError(403, "Périmètre financier non autorisé.");
+          v.releases.push({
+            settlementId: a.settlementId,
+            chargeId: a.chargeId,
+            newMoneyMinor: fresh,
+            sources,
+          });
+          v.chargeIds.push(a.chargeId);
+        }
+        Object.assign(v, {
+          currency: receipt.currency,
+          reversedSettlementId: receipt.id,
+          settlementIds: [
+            ...new Set([receipt.id, ...v.releases.map((r) => r.settlementId)]),
+          ],
+          amountMinor: receipt.newMoneyMinor,
+        });
+      },
+    );
+  }
+  cancel(
+    actor: Actor | undefined,
+    patientId: string,
+    data: z.infer<typeof cancelChargedPlanSchema>,
+  ) {
+    return this.correct(
+      actor,
+      patientId,
+      "discounts",
+      "cancellation",
+      data,
+      async (c, tx, state, v) => {
+        if (!c.canCancelClinical)
+          throw new AppError(403, "Annulation clinique autorisée requise.");
+        const all = await this.project(tx, { ...c, ownWork: false }, patientId);
+        const charges = all.charges.filter((ch) => ch.planId === data.planId);
+        if (
+          !charges.length ||
+          charges.length !== data.charges.length ||
+          new Set(data.charges.map((ch) => ch.chargeId)).size !==
+            charges.length ||
+          data.charges.some((ch) => !charges.some((x) => x.id === ch.chargeId))
+        )
+          throw new AppError(
+            409,
+            "Charge finale explicite requise pour chaque acte commencé.",
+          );
+        for (const ch of data.charges) await this.reduce(tx, c, state, v, ch);
+        v.planId = data.planId;
+        await treatmentBilling(tx, c.clinicId).cancel(
+          patientId,
+          data.planId,
+          data.revision,
+          c.accountId,
+          data.reason,
+          v.at,
+        );
+      },
+    );
+  }
   private visibleInvoice(invoice: Invoice, c: Scope) {
     if (c.ownWork && invoice.items.some((i) => i.performedBy !== c.accountId))
       return null;
@@ -346,6 +747,10 @@ export class BillingService {
     const allSettlements = entries
       .filter((e) => e.kind === "settlement")
       .map((e) => e.snapshot as unknown as Settlement);
+    const corrections = entries
+      .filter((e) => e.kind === "correction")
+      .map((e) => e.snapshot as unknown as FinancialCorrection);
+    const funds = projectFunds(allSettlements, corrections);
     const versions = await treatmentBilling(tx, c.clinicId).versions(patientId);
     const completions = await treatmentBilling(tx, c.clinicId).completions(
       patientId,
@@ -375,16 +780,14 @@ export class BillingService {
         const due =
           BigInt(e.amountMinor.toFixed(0)) +
           adjustments.reduce((n, a) => n + BigInt(a.amountMinor), 0n);
-        const allocations = allSettlements.flatMap((s) =>
-          s.allocations
-            .filter((a) => a.chargeId === e.id)
-            .map((a) => ({
-              settlementId: s.id,
-              at: s.at,
-              newMoneyMinor: a.newMoneyMinor,
-              creditMinor: a.creditMinor,
-            })),
-        );
+        const allocations = funds.allocations
+          .filter((a) => a.chargeId === e.id)
+          .map(({ settlementId, at, newMoneyMinor, creditMinor }) => ({
+            settlementId,
+            at,
+            newMoneyMinor,
+            creditMinor,
+          }));
         const paid = allocations.reduce(
           (n, a) => n + BigInt(a.newMoneyMinor) + BigInt(a.creditMinor),
           0n,
@@ -408,7 +811,12 @@ export class BillingService {
           acceptedMinor,
           revision: adjustments.length,
           reconciliationRequired:
-            current?.status !== "cancelled" && acceptedMinor !== due.toString(),
+            current?.status !== "cancelled" &&
+            !(
+              adjustments.at(-1)?.correctionId &&
+              adjustments.at(-1)?.acceptedRevision === accepted?.revision
+            ) &&
+            acceptedMinor !== due.toString(),
           adjustments,
           at: start.at,
           ...(c.clinical
@@ -472,15 +880,14 @@ export class BillingService {
           .filter((e) => e.currency === currency)
           .reduce((n, e) => n + BigInt(e.amountMinor), 0n)
       ).toString(),
-      creditMinor: c.ownWork
-        ? "0"
-        : allSettlements
-            .filter((s) => s.currency === currency)
-            .reduce(
-              (n, s) => n + BigInt(s.depositMinor) - BigInt(s.creditUsedMinor),
-              0n,
-            )
-            .toString(),
+      creditMinor: funds.lots
+        .filter(
+          (l) =>
+            l.currency === currency &&
+            (!c.ownWork || l.performedBy === c.accountId),
+        )
+        .reduce((n, l) => n + BigInt(l.availableMinor), 0n)
+        .toString(),
     }));
     const settlements = c.ownWork
       ? allSettlements.filter(
@@ -492,8 +899,37 @@ export class BillingService {
             ),
         )
       : allSettlements;
+    const visibleInvoiceIds = (
+      await new BillingRepository(tx, c.clinicId).invoices(patientId)
+    )
+      .filter(
+        (i) =>
+          !c.ownWork || i.items.every((it) => it.performedBy === c.accountId),
+      )
+      .map((i) => i.id);
     return {
       patientId,
+      corrections: corrections
+        .filter(
+          (v) =>
+            !c.ownWork ||
+            (v.chargeIds.length > 0 &&
+              v.chargeIds.every((id) => charges.some((ch) => ch.id === id)) &&
+              v.credits.every((l) => l.performedBy === c.accountId) &&
+              (!v.sourceId ||
+                funds.lots.some(
+                  (l) => l.id === v.sourceId && l.performedBy === c.accountId,
+                ))),
+        )
+        .map((v) => ({
+          ...v,
+          invoiceIds: v.invoiceIds.filter((id) =>
+            visibleInvoiceIds.includes(id),
+          ),
+        })),
+      creditSources: funds.lots.filter(
+        (l) => !c.ownWork || l.performedBy === c.accountId,
+      ),
       charges,
       planned,
       openingBalances,
@@ -501,20 +937,13 @@ export class BillingService {
       settlements,
       deposits: c.ownWork
         ? []
-        : allSettlements
-            .filter((s) => BigInt(s.depositMinor) > 0n)
-            .map((s) => ({
-              settlementId: s.id,
-              currency: s.currency,
-              amountMinor: s.depositMinor,
-              availableMinor: (
-                BigInt(s.depositMinor) -
-                allSettlements
-                  .flatMap((v) => v.allocations)
-                  .flatMap((a) => a.sources)
-                  .filter((src) => src.settlementId === s.id)
-                  .reduce((n, src) => n + BigInt(src.amountMinor), 0n)
-              ).toString(),
+        : funds.lots
+            .filter((l) => allSettlements.some((s) => s.id === l.id))
+            .map((l) => ({
+              settlementId: l.id,
+              currency: l.currency,
+              amountMinor: l.amountMinor,
+              availableMinor: l.availableMinor,
             })),
     };
   }
@@ -604,23 +1033,14 @@ export class BillingService {
             400,
             "Rapprochez les nouveaux fonds, allocations et dépôt explicite.",
           );
-        if (c.ownWork && (deposit > 0n || creditUsed > 0n))
+        if (c.ownWork && deposit > 0n)
           throw new AppError(
             403,
             "Le crédit non attribué nécessite une autorité financière générale.",
           );
-        const available = state.settlements
-          .filter((s) => s.currency === data.currency)
-          .map((s) => ({
-            id: s.id,
-            remaining:
-              BigInt(s.depositMinor) -
-              state.settlements
-                .flatMap((v) => v.allocations)
-                .flatMap((a) => a.sources)
-                .filter((src) => src.settlementId === s.id)
-                .reduce((n, src) => n + BigInt(src.amountMinor), 0n),
-          }));
+        const available = state.creditSources
+          .filter((l) => l.currency === data.currency)
+          .map((l) => ({ id: l.id, remaining: BigInt(l.availableMinor) }));
         for (const allocation of allocations) {
           let needed = BigInt(allocation.creditMinor);
           for (const source of available) {
@@ -734,15 +1154,9 @@ export class BillingService {
         ]);
         if (replay.receipt)
           return { clinicId: c.clinicId, value: replay.receipt };
-        if (
-          (await r.invoices(patientId)).some((v) =>
-            v.items.some((i) => i.chargeId === charge.id),
-          )
-        )
-          throw new AppError(
-            409,
-            "Une correction liée à la facture est requise.",
-          );
+        const linkedInvoices = (await r.invoices(patientId)).filter((v) =>
+          v.items.some((i) => i.chargeId === charge.id),
+        );
         const versions = await plans.versions(patientId, charge.planId),
           plan = versions.at(-1);
         if (
@@ -773,6 +1187,23 @@ export class BillingService {
           actorId: c.accountId,
           at: new Date(this.now()).toISOString(),
         };
+        if (linkedInvoices.length) {
+          value.correctionId = randomUUID();
+          await r.correction({
+            id: value.correctionId,
+            patientId,
+            currency: charge.currency,
+            actorId: c.accountId,
+            at: value.at,
+            reason: data.reason,
+            kind: "reconciliation",
+            chargeIds: [charge.id],
+            invoiceIds: linkedInvoices.map((i) => i.id),
+            settlementIds: [],
+            releases: [],
+            credits: [],
+          });
+        }
         await r.adjust(patientId, charge.currency, charge.performedBy, value);
         await r.save(data.commandId, c.accountId, replay.hash, value);
         return { clinicId: c.clinicId, value };

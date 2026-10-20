@@ -2,6 +2,13 @@ import { Router } from "express";
 import type { BillingController } from "./billing.controller.js";
 export function billingRoutes(c: BillingController) {
   const router = Router();
+  router.post("/billing/:id/credits", c.credit);
+  router.post("/billing/:id/allocation-releases", c.release);
+  router.post("/billing/:id/reversals", c.reverse);
+  router.post("/billing/:id/refund-requests", c.refundRequest);
+  router.post("/billing/:id/refund-approvals", c.refundApprove);
+  router.post("/billing/:id/refunds", c.refundExecute);
+  router.post("/billing/:id/cancel-plan", c.cancel);
   router.get("/billing/payment-methods", c.methods);
   router.post("/billing/:id/invoices", c.issue);
   router.get("/billing/:id/plans/:planId/summary", c.summary);
