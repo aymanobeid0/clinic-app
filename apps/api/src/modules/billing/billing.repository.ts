@@ -1,4 +1,4 @@
-import { AppError } from '../../errors/app-error.js';
+import { AppError } from "../../errors/app-error.js";
 import { createHash } from "node:crypto";
 import type {
   ProcedureStart,
@@ -6,6 +6,7 @@ import type {
   OpeningBalance,
   PaymentMethod,
   Settlement,
+  Invoice,
 } from "@clinic/contracts";
 import type { ClinicTransaction } from "../../database.js";
 
@@ -14,6 +15,43 @@ export class BillingRepository {
     readonly tx: ClinicTransaction,
     readonly clinicId: string,
   ) {}
+  async invoices(patientId?: string): Promise<Invoice[]> {
+    const rows = await this.tx.billingInvoice.findMany({
+      where: { clinicId: this.clinicId, ...(patientId ? { patientId } : {}) },
+      orderBy: { number: "asc" },
+    });
+    return rows.map((r) => r.snapshot as unknown as Invoice);
+  }
+  async invoice(value: Invoice) {
+    await this.tx.billingInvoice.create({
+      data: {
+        id: value.id,
+        clinicId: this.clinicId,
+        patientId: value.patientId,
+        number: value.number,
+        snapshot: value,
+      },
+    });
+    await this.tx.billingInvoiceCharge.createMany({
+      data: value.items.map((i) => ({
+        clinicId: this.clinicId,
+        chargeId: i.chargeId,
+        invoiceId: value.id,
+      })),
+    });
+  }
+  async nextInvoice(year: number) {
+    const prefix = `INV-${year}-`;
+    const values = await this.invoices();
+    const next =
+      values
+        .filter((v) => v.number.startsWith(prefix))
+        .reduce(
+          (n, v) => Math.max(n, Number(v.number.slice(prefix.length))),
+          0,
+        ) + 1;
+    return prefix + String(next).padStart(6, "0");
+  }
   async documentIdentity(patientId: string) {
     const patient = await this.tx.patient.findFirstOrThrow({
       where: { clinicId: this.clinicId, id: patientId },

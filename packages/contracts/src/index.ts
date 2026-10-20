@@ -979,3 +979,64 @@ export type Settlement = {
     sources: { settlementId: string; amountMinor: string }[];
   }[];
 };
+export const issueInvoiceSchema = z
+  .object({
+    commandId: z.uuid().transform((v) => v.toLowerCase()),
+    chargeIds: z
+      .array(z.uuid().transform((v) => v.toLowerCase()))
+      .min(1)
+      .max(100),
+  })
+  .strict();
+export type InvoiceItem = {
+  chargeId: string;
+  planId: string;
+  itemId: string;
+  performedBy: string;
+  amountMinor: string;
+  completedAt: string;
+  name?: string;
+  teeth?: string[];
+};
+export type Invoice = {
+  id: string;
+  patientId: string;
+  number: string;
+  currency: string;
+  actorId: string;
+  at: string;
+  identity: Settlement["identity"];
+  items: InvoiceItem[];
+  totalMinor: string;
+};
+export type PlanSummary = {
+  patientId: string;
+  planId: string;
+  planRevision: number;
+  currency: string;
+  identity: Settlement["identity"];
+  scope: "whole_plan" | "own_work";
+  title?: string;
+  procedures: {
+    chargeId: string;
+    itemId: string;
+    performedBy: string;
+    completedAt: string;
+    name?: string;
+    teeth?: string[];
+    chargedMinor: string;
+    paidMinor: string;
+    dueMinor: string;
+    invoice: { id: string; number: string } | null;
+    payments: {
+      settlementId: string;
+      receiptNumber: string | null;
+      amountMinor: string;
+    }[];
+  }[];
+  chargedMinor: string;
+  paidMinor: string;
+  dueMinor: string;
+};
+export type InvoiceOutput = { title: string; invoice: Invoice };
+export type PlanSummaryOutput = { title: string; summary: PlanSummary };

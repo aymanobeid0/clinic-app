@@ -338,7 +338,7 @@ export class IdentityService {
   withFinancialPermission<T>(
     actor: Actor | undefined,
     patientId: string,
-    permission: 'billing.read' | 'billing.edit' | 'financial.print' | 'financial.download',
+    permission: 'invoices.issue' | 'billing.read' | 'billing.edit' | 'financial.print' | 'financial.download',
     action: (context: { clinicId: string; accountId: string; ownWork: boolean; clinical: boolean }, tx: import('../../database.js').ClinicTransaction) => Promise<T>,
   ) {
     return this.withReadyAccount(actor, (account, transaction) =>

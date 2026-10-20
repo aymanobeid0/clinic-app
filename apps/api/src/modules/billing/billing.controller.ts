@@ -5,11 +5,45 @@ import {
   reconcileChargeSchema,
   paymentMethodSchema,
   settlementSchema,
+  issueInvoiceSchema,
 } from "@clinic/contracts";
 import type { BillingService } from "./billing.service.js";
 const patientId = (value: unknown) => z.uuid().parse(value).toLowerCase();
 export class BillingController {
   constructor(readonly service: BillingService) {}
+  summary: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.summary(
+        req.session.actor,
+        patientId(req.params.id),
+        patientId(req.params.planId),
+        req.params.action
+          ? z.enum(["print", "download"]).parse(req.params.action)
+          : undefined,
+      ),
+    );
+  };
+  issue: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.issue(
+        req.session.actor,
+        patientId(req.params.id),
+        issueInvoiceSchema.parse(req.body),
+      ),
+    );
+  };
+  invoices: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.invoices(
+        req.session.actor,
+        patientId(req.params.id),
+        req.params.invoiceId ? patientId(req.params.invoiceId) : undefined,
+        req.params.action
+          ? z.enum(["print", "download"]).parse(req.params.action)
+          : undefined,
+      ),
+    );
+  };
   output: RequestHandler = async (req, res) => {
     res.json(
       await this.service.output(

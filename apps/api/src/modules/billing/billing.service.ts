@@ -1,4 +1,4 @@
-import { AppError } from '../../errors/app-error.js';
+import { AppError } from "../../errors/app-error.js";
 import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import type {
@@ -13,6 +13,9 @@ import type {
   settlementSchema,
   PaymentMethod,
   Settlement,
+  Invoice,
+  PlanSummary,
+  issueInvoiceSchema,
 } from "@clinic/contracts";
 import type { Actor, IdentityAccess } from "../identity/index.js";
 import { treatmentBilling, exactMinor } from "../treatment/index.js";
@@ -37,6 +40,228 @@ export class BillingService {
     readonly updates: ClinicUpdates,
     readonly now: () => number,
   ) {}
+  private visibleInvoice(invoice: Invoice, c: Scope) {
+    if (c.ownWork && invoice.items.some((i) => i.performedBy !== c.accountId))
+      return null;
+    return {
+      ...invoice,
+      items: invoice.items.map(({ name, teeth, ...item }) => ({
+        ...item,
+        ...(c.clinical ? { name, teeth } : {}),
+      })),
+    };
+  }
+  invoices(
+    actor: Actor | undefined,
+    patientId: string,
+    id?: string,
+    action?: "print" | "download",
+  ) {
+    return this.identity.withFinancialPermission(
+      actor,
+      patientId,
+      action ? `financial.${action}` : "billing.read",
+      async (c, tx) => {
+        const values = (
+          await new BillingRepository(tx, c.clinicId).invoices(patientId)
+        ).flatMap((v) => {
+          const visible = this.visibleInvoice(v, c);
+          return visible ? [visible] : [];
+        });
+        if (!id) return values;
+        const invoice = values.find((v) => v.id === id);
+        if (!invoice) throw new AppError(404, "Facture introuvable.");
+        return action ? { title: "Facture", invoice } : invoice;
+      },
+    );
+  }
+  async issue(
+    actor: Actor | undefined,
+    patientId: string,
+    data: z.infer<typeof issueInvoiceSchema>,
+  ) {
+    const result = await this.identity.withFinancialPermission(
+      actor,
+      patientId,
+      "invoices.issue",
+      async (c, tx) => {
+        const plans = treatmentBilling(tx, c.clinicId),
+          r = new BillingRepository(tx, c.clinicId);
+        await plans.lock();
+        const replay = await r.replay(data.commandId, c.accountId, [
+          "invoice",
+          patientId,
+          data,
+        ]);
+        if (replay.receipt) {
+          const value = this.visibleInvoice(
+            replay.receipt as unknown as Invoice,
+            c,
+          );
+          if (!value)
+            throw new AppError(403, "Périmètre financier non autorisé.");
+          return { clinicId: c.clinicId, value };
+        }
+        if (new Set(data.chargeIds).size !== data.chargeIds.length)
+          throw new AppError(400, "Charge répétée.");
+        const state = await this.project(tx, c, patientId),
+          completions = await plans.completions(patientId);
+        const issued = await r.invoices(patientId);
+        const items: Invoice["items"] = data.chargeIds.map((id) => {
+          const charge = state.charges.find((ch) => ch.id === id);
+          if (!charge) throw new AppError(404, "Charge introuvable.");
+          const completion = completions.find(
+            (v) => v.planId === charge.planId && v.itemId === charge.itemId,
+          );
+          if (
+            !completion ||
+            charge.dueMinor !== "0" ||
+            charge.reconciliationRequired
+          )
+            throw new AppError(
+              409,
+              "Acte terminé, réconcilié et intégralement payé requis.",
+            );
+          if (issued.some((v) => v.items.some((i) => i.chargeId === id)))
+            throw new AppError(409, "Charge déjà facturée.");
+          return {
+            chargeId: id,
+            planId: charge.planId,
+            itemId: charge.itemId,
+            performedBy: charge.performedBy,
+            amountMinor: charge.chargedMinor,
+            completedAt: completion.at,
+            ...(charge.name !== undefined
+              ? { name: charge.name, teeth: charge.teeth }
+              : {}),
+          };
+        });
+        const currencies = new Set(
+          state.charges
+            .filter((ch) => data.chargeIds.includes(ch.id))
+            .map((ch) => ch.currency),
+        );
+        if (currencies.size !== 1)
+          throw new AppError(400, "Une seule devise par facture.");
+        // Retain full financial content regardless of issuer; redact only at delivery.
+        const full = await this.project(
+          tx,
+          { ...c, clinical: true },
+          patientId,
+        );
+        for (const item of items) {
+          const charge = full.charges.find((ch) => ch.id === item.chargeId)!;
+          item.name = charge.name;
+          item.teeth = charge.teeth;
+        }
+        const at = new Date(this.now()).toISOString();
+        const invoice: Invoice = {
+          id: randomUUID(),
+          patientId,
+          number: await r.nextInvoice(new Date(at).getUTCFullYear()),
+          currency: [...currencies][0]!,
+          actorId: c.accountId,
+          at,
+          identity: await r.documentIdentity(patientId),
+          items,
+          totalMinor: items
+            .reduce((n, i) => n + BigInt(i.amountMinor), 0n)
+            .toString(),
+        };
+        await r.invoice(invoice);
+        await r.save(data.commandId, c.accountId, replay.hash, invoice);
+        return {
+          clinicId: c.clinicId,
+          value: this.visibleInvoice(invoice, c)!,
+        };
+      },
+    );
+    this.updates.publish(result.clinicId);
+    return result.value;
+  }
+  summary(
+    actor: Actor | undefined,
+    patientId: string,
+    planId: string,
+    action?: "print" | "download",
+  ) {
+    return this.identity.withFinancialPermission(
+      actor,
+      patientId,
+      action ? `financial.${action}` : "billing.read",
+      async (c, tx) => {
+        const plans = treatmentBilling(tx, c.clinicId),
+          r = new BillingRepository(tx, c.clinicId);
+        await plans.lock();
+        const plan = (await plans.versions(patientId, planId)).at(-1);
+        const state = await this.project(tx, c, patientId);
+        const charges = state.charges.filter((ch) => ch.planId === planId);
+        if (!plan || (c.ownWork && !charges.length))
+          throw new AppError(404, "Plan introuvable.");
+        if (plan.status !== "completed")
+          throw new AppError(409, "Plan terminé requis.");
+        const completions = await plans.completions(patientId);
+        const invoices = (await r.invoices(patientId)).flatMap((v) => {
+          const visible = this.visibleInvoice(v, c);
+          return visible ? [visible] : [];
+        });
+        const summary: PlanSummary = {
+          patientId,
+          planId,
+          planRevision: plan.revision,
+          currency: plan.currency,
+          identity: await r.documentIdentity(patientId),
+          scope: c.ownWork ? "own_work" : "whole_plan",
+          ...(c.clinical ? { title: plan.title } : {}),
+          procedures: charges.map((ch) => {
+            const invoice = invoices.find((v) =>
+              v.items.some((i) => i.chargeId === ch.id),
+            );
+            const completion = completions.find(
+              (v) => v.planId === planId && v.itemId === ch.itemId,
+            );
+            if (!completion) throw new AppError(409, "Acte terminé requis.");
+            return {
+              chargeId: ch.id,
+              itemId: ch.itemId,
+              performedBy: ch.performedBy,
+              completedAt: completion.at,
+              chargedMinor: ch.chargedMinor,
+              paidMinor: ch.paidMinor,
+              dueMinor: ch.dueMinor,
+              ...(ch.name !== undefined
+                ? { name: ch.name, teeth: ch.teeth }
+                : {}),
+              invoice: invoice
+                ? { id: invoice.id, number: invoice.number }
+                : null,
+              payments: ch.allocations.map((a) => ({
+                settlementId: a.settlementId,
+                receiptNumber:
+                  state.settlements.find((s) => s.id === a.settlementId)
+                    ?.receiptNumber ?? null,
+                amountMinor: (
+                  BigInt(a.newMoneyMinor) + BigInt(a.creditMinor)
+                ).toString(),
+              })),
+            };
+          }),
+          chargedMinor: charges
+            .reduce((n, ch) => n + BigInt(ch.chargedMinor), 0n)
+            .toString(),
+          paidMinor: charges
+            .reduce((n, ch) => n + BigInt(ch.paidMinor), 0n)
+            .toString(),
+          dueMinor: charges
+            .reduce((n, ch) => n + BigInt(ch.dueMinor), 0n)
+            .toString(),
+        };
+        return action
+          ? { title: "Récapitulatif du plan terminé", summary }
+          : summary;
+      },
+    );
+  }
   methods(actor: Actor | undefined) {
     return this.identity.withPermissionOrManager(
       actor,
@@ -517,10 +742,7 @@ export class BillingService {
           plan.revision !== data.acceptedRevision ||
           charge.revision !== data.revision
         )
-          throw new AppError(
-            409,
-            "Relisez la charge et la version acceptée.",
-          );
+          throw new AppError(409, "Relisez la charge et la version acceptée.");
         const item = plan.items.find((i) => i.id === charge.itemId);
         if (!item) throw new AppError(409, "Acte accepté introuvable.");
         const target = agreed(item),
