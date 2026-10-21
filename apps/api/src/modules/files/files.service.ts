@@ -76,15 +76,15 @@ export class FilesService {
       async (c, tx) => {
         const r = new FilesRepository(tx, c.clinicId);
         await r.lock();
-        if (cancelled()) throw new AppError(409, 'Téléversement annulé.');
+        if (cancelled()) throw new AppError(409, "Téléversement annulé.");
         const receipt = await r.replay(data.commandId, c.accountId, hash);
         if (receipt) return { receipt, key: null };
         // No temporary object exists before a durable reservation. Expired objects
         // are unreachable; discard them before releasing their reserved bytes.
         for (const pending of await r.reservations()) {
-          if (pending.expiresAt.getTime() <= this.now()) {
+          if (pending.cancelled || pending.expiresAt.getTime() <= this.now()) {
             await store.discard(pending.key);
-            await r.release(pending.key);
+            await r.cancel(pending.key);
           } else if (pending.commandId === data.commandId)
             throw new AppError(409, "Téléversement déjà en cours. Réessayez.");
         }
@@ -123,9 +123,13 @@ export class FilesService {
         async (c, tx) => {
           const r = new FilesRepository(tx, c.clinicId);
           await r.lock();
-          if (cancelled()) throw new AppError(409, 'Téléversement annulé.');
+          if (cancelled()) throw new AppError(409, "Téléversement annulé.");
           const reservation = await r.reservation(key);
-          if (!reservation || reservation.expiresAt.getTime() <= this.now())
+          if (
+            !reservation ||
+            reservation.cancelled ||
+            reservation.expiresAt.getTime() <= this.now()
+          )
             throw new AppError(409, "Réservation expirée. Réessayez.");
           await this.expected(r, patientId, id, data);
           const value: AttachmentVersion = {
@@ -160,7 +164,7 @@ export class FilesService {
           async (c, tx) => {
             const r = new FilesRepository(tx, c.clinicId);
             await r.lock();
-            if (await r.reservation(key)) {
+            if (!(await r.published(key))) {
               await store.discard(key);
               await r.release(key);
             }
@@ -232,7 +236,12 @@ export class FilesService {
         if ((head.removed || head.revision !== revision) && !c.canHistory)
           throw new AppError(403, "Autorisation d’historique requise.");
         const version = await r.version(patientId, id, revision);
-        const bytes = await this.storage().read(version.key);
+        let bytes: Buffer;
+        try {
+          bytes = await this.storage().read(version.key);
+        } catch {
+          throw new AppError(503, "Fichier temporairement indisponible.");
+        }
         if (
           bytes.length !== version.value.size ||
           createHash("sha256").update(bytes).digest("hex") !==

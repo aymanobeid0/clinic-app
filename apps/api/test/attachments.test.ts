@@ -12,7 +12,7 @@ import {
   privateFileStore,
   type PrivateFileStore,
 } from "../src/modules/files/index.js";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFName } from "pdf-lib";
 
 const owner = openDatabase(
   "postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7",
@@ -212,6 +212,85 @@ async function scenario(store?: PrivateFileStore, now?: () => number) {
   };
 }
 let png: Buffer;
+
+it("rejects corrupt PDF streams hidden behind a filter array", async () => {
+  const s = await scenario(),
+    doc = await PDFDocument.create(),
+    page = doc.addPage();
+  const stream = doc.context.stream(Uint8Array.from([1, 2, 3, 4]), {
+    Filter: ["FlateDecode"],
+  });
+  page.node.set(PDFName.of("Contents"), doc.context.register(stream));
+  expect(
+    (
+      await s.upload(
+        Buffer.from(await doc.save()),
+        { name: "corrupt.pdf" },
+        "application/pdf",
+      )
+    ).status,
+  ).toBe(400);
+});
+
+it("returns a safe unavailable response if retained private bytes cannot be read", async () => {
+  const disk = privateFileStore(directory);
+  const s = await scenario({
+    ...disk,
+    async read() {
+      throw new Error("fictional private path inaccessible");
+    },
+  });
+  const file = await s.upload(png);
+  expect(file.status).toBe(200);
+  const read = await s.browser
+    .get(`${s.base}/${file.body.id}/versions/1/content`)
+    .query({ classification: "financial" });
+  expect(read.status).toBe(503);
+  expect(JSON.stringify(read.body)).not.toContain("private path");
+});
+
+it("discards a delayed write even when its expired reservation was already reclaimed", async () => {
+  const disk = privateFileStore(directory),
+    keys = new Set<string>();
+  let release = () => {},
+    entered = () => {},
+    first = true;
+  const gate = new Promise<void>((r) => {
+      release = r;
+    }),
+    ready = new Promise<void>((r) => {
+      entered = r;
+    });
+  const store = {
+    async put(key: string, bytes: Buffer) {
+      if (first) {
+        first = false;
+        entered();
+        await gate;
+      }
+      await disk.put(key, bytes);
+      keys.add(key);
+    },
+    read: disk.read,
+    async discard(key: string) {
+      await disk.discard(key);
+      keys.delete(key);
+    },
+  };
+  let now = Date.now();
+  const s = await scenario(store, () => now);
+  const pending = s.upload(png).then((r) => r);
+  await ready;
+  now += 10 * 60_000 + 1;
+  expect((await s.upload(png)).status).toBe(200);
+  release();
+  expect((await pending).status).toBe(409);
+  expect(keys.size).toBe(1);
+  expect(
+    (await s.browser.get(s.base).query({ classification: "financial" })).body
+      .usage,
+  ).toMatchObject({ retainedBytes: png.length, reservedBytes: 0 });
+});
 
 it("publishes a validated private file and replays an identical upload without counting it twice", async () => {
   const s = await scenario(),
@@ -679,10 +758,34 @@ it("links an authorized immutable signed-evidence version and preserves it after
     method: "Signature sur document",
     attachment: { id: uploaded.body.id, revision: 1 },
   };
-  expect((await doctor.post(path + '/lifecycle', {...evidence,commandId:randomUUID(),attachment:{id:randomUUID(),revision:1}})).status).toBe(404);
-  expect((await doctor.post(path + '/lifecycle', {...evidence,commandId:randomUUID(),attachment:{id:uploaded.body.id,revision:2}})).status).toBe(409);
-  const financial=(await s.upload(png)).body;
-  expect((await doctor.post(path + '/lifecycle', {...evidence,commandId:randomUUID(),attachment:{id:financial.id,revision:1}})).status).toBe(403);
+  expect(
+    (
+      await doctor.post(path + "/lifecycle", {
+        ...evidence,
+        commandId: randomUUID(),
+        attachment: { id: randomUUID(), revision: 1 },
+      })
+    ).status,
+  ).toBe(404);
+  expect(
+    (
+      await doctor.post(path + "/lifecycle", {
+        ...evidence,
+        commandId: randomUUID(),
+        attachment: { id: uploaded.body.id, revision: 2 },
+      })
+    ).status,
+  ).toBe(409);
+  const financial = (await s.upload(png)).body;
+  expect(
+    (
+      await doctor.post(path + "/lifecycle", {
+        ...evidence,
+        commandId: randomUUID(),
+        attachment: { id: financial.id, revision: 1 },
+      })
+    ).status,
+  ).toBe(403);
   const linked = await doctor.post(path + "/lifecycle", evidence);
   expect(linked.status).toBe(200);
   expect(linked.body.evidence.attachment).toEqual(evidence.attachment);

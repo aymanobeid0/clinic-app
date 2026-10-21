@@ -23,7 +23,7 @@ export class FilesRepository {
         _sum: { size: true },
       }),
       this.tx.attachmentReservation.aggregate({
-        where: { clinicId: this.clinicId },
+        where: { clinicId: this.clinicId, cancelled: false },
         _sum: { size: true },
       }),
     ]);
@@ -57,7 +57,12 @@ export class FilesRepository {
       ...(await this.version(patientId, id, head.revision)).value,
       removed: head.removed,
       events: head.events as unknown as AttachmentEvent[],
-      versions: (await this.tx.attachmentVersion.findMany({where:{clinicId:this.clinicId,patientId,attachmentId:id},orderBy:{revision:'asc'}})).map(row=>row.snapshot as unknown as AttachmentVersion),
+      versions: (
+        await this.tx.attachmentVersion.findMany({
+          where: { clinicId: this.clinicId, patientId, attachmentId: id },
+          orderBy: { revision: "asc" },
+        })
+      ).map((row) => row.snapshot as unknown as AttachmentVersion),
     };
   }
   async list(patientId: string, classification: AttachmentClass) {
@@ -113,6 +118,18 @@ export class FilesRepository {
   release(key: string) {
     return this.tx.attachmentReservation.deleteMany({
       where: { clinicId: this.clinicId, key },
+    });
+  }
+  cancel(key: string) {
+    return this.tx.attachmentReservation.updateMany({
+      where: { clinicId: this.clinicId, key },
+      data: { cancelled: true },
+    });
+  }
+  published(key: string) {
+    return this.tx.attachmentVersion.findFirst({
+      where: { clinicId: this.clinicId, key },
+      select: { key: true },
     });
   }
   reserve(data: {

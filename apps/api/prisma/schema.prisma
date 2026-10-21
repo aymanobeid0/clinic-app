@@ -393,7 +393,8 @@ model AttachmentReservation {
  payloadHash String
  size Int
  expiresAt DateTime @db.Timestamptz(6)
- @@unique([clinicId,commandId])
+ cancelled Boolean @default(false)
+ @@index([clinicId,commandId])
 }
 model AttachmentCommand {
  clinicId String @db.Uuid
