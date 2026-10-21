@@ -106,8 +106,11 @@ export class PatientAccessRepository {
     now: number,
     removalId?: string,
   ) {
+    // Preserve durable share/remove retry hashes from before historical grants.
+    const payload:unknown[]=[patientId,data.accountId,data.revision,action,data.kind ?? null];
+    if(action==='historical') payload.push(removalId ?? null);
     const hash = createHash('sha256')
-      .update(JSON.stringify([patientId, data.accountId, data.revision, action, data.kind ?? null, removalId ?? null]))
+      .update(JSON.stringify(payload))
       .digest('hex');
     const old = await this.tx.patientAccessHistory.findUnique({
       where: {

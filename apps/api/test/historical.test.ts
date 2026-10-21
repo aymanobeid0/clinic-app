@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, expect, it } from "vitest";
 import { createApplication } from "../src/application.js";
@@ -926,6 +926,42 @@ it("only managers grant a real current removal, with version conflicts and safe 
       })
     ).status,
   ).toBe(409);
+});
+
+it("replays retained pre-historical share and remove commands after the upgrade", async () => {
+  const { m, patient, create } = await scenario();
+  const d = await create("legacy");
+  const base = `/patient-access/${patient.id}`;
+  const share = {
+    commandId: randomUUID(),
+    revision: 0,
+    accountId: d.id,
+    kind: "assigned",
+  };
+  const remove = { commandId: randomUUID(), revision: 1, accountId: d.id };
+  const shared = await m.post(base + "/share", share);
+  const removed = await m.post(base + "/remove", remove);
+  expect(shared.status).toBe(200);
+  expect(removed.status).toBe(200);
+  // Upgrade fixture: reproduce the previously shipped durable wire-payload hash.
+  // Assertions use HTTP only; no internal persistence assertions.
+  for (const [action, command, kind] of [
+    ["share", share, "assigned"],
+    ["remove", remove, null],
+  ] as const) {
+    const legacyHash = createHash("sha256")
+      .update(
+        JSON.stringify([patient.id, d.id, command.revision, action, kind]),
+      )
+      .digest("hex");
+    await owner.pool.query(
+      'UPDATE "PatientAccessHistory" SET "payloadHash"=$1 WHERE "commandId"=$2::uuid',
+      [legacyHash, command.commandId],
+    );
+  }
+  expect((await m.post(base + "/share", share)).body).toEqual(shared.body);
+  expect((await m.post(base + "/remove", remove)).body).toEqual(removed.body);
+  expect((await d.browser.get(`/api/clinical/${patient.id}`)).status).toBe(403);
 });
 it("reassignment and subsequent removal require a fresh explicit historical grant", async () => {
   const { m, d, base, command, patient } = await removedDoctor();
