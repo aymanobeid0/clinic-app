@@ -1,11 +1,14 @@
 import { Worker } from "node:worker_threads";
 import { AppError } from "../../errors/app-error.js";
+let activeWorkers = 0;
 
 // Keep untrusted PDF parsing/decompression off the API event loop. Node 24
 // strips worker source types in development; tsc emits .js for production.
 export async function validateContent(bytes: Buffer, mediaType: string) {
   if (!bytes.length || bytes.length > 20_000_000)
     throw new AppError(413, "Maximum 20 000 000 octets par fichier.");
+  if (activeWorkers >= 4)
+    throw new AppError(503, "Validation de fichiers occupée. Réessayez.");
   const valid = await new Promise<boolean>((resolve) => {
     const worker = new Worker(
       new URL(
@@ -26,6 +29,10 @@ export async function validateContent(bytes: Buffer, mediaType: string) {
         stderr: true,
       },
     );
+    activeWorkers++;
+    worker.once("exit", () => {
+      activeWorkers--;
+    });
     let settled = false;
     const finish = (value: boolean) => {
       if (settled) return;
