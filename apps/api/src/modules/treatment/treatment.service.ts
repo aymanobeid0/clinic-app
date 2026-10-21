@@ -14,6 +14,7 @@ import type { Actor, IdentityAccess } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
 import { TreatmentRepository } from './treatment.repository.js';
 import { VisitRepository } from './visit.repository.js';
+import { acceptanceAttachment } from '../files/index.js';
 export function exactMinor(value: string, precision: number) {
   const [whole, fraction = ''] = value.split('.');
   if (fraction.length > precision)
@@ -162,6 +163,7 @@ export class TreatmentService {
               recordedBy: c.accountId,
               recordedByName: name,
               recordedAt: at,
+              ...(data.attachment ? { attachment: await acceptanceAttachment(tx,c,patientId,data.attachment) } : {}),
             };
           } else {
             if (!old.evidence)
