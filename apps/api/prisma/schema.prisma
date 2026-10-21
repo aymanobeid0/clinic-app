@@ -74,6 +74,23 @@ model PatientGrant {
   @@id([clinicId, patientId, accountId])
 }
 
+model HistoricalRemoval {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ accountId String @db.Uuid
+ cutoff DateTime @db.Timestamptz(6)
+ snapshot Json
+ @@unique([clinicId,patientId,accountId,id])
+}
+model HistoricalGrant {
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ accountId String @db.Uuid
+ removalId String @db.Uuid
+ @@id([clinicId,patientId,accountId])
+}
+
 model PatientAccessHistory {
   id String @id @default(uuid()) @db.Uuid
   clinicId String @db.Uuid

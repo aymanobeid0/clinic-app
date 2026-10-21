@@ -10,6 +10,10 @@ import type {
 import type { ClinicTransaction } from '../../database.js';
 
 export class ClinicalRepository {
+  async historical():Promise<import('@clinic/contracts').HistoricalSnapshot['clinical']> {
+    const rows=await this.tx.clinicalRevision.findMany({where:{clinicId:this.clinicId,patientId:this.patientId},orderBy:{revision:'asc'}});
+    return [...new Set(rows.map(r=>r.kind))].map(kind=>({kind,versions:rows.filter(r=>r.kind===kind).map(r=>r.snapshot as unknown as import('@clinic/contracts').HistoricalSnapshot['clinical'][number]['versions'][number])}));
+  }
   constructor(
     private readonly tx: ClinicTransaction,
     private readonly clinicId: string,

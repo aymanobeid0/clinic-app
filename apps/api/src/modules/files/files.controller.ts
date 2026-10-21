@@ -6,10 +6,34 @@ import {
   attachmentRemoveSchema,
 } from "@clinic/contracts";
 import type { FilesService } from "./files.service.js";
+import type { ClinicUpdates } from '../../clinic-updates.js';
 import { AppError } from "../../errors/app-error.js";
 const uuid = (v: unknown) => z.uuid().parse(v).toLowerCase();
 export class FilesController {
-  constructor(readonly service: FilesService) {}
+  historical:RequestHandler=async(req,res)=>{
+    if(req.query.output && req.query.output!=='inline') throw new AppError(403,'Sortie historique interdite.');
+    const result=await this.service.historicalContent(req.session.actor,uuid(req.params.patientId),uuid(req.params.attachmentId),z.coerce.number().int().positive().parse(req.params.revision));
+    // Slow responses must stop if the grant/session changes after the initial read.
+    const actor=req.session.actor!;
+    let checking=false;
+    const verify=async()=>{
+      if(checking || res.destroyed || res.writableEnded) return;
+      checking=true;
+      try {
+        await new Promise<void>((resolve,reject)=>req.session.reload(error=>error?reject(error):resolve()));
+        if(!req.session.actor || req.session.actor.accountId!==actor.accountId || req.session.actor.version!==actor.version || req.session.startedAt===undefined || this.now()-req.session.startedAt>=12*60*60*1000) throw new Error('Session expired');
+        await this.service.authorizeHistoricalContent(req.session.actor,uuid(req.params.patientId),uuid(req.params.attachmentId),Number(req.params.revision));
+      } catch {res.destroy();} finally {checking=false;}
+    };
+    const unsubscribe=this.updates.subscribe(actor.clinicId,()=>{void verify();});
+    const timer=setInterval(()=>{void verify();},1000);
+    const cleanup=()=>{clearInterval(timer);unsubscribe();};
+    res.once('close',cleanup);res.once('finish',cleanup);
+    await verify();
+    if(res.destroyed) return;
+    res.set('Content-Type',result.version.mediaType).set('Content-Disposition','inline; filename="attachment"').set('Content-Security-Policy',"sandbox; default-src 'none'").send(result.bytes);
+  };
+  constructor(readonly service: FilesService,readonly updates:ClinicUpdates,readonly now:()=>number) {}
   preflight: RequestHandler = async (req, _res, next) => {
     const data = attachmentUploadSchema.parse(req.query);
     await this.service.authorize(

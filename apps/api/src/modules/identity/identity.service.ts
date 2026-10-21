@@ -1,5 +1,6 @@
 import { AppError } from '../../errors/app-error.js';
 import { PatientAccessRepository } from './patient-access.repository.js';
+import { HistoricalRepository } from './historical.repository.js';
 import {
   clinicalEligible,
   clinicalPermissions,
@@ -30,6 +31,25 @@ const DAY = 24 * 60 * 60 * 1000;
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 
 export class IdentityService {
+  withHistoricalFile<T>(actor:Actor|undefined,patientId:string,id:string,revision:number,perform:(c:{clinicId:string},tx:import('../../database.js').ClinicTransaction)=>Promise<T>) {
+    return this.withHistorical(actor,async(account,tx)=>{
+      const snapshot=await new HistoricalRepository(tx,account.clinicId).snapshot(patientId,account.id);
+      if(!snapshot.attachments.some(v=>v.id===id && v.revision===revision)) throw new AppError(404,'Version historique introuvable.');
+      return perform({clinicId:account.clinicId},tx);
+    });
+  }
+  withHistorical<T>(actor:Actor|undefined, action:(account:ManagerAccount,tx:import('../../database.js').ClinicTransaction)=>Promise<T>) {
+    return this.withAuthenticatedAccount(actor,(account,transaction)=>{
+      if(account.kind!=='doctor' || onboardingStage(account)!=='ready') throw new AppError(403,'Accès historique non autorisé.');
+      return transaction.databaseTransaction(tx=>action(account,tx));
+    });
+  }
+  historicalPatients(actor:Actor|undefined) {
+    return this.withHistorical(actor,(account,tx)=>new HistoricalRepository(tx,account.clinicId).patients(account.id));
+  }
+  historicalSnapshot(actor:Actor|undefined,patientId:string) {
+    return this.withHistorical(actor,(account,tx)=>new HistoricalRepository(tx,account.clinicId).snapshot(patientId,account.id));
+  }
   private readonly dummyHash = hash(randomBytes(32).toString('hex'));
 
   constructor(

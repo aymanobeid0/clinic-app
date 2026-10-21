@@ -8,6 +8,11 @@ import type {
 import type { ClinicTransaction } from "../../database.js";
 import { AppError } from "../../errors/app-error.js";
 export class FilesRepository {
+  async historical(patientId:string) {
+    const heads=await this.tx.attachment.findMany({where:{clinicId:this.clinicId,patientId,classification:'clinical'}});
+    const rows=await this.tx.attachmentVersion.findMany({where:{clinicId:this.clinicId,patientId,attachmentId:{in:heads.map(h=>h.id)}},orderBy:{revision:'asc'}});
+    return rows.map(r=>r.snapshot as unknown as AttachmentVersion);
+  }
   constructor(
     readonly tx: ClinicTransaction,
     readonly clinicId: string,

@@ -39,3 +39,4 @@ export function createClinicalRoutes(
   );
   return r;
 }
+export { captureClinical } from './historical.js';
