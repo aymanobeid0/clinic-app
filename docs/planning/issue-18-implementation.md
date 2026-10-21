@@ -25,3 +25,9 @@ Initial targeted 1/1 passed after red. Later 4/4, 6/6 and 7/7 passed at intermed
 ## Review status
 
 Same separate reviewer initially identified missing clinical plan metadata/performed-care attribution and repository/service ownership violations. Builder corrected them; reviewer reports those corrections resolve the substantive findings in the inspected working tree. Final stable-revision inspection/execution report pending in issue-18-review.md. No completed independent/full-suite acceptance claimed yet.
+
+### Follow-up verification before final suite
+
+Runtime initial `2add778`; durable retry fix `5e51377`. Builder found adding a removal-id placeholder changed legacy share/remove retry hashes; retained the shipped five-element encoding for old actions. A migration fixture rewrites fictional retained command hashes to the baseline encoding and verifies retries/revocation via HTTP only; targeted1/1 PASS3.57s. Same reviewer independently inspected the exact baseline/fix and ran final typecheck/diffcheck PASS; earlier independently8/8 PASS50.51s belongs to2add778, not a claimed9/9 execution.
+
+Builder added a paused HTTP-client delivery test using a valid14.5MB fictional PNG. It failed because sending an entire Buffer allowed response delivery to complete after manager revocation. Changing writableEnded to writableFinished alone still failed. Delivery now reauthorizes before each64KiB chunk and waits for write callbacks/backpressure; targeted regression then PASS6.27s. This is an observed red→green HTTP/system-boundary test; no internal collaborator mocks. The two started full-suite attempts were interrupted for these real fixes; neither is claimed as a pass. New final suite/review revision pending. Earlier build PASS with existing523.85kB/152.06kB gzip web-bundle warning; no new frontend implementation.

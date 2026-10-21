@@ -17,7 +17,7 @@ export class FilesController {
     const actor=req.session.actor!;
     let checking=false;
     const verify=async()=>{
-      if(checking || res.destroyed || res.writableEnded) return;
+      if(checking || res.destroyed || res.writableFinished) return;
       checking=true;
       try {
         await new Promise<void>((resolve,reject)=>req.session.reload(error=>error?reject(error):resolve()));
@@ -31,7 +31,15 @@ export class FilesController {
     res.once('close',cleanup);res.once('finish',cleanup);
     await verify();
     if(res.destroyed) return;
-    res.set('Content-Type',result.version.mediaType).set('Content-Disposition','inline; filename="attachment"').set('Content-Security-Policy',"sandbox; default-src 'none'").send(result.bytes);
+    res.set('Content-Type',result.version.mediaType).set('Content-Length',String(result.bytes.length)).set('Content-Disposition','inline; filename="attachment"').set('Content-Security-Policy',"sandbox; default-src 'none'");
+    try {
+      for(let offset=0;offset<result.bytes.length;offset+=64*1024) {
+        await this.service.authorizeHistoricalContent(actor,uuid(req.params.patientId),uuid(req.params.attachmentId),Number(req.params.revision));
+        if(res.destroyed) return;
+        await new Promise<void>((resolve,reject)=>res.write(result.bytes.subarray(offset,offset+64*1024),error=>error?reject(error):resolve()));
+      }
+      if(!res.destroyed) res.end();
+    } catch {res.destroy();}
   };
   constructor(readonly service: FilesService,readonly updates:ClinicUpdates,readonly now:()=>number) {}
   preflight: RequestHandler = async (req, _res, next) => {

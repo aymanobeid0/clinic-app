@@ -1,4 +1,5 @@
-import { randomUUID, createHash } from "node:crypto";
+import { randomUUID, createHash, randomBytes } from "node:crypto";
+import { get as httpGet } from "node:http";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, expect, it } from "vitest";
 import { createApplication } from "../src/application.js";
@@ -189,6 +190,116 @@ it("retains only pre-removal clinical file versions inline after replacement and
     ).status,
   ).toBe(200);
   expect((await d.browser.get(read)).status).toBe(403);
+});
+
+it("aborts buffered historical file delivery when the manager revokes its grant", async () => {
+  const { m, patient, create } = await scenario();
+  const d = await create("slow-file", "doctor", [
+    "clinical.read",
+    "attachments.upload",
+  ]);
+  const base = `/patient-access/${patient.id}`;
+  expect(
+    (
+      await m.post(base + "/share", {
+        commandId: randomUUID(),
+        revision: 0,
+        accountId: d.id,
+        kind: "assigned",
+      })
+    ).status,
+  ).toBe(200);
+  const png = await sharp(randomBytes(2200 * 2200 * 3), {
+    raw: { width: 2200, height: 2200, channels: 3 },
+  })
+    .png()
+    .toBuffer();
+  const csrf = (await d.browser.get("/api/session")).body.csrfToken;
+  const uploaded = await d.browser
+    .post(`/api/patients/${patient.id}/attachments`)
+    .query({
+      commandId: randomUUID(),
+      classification: "clinical",
+      name: "Large.png",
+    })
+    .set("Origin", origin)
+    .set("x-csrf-token", csrf)
+    .set("Content-Type", "image/png")
+    .send(png);
+  expect(uploaded.status).toBe(200);
+  expect(
+    (
+      await m.post(base + "/remove", {
+        commandId: randomUUID(),
+        revision: 1,
+        accountId: d.id,
+      })
+    ).status,
+  ).toBe(200);
+  const removalId = (await m.browser.get("/api" + base + "/history")).body.at(
+    -1,
+  ).id;
+  expect(
+    (
+      await m.post(base + "/historical", {
+        commandId: randomUUID(),
+        revision: 2,
+        accountId: d.id,
+        removalId,
+      })
+    ).status,
+  ).toBe(200);
+  const login = await d.signIn("Fictional-employee-pass-2");
+  const cookie = (login.headers["set-cookie"] as unknown as string[])
+    .map((v) => v.split(";")[0])
+    .join("; ");
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  let delivery: ReturnType<typeof httpGet> | undefined;
+  try {
+    const response = await new Promise<import("node:http").IncomingMessage>(
+      (resolve, reject) => {
+        delivery = httpGet(
+          `http://127.0.0.1:${(server.address() as { port: number }).port}/api/historical/${patient.id}/attachments/${uploaded.body.id}/versions/1/content`,
+          { headers: { Cookie: cookie } },
+          resolve,
+        );
+        delivery.on("error", reject);
+      },
+    );
+    expect(response.statusCode).toBe(200);
+    response.pause();
+    let bytes = 0;
+    const ended = new Promise<boolean>((resolve, reject) => {
+      response.on("data", (chunk: Buffer) => {
+        bytes += chunk.length;
+      });
+      response.on("aborted", () => resolve(true));
+      response.on("end", () => resolve(false));
+      response.on("error", (error) => {
+        if ((error as NodeJS.ErrnoException).code !== "ECONNRESET")
+          reject(error);
+      });
+    });
+    expect(
+      (
+        await m.post(base + "/revoke", {
+          commandId: randomUUID(),
+          revision: 3,
+          accountId: d.id,
+        })
+      ).status,
+    ).toBe(200);
+    // Keep the receiver paused through one authorization heartbeat so bytes remain queued.
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    response.resume();
+    expect(await ended).toBe(true);
+    expect(bytes).toBeLessThan(png.length);
+  } finally {
+    delivery?.destroy();
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
 });
 
 it("closes historical invalidation streams after grant revocation", async () => {
