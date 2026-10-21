@@ -26,3 +26,22 @@ PDF decompression has no expanded-size/time bound during `PDFDocument.load` or s
 - No independent full-suite, browser, production/Linux native-parser, deployment, live migration, actual 2GB disk-capacity or restore rehearsal run. Current routes safely deny historical-only accounts; #18 separately owns historical grant/cutoff delivery. Conservative rejection of opaque financial files for users whose own-work/restricted-field scope cannot be enforced follows the approved deny-unseparable-content rule.
 
 Initial disposition: Standards 0 findings; Spec 2 P2 findings, both require builder fixes and same-reviewer recheck. Backend-only scope remains distinct from #54/#68/#64/#60/#76.
+
+## Same-reviewer recheck — `162186f`
+
+Re-read the applicable skill-integration checkpoint and inspected the complete updated pinned diff plus `c765741..162186f` (fix `f433c38`, worker-admission follow-up `162186f`). No runtime fixes made by reviewer. A working-tree formatting-only change in `packages/contracts/src/attachments.ts` was visible; it does not change the reviewed contract's meaning.
+
+**Standards:** 0 unresolved findings. Feature/module boundaries and RLS/runtime grants remain intact. Worker execution stays within the API process rather than adding infrastructure; its process-wide admission count lasts until actual worker exit, including disconnected requests. No new UI, production operation or patient-data use was introduced.
+
+**Spec:** Both initial P2s are fixed by independent inspection and the rerun regressions. PDF filters/one-element arrays are now checked in the isolated worker; supported Flate streams use bounded strict zlib decoding, unsupported chains are rejected, and embedded JPEGs are decoded. Cancelled reservation keys survive reaping, do not consume upload quota, and remain discoverable for repeated cleanup; failed writers inspect committed versions before discard even when their active lease is gone. Read failures now become the documented sanitized 503. No unresolved actionable finding identified in the corrected backend scope.
+
+Independently executed on `162186f` runtime:
+
+- `npx vitest run apps/api/test/attachments.test.ts`: **13/13 PASS**, 65.59 s, real isolated PostgreSQL/private disk. This includes the two corrected regressions and storage-read 503 behavior. Concurrent builder full-suite work means this is not a performance benchmark.
+- `npm run typecheck`: **PASS**; contract declarations had already been rebuilt after the earlier stale-artifact failure.
+- `git diff --check a8b5ad6e563d1a8752263087e7cb3486f5e0be11...162186f`: **PASS**.
+- Additional bounded diagnostic against the compiled validator: a small PDF with a Flate stream expanding to 40,000,001 bytes was rejected with **400**. This verifies that explicit stream-budget path, not complete adversarial resource safety.
+
+Limits remain explicit: five-second worker deadline and V8 heap/stack limits are not whole-host/native/ArrayBuffer memory guarantees. PDFDocument loading can process object/XRef streams before the later enumerated-stream budgets; no destructive resource-exhaustion test or host-isolation proof is claimed. Supported PDF content is intentionally conservative, as documented. No independent full-suite/build/Linux native/browser/restore/production checks were run; builder's completed results must be attributed separately. Historical grant/cutoff integration remains #18; logic/UI owners remain outstanding. Final handoff and required builder full-suite result must be completed before PR publication.
+
+Final reviewer disposition at `162186f`: **Standards 0 unresolved; Spec 0 unresolved**. Initial Spec findings: 2 P2, both fixed. Human PR review/manual merge remains required.

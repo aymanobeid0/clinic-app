@@ -36,7 +36,10 @@ export type AttachmentRecord = AttachmentVersion & {
   events: AttachmentEvent[];
   versions: AttachmentVersion[];
 };
-export type AttachmentList = { attachments:AttachmentVersion[]; usage:AttachmentUsage };
+export type AttachmentList = {
+  attachments: AttachmentVersion[];
+  usage: AttachmentUsage;
+};
 export type AttachmentEvent = {
   actorId: string;
   at: string;
