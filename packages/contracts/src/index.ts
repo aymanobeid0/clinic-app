@@ -1,4 +1,5 @@
 import { z } from 'zod';
+export * from './attachments.js';
 export const clinicCodeSchema = z.string().regex(/^[a-z0-9-]{3,32}$/);
 export const usernameSchema = z
   .string()
@@ -614,7 +615,7 @@ export type PlanEvidence = {
   recordedBy: string;
   recordedByName: string;
   recordedAt: string;
-  // Attachment support (#19) will add an authorized immutable file-version reference.
+  attachment?: { id: string; revision: number };
 };
 export type PlanAcceptance = PlanEvidence & {
   confirmedBy: string;
@@ -661,6 +662,7 @@ export const planLifecycleSchema = z
     acceptedBy: z.string().trim().min(1).max(200).optional(),
     acceptedAt: z.iso.datetime().optional(),
     method: z.string().trim().min(1).max(1000).optional(),
+    attachment: z.object({id:z.uuid(),revision:z.number().int().positive()}).strict().optional(),
   })
   .strict();
 

@@ -361,3 +361,45 @@ model BillingInvoiceCharge {
  invoiceId String @db.Uuid
  @@id([clinicId,chargeId])
 }
+
+model Attachment {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ classification String
+ revision Int
+ removed Boolean @default(false)
+ events Json
+ @@unique([clinicId,patientId,id])
+ @@index([clinicId,patientId])
+}
+model AttachmentVersion {
+ key String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ attachmentId String @db.Uuid
+ revision Int
+ size Int
+ snapshot Json
+ @@unique([clinicId,attachmentId,revision])
+ @@index([clinicId,patientId])
+}
+model AttachmentReservation {
+ key String @id @db.Uuid
+ clinicId String @db.Uuid
+ patientId String @db.Uuid
+ commandId String @db.Uuid
+ actorId String @db.Uuid
+ payloadHash String
+ size Int
+ expiresAt DateTime @db.Timestamptz(6)
+ @@unique([clinicId,commandId])
+}
+model AttachmentCommand {
+ clinicId String @db.Uuid
+ commandId String @db.Uuid
+ actorId String @db.Uuid
+ payloadHash String
+ receipt Json
+ @@id([clinicId,commandId])
+}

@@ -1,4 +1,5 @@
 import {createTreatmentRoutes} from './modules/treatment/index.js';
+import { createFileRoutes, type PrivateFileStore } from './modules/files/index.js';
 import { createBillingRoutes } from './modules/billing/index.js';
 import { createClinicalRoutes } from './modules/clinical/index.js';
 import { createSchedulingRoutes } from './modules/scheduling/index.js';
@@ -20,6 +21,7 @@ type Options = {
   secureCookies: boolean;
   now?: () => number;
   mail?: Mail;
+  attachmentStore?: PrivateFileStore;
 };
 
 export function createApplication(options: Options) {
@@ -64,6 +66,7 @@ export function createApplication(options: Options) {
   app.use('/api', createClinicalRoutes(createIdentityAccess(config.database, config.now), config.updates, config.now));
   app.use('/api',createTreatmentRoutes(createIdentityAccess(config.database,config.now),config.updates,config.now));
   app.use('/api', createBillingRoutes(createIdentityAccess(config.database, config.now), config.updates, config.now));
+  app.use('/api',createFileRoutes(createIdentityAccess(config.database,config.now),config.updates,config.now,config.attachmentStore));
   installErrorHandling(app);
   return app;
 }

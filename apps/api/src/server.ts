@@ -1,6 +1,7 @@
 import { logger as log } from './logger.js';
 import { createApplication } from './application.js';
 import { openDatabase } from './database.js';
+import { privateFileStore } from './modules/files/index.js';
 
 const { DATABASE_URL, SESSION_SECRET, APP_ORIGIN } = process.env;
 if (!DATABASE_URL || !SESSION_SECRET || !APP_ORIGIN) {
@@ -17,6 +18,7 @@ const application = createApplication({
   sessionSecret: SESSION_SECRET,
   origin: APP_ORIGIN,
   secureCookies: process.env.COOKIE_SECURE !== 'false',
+  attachmentStore: process.env.ATTACHMENT_DIRECTORY ? privateFileStore(process.env.ATTACHMENT_DIRECTORY) : undefined,
 });
 const server = application.listen(Number(process.env.PORT ?? 3000), '127.0.0.1', () =>
   log.info('Clinic API listening.'),

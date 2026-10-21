@@ -318,7 +318,7 @@ export class IdentityService {
     patientId: string,
     permission: ClinicalPermission,
     action: (
-      context: { clinicId: string; accountId: string; patientId: string; permissions: readonly string[]; isManager:boolean },
+      context: { clinicId: string; accountId: string; patientId: string; permissions: readonly string[]; isManager:boolean; canReadFinancialFiles:boolean },
       tx: import('../../database.js').ClinicTransaction,
     ) => Promise<T>,
   ) {
@@ -330,7 +330,7 @@ export class IdentityService {
           !(await new PatientAccessRepository(tx, account.clinicId).active(patientId, account.id))
         )
           throw new AppError(403, 'Accès clinique non autorisé.');
-        return action({ clinicId: account.clinicId, accountId: account.id, patientId, permissions: account.permissions, isManager:account.isManager }, tx);
+        return action({ clinicId: account.clinicId, accountId: account.id, patientId, permissions: account.permissions, isManager:account.isManager, canReadFinancialFiles:account.isManager || (account.kind==='staff' && account.permissions.includes('billing.read')) }, tx);
       }),
     );
   }
@@ -359,6 +359,41 @@ export class IdentityService {
           clinical: account.isManager || (active && clinicalEligible(account, 'clinical.read'))}, tx);
       }),
     );
+  }
+  // Opaque files cannot be redacted like structured billing projections.
+  withAttachmentPermission<T>(
+    actor: Actor | undefined,
+    patientId: string,
+    classification: import('@clinic/contracts').AttachmentClass,
+    action: 'read' | 'history' | 'download' | 'print' | 'upload' | 'replace' | 'remove',
+    perform: (context:{clinicId:string;accountId:string;permissions:readonly string[];canHistory:boolean}, tx:import('../../database.js').ClinicTransaction)=>Promise<T>,
+  ) {
+    return this.withReadyAccount(actor,(account,transaction)=>transaction.databaseTransaction(async tx=>{
+      const patients=new PatientAccessRepository(tx,account.clinicId);
+      const active=await patients.active(patientId,account.id);
+      const clinical=active && clinicalEligible(account,'clinical.read');
+      const mutation=['upload','replace','remove'].includes(action);
+      const requirePermission=(permission:string)=>{ if(!account.permissions.includes(permission)) throw new AppError(403,'Autorisation de fichier requise.'); };
+      if(classification!=='financial') {
+        if(!clinical) throw new AppError(403,'Accès clinique patient requis.');
+        if(mutation) requirePermission(`attachments.${action}`);
+        if(action==='history') requirePermission('clinical.history');
+        if(action==='download'||action==='print') requirePermission(`clinical.${action}`);
+      }
+      if(classification!=='clinical') {
+        if(!account.isManager) {
+          requirePermission('billing.read');
+          if(account.kind==='doctor' || !clinical) throw new AppError(403,'Le contenu financier opaque ne peut pas être séparé pour ce périmètre.');
+          if(mutation) requirePermission(`financial.attachments.${action}`);
+          if(action==='history') requirePermission('financial.history');
+          if(action==='download'||action==='print') requirePermission(`financial.${action}`);
+        }
+      }
+      if(classification==='mixed' && mutation) requirePermission(`mixed.attachments.${action}`);
+      if(!(await patients.exists(patientId))) throw new AppError(404,'Patient introuvable.');
+      const canHistory=(classification==='financial'||account.permissions.includes('clinical.history')) && (classification==='clinical'||account.isManager||account.permissions.includes('financial.history'));
+      return perform({clinicId:account.clinicId,accountId:account.id,permissions:account.permissions,canHistory},tx);
+    }));
   }
   withManager<T>(
     actor: Actor | undefined,

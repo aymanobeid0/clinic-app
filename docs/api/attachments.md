@@ -1,0 +1,28 @@
+# Patient attachment API
+
+All paths are relative to `/api`. Cookie session authentication and existing Origin/CSRF rules apply. JSON errors use `{error:string}`. Attachments require their immutable `classification=clinical|financial|mixed` query on every request; choosing a different class never changes the object or bypasses its scope. UUID path fields and command IDs identify records, not authority.
+
+| Method/path | Request | Response |
+| --- | --- | --- |
+| `GET /patients/:patientId/attachments` | classification query | `{attachments:AttachmentVersion[],usage:AttachmentUsage}`; current unremoved versions only |
+| `POST /patients/:patientId/attachments` | Raw PDF/JPEG/PNG body; queries `commandId`, `classification`, `name` | Immutable `AttachmentVersion` |
+| `POST /patients/:patientId/attachments/:id/versions` | Same binary body/queries plus current `revision` and nonempty `reason` | New version; old bytes count and remain retained |
+| `POST /patients/:patientId/attachments/:id/remove` | classification query; JSON `{commandId,revision,reason}` | Last version receipt; logical tombstone only |
+| `GET /patients/:patientId/attachments/:id/history` | classification query | `AttachmentRecord`, including retained version metadata and dated actor/reason events |
+| `GET /patients/:patientId/attachments/:id/versions/:revision/content` | classification; optional `output=inline|download|print` (default inline) | Authorized bytes; private no-store, nosniff, sandbox CSP and safe Content-Disposition |
+
+Shared schemas/types: `packages/contracts/src/attachments.ts`, re-exported by `@clinic/contracts`. `AttachmentVersion` includes attachment `id`, patientId, revision (starts at 1), classification, name, mediaType, size, sha256, actorId, at, reason. Storage keys are never returned. `AttachmentRecord` additionally has removed, events and retained versions. Usage gives retainedBytes, reservedBytes, limitBytes=2,000,000,000 and fileLimitBytes=20,000,000. Logical removal never frees retained bytes. Listing includes clinic-wide byte counts, not other patients' file metadata.
+
+Upload `Content-Type` must be application/pdf, image/jpeg or image/png. No base64 JSON/multipart or filename inference. Encrypted/active PDFs and corrupt/mismatched images are rejected; PDF support is deliberately conservative (no forms, actions, embedded files or external links), images require a full decode and at most 40 million pixels. Unsupported/invalid content returns 400; oversize 413. Names are display labels, never filesystem paths.
+
+An identical completed command replay returns its original immutable receipt without reserving/storing again; changed payload/actor reuse returns 409. An in-progress command returns 409 and can be retried later. Stale replacement/removal revisions, expired reservations and quota admission failures return 409. Preserve the command ID when retrying an uncertain response. Revision conflicts require reload/reconciliation; replacement requires a new command after reconciling the version.
+
+Clinical read/mutations require active patient scope and relevant clinical/action permissions, including doctor-managers; non-doctor managers cannot access clinical/mixed files. Financial managers have full financial authority. Restricted financial users receive 403 for opaque bytes that cannot safely enforce their own-work/restricted-fields scope. Staff financial files additionally require billing.read and active clinical patient access for unfiltered content. Mixed writes need mixed.attachments.action, attachments.action and financial.attachments.action (financial authority is intrinsic for managers). Download/print require their separate clinical/financial output capabilities. Retained/removed/old bytes and history require the relevant history capability (financial history intrinsic for managers). No application export route is added here; exports belong to their backend owner.
+
+Historical-only/disabled/unready accounts cannot use these active routes. Historical grant/cutoff delivery belongs to #18; URL guessing cannot opt into historical access. A missing or mismatched-class/patient/clinic identifier returns 404 after permission checks, or 403 where patient/content access is absent. Permission changes are checked again before publication. Core access and existing authorized content remain available at quota. Storage unavailable/corrupt-at-rest bytes and busy upload admission return 503 without exposing storage details.
+
+Treatment `POST /treatment/:patientId/plans/lifecycle` with action=evidence accepts optional `attachment:{id,revision}` along with the existing agreement fields. The file must be current, unremoved, in the same patient/clinic, and clinical or authorized mixed content. The immutable reference is copied into confirmed acceptance. Replacing/removing the file later never removes that version/reference. Linking does not grant the viewer new byte access.
+
+Runtime: set `ATTACHMENT_DIRECTORY` to a private persistent directory outside static web serving; back it up with database metadata under the approved operational policy. Unconfigured storage returns 503 for byte operations; other core APIs remain usable. Only generated keys are accepted by the storage adapter. Expired failed/abandoned reservations are reclaimed lazily on the next authorized upload in that clinic; storage/database/revocation failures can defer cleanup until then. No ordinary purge, background cleanup service, deployment or backup rehearsal is implied.
+
+This is backend acceptance only. Remaining consumers: logic #54; UI #68/#64; shared navigation #60 and final connected coverage #76.
