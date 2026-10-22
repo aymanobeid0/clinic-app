@@ -5,6 +5,7 @@ import {
 import { createHash, randomUUID } from "node:crypto";
 import type {
   InventoryReceipt,
+  InventoryMovement,
   InventoryItem,
   InventorySupplier,
   InventorySettings,
@@ -180,6 +181,50 @@ export class InventoryRepository {
       totalCostMinor: row.totalCostMinor.toString(),
       receivedAt: row.receivedAt.toISOString(),
     };
+  }
+  async batch(id: string) {
+    const row = await this.tx.inventoryBatch.findFirst({
+      where: { clinicId: this.clinicId, id },
+    });
+    if (!row) throw new AppError(404, "Lot introuvable.");
+    return row;
+  }
+  async movements(batchId?: string): Promise<InventoryMovement[]> {
+    const rows = await this.tx.inventoryMovement.findMany({
+      where: { clinicId: this.clinicId, ...(batchId ? { batchId } : {}) },
+      orderBy: [{ occurredAt: "asc" }, { batchId: "asc" }, { revision: "asc" }],
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      batchId: r.batchId,
+      kind: r.kind as InventoryMovement["kind"],
+      deltaPacks: r.deltaPacks,
+      balancePacks: r.balancePacks,
+      revision: r.revision,
+      reason: r.reason,
+      occurredAt: r.occurredAt.toISOString(),
+      actorId: r.actorId,
+    }));
+  }
+  async stock(batchId: string, received: number) {
+    const movements = await this.movements(batchId);
+    return {
+      balance: received + movements.reduce((n, m) => n + m.deltaPacks, 0),
+      revision: movements.length,
+    };
+  }
+  async movement(
+    data: Omit<InventoryMovement, "id" | "actorId">,
+  ): Promise<InventoryMovement> {
+    const value = { ...data, id: randomUUID(), actorId: this.actorId };
+    await this.tx.inventoryMovement.create({
+      data: {
+        ...value,
+        clinicId: this.clinicId,
+        occurredAt: new Date(value.occurredAt),
+      },
+    });
+    return value;
   }
   async receipts(): Promise<InventoryReceipt[]> {
     return (

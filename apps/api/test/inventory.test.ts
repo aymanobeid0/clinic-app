@@ -768,3 +768,610 @@ it("inventory readers can discover manager-enabled receiving currencies without 
     { code: "MRU", precision: 2 },
   ]);
 });
+
+it("opening one manually selected pack retains a movement and reduces only that batch", async () => {
+  const m = await receiver();
+  const ownId = (await m.browser.get("/api/identity")).body.accountId;
+  await m.post(`/accounts/${ownId}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["inventory.read", "inventory.receive", "inventory.consume"],
+  });
+  const ref = await references(m);
+  const first = await m.post("/inventory/receiving", batch(ref));
+  const second = await m.post("/inventory/receiving", batch(ref));
+  const consumed = await m.post("/inventory/consume", {
+    commandId: randomUUID(),
+    batchId: first.body.id,
+    quantityPacks: 1,
+  });
+  expect(consumed.status).toBe(200);
+  expect(consumed.body).toMatchObject({
+    batchId: first.body.id,
+    kind: "consume",
+    deltaPacks: -1,
+    balancePacks: 2,
+    actorId: ownId,
+  });
+  const stock = (await m.browser.get("/api/inventory")).body;
+  expect(
+    stock.batches.find((b: { id: string }) => b.id === first.body.id)
+      .availablePacks,
+  ).toBe(2);
+  expect(
+    stock.batches.find((b: { id: string }) => b.id === second.body.id)
+      .availablePacks,
+  ).toBe(3);
+  expect(stock.items[0].availablePacks).toBe(5);
+  expect(
+    (await m.browser.get("/api/inventory/movements")).body.movements,
+  ).toEqual([consumed.body]);
+  expect(
+    (await m.browser.get("/api/inventory/receiving")).body.receipts[0]
+      .quantityPacks,
+  ).toBe(3);
+});
+async function operator() {
+  const m = await receiver();
+  const ownId = (await m.browser.get("/api/identity")).body.accountId;
+  expect(
+    (
+      await m.post(`/accounts/${ownId}/permissions`, {
+        currentPassword: "Fictional-manager-pass-2",
+        permissions: [
+          "inventory.read",
+          "inventory.receive",
+          "inventory.consume",
+          "inventory.adjust",
+        ],
+      })
+    ).status,
+  ).toBe(200);
+  const ref = await references(m);
+  const received = await m.post(
+    "/inventory/receiving",
+    batch(ref, { quantityPacks: 6 }),
+  );
+  expect(received.status).toBe(200);
+  return { ...m, ref, batchId: received.body.id, ownId };
+}
+it("reasoned waste, disposal and count corrections preserve original and intervening movements", async () => {
+  const m = await operator();
+  const waste = await m.post("/inventory/corrections", {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    revision: 0,
+    kind: "waste",
+    quantityPacks: 2,
+    reason: "  Emballage endommagé  ",
+  });
+  expect(waste.status).toBe(200);
+  expect(waste.body).toMatchObject({
+    kind: "waste",
+    deltaPacks: -2,
+    balancePacks: 4,
+    revision: 1,
+    reason: "Emballage endommagé",
+  });
+  const disposal = await m.post("/inventory/corrections", {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    revision: 1,
+    kind: "disposal",
+    quantityPacks: 1,
+    reason: "Contamination",
+  });
+  expect(disposal.status).toBe(200);
+  const count = await m.post("/inventory/corrections", {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    revision: 2,
+    kind: "count",
+    countedPacks: 8,
+    reason: "Recomptage physique",
+  });
+  expect(count.status).toBe(200);
+  expect(count.body).toMatchObject({
+    kind: "count",
+    deltaPacks: 5,
+    balancePacks: 8,
+    revision: 3,
+  });
+  const down = await m.post("/inventory/corrections", {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    revision: 3,
+    kind: "count",
+    countedPacks: 0,
+    reason: "Vérification finale",
+  });
+  expect(down.status).toBe(200);
+  expect(down.body).toMatchObject({
+    deltaPacks: -8,
+    balancePacks: 0,
+    revision: 4,
+  });
+  expect(
+    (await m.browser.get("/api/inventory/movements")).body.movements,
+  ).toEqual([waste.body, disposal.body, count.body, down.body]);
+  expect(
+    (await m.browser.get("/api/inventory/receiving")).body.receipts[0]
+      .quantityPacks,
+  ).toBe(6);
+  expect((await m.browser.get("/api/inventory")).body.batches[0]).toMatchObject(
+    { remainingPacks: 0, stockRevision: 4, availablePacks: 0 },
+  );
+});
+it("movement inputs reject fractions, missing reasons and patient or visit linkage without partial history", async () => {
+  const m = await operator();
+  for (const quantityPacks of [0, -1, 0.5, 2, "1", null]) {
+    expect(
+      (
+        await m.post("/inventory/consume", {
+          commandId: randomUUID(),
+          batchId: m.batchId,
+          quantityPacks,
+        })
+      ).status,
+    ).toBe(400);
+  }
+  for (const extra of [
+    { patientId: randomUUID() },
+    { visitId: randomUUID() },
+    { clinicId: randomUUID() },
+  ]) {
+    expect(
+      (
+        await m.post("/inventory/consume", {
+          commandId: randomUUID(),
+          batchId: m.batchId,
+          quantityPacks: 1,
+          ...extra,
+        })
+      ).status,
+    ).toBe(400);
+  }
+  for (const extra of [
+    { reason: " " },
+    { reason: null },
+    { reason: undefined },
+    { quantityPacks: 1.5 },
+    { quantityPacks: 0 },
+    { quantityPacks: -1 },
+    { revision: -1 },
+    { patientId: randomUUID() },
+  ]) {
+    expect(
+      (
+        await m.post("/inventory/corrections", {
+          commandId: randomUUID(),
+          batchId: m.batchId,
+          revision: 0,
+          kind: "waste",
+          quantityPacks: 1,
+          reason: "Perte",
+          ...extra,
+        })
+      ).status,
+    ).toBe(400);
+  }
+  expect(
+    (
+      await m.post("/inventory/corrections", {
+        commandId: randomUUID(),
+        batchId: m.batchId,
+        revision: 0,
+        kind: "count",
+        countedPacks: 0.5,
+        reason: "Compte",
+      })
+    ).status,
+  ).toBe(400);
+  expect(
+    (await m.browser.get("/api/inventory/movements")).body.movements,
+  ).toEqual([]);
+  expect(
+    (await m.browser.get("/api/inventory")).body.batches[0].remainingPacks,
+  ).toBe(6);
+});
+it("concurrent openings cannot consume more packs than remain and identical retries commit once", async () => {
+  const m = await operator();
+  const command = {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    quantityPacks: 1,
+  };
+  const repeated = await Promise.all([
+    m.post("/inventory/consume", command),
+    m.post("/inventory/consume", command),
+  ]);
+  expect(repeated.map((r) => r.status)).toEqual([200, 200]);
+  expect(repeated[0].body).toEqual(repeated[1].body);
+  const raced = await Promise.all(
+    Array.from({ length: 6 }, () =>
+      m.post("/inventory/consume", { ...command, commandId: randomUUID() }),
+    ),
+  );
+  expect(raced.map((r) => r.status).sort()).toEqual([
+    200, 200, 200, 200, 200, 409,
+  ]);
+  expect((await m.post("/inventory/consume", command)).body).toEqual(
+    repeated[0].body,
+  );
+  expect(
+    (await m.browser.get("/api/inventory/movements")).body.movements,
+  ).toHaveLength(6);
+  expect((await m.browser.get("/api/inventory")).body.batches[0]).toMatchObject(
+    { remainingPacks: 0, stockRevision: 6 },
+  );
+});
+it("stale counts conflict after intervening consumption and correction retries do not duplicate history", async () => {
+  const m = await operator();
+  const count = {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    revision: 0,
+    kind: "count",
+    countedPacks: 9,
+    reason: "Recomptage",
+  };
+  const first = await m.post("/inventory/corrections", count);
+  expect(first.status).toBe(200);
+  expect(
+    (
+      await m.post("/inventory/consume", {
+        commandId: randomUUID(),
+        batchId: m.batchId,
+        quantityPacks: 1,
+      })
+    ).status,
+  ).toBe(200);
+  expect((await m.post("/inventory/corrections", count)).body).toEqual(
+    first.body,
+  );
+  expect(
+    (await m.post("/inventory/corrections", { ...count, countedPacks: 10 }))
+      .status,
+  ).toBe(409);
+  expect(
+    (
+      await m.post("/inventory/corrections", {
+        ...count,
+        commandId: randomUUID(),
+        revision: 1,
+      })
+    ).status,
+  ).toBe(409);
+  expect(
+    (
+      await m.post("/inventory/consume", {
+        commandId: count.commandId,
+        batchId: m.batchId,
+        quantityPacks: 1,
+      })
+    ).status,
+  ).toBe(409);
+  const waste = {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    revision: 2,
+    kind: "waste",
+    quantityPacks: 9,
+    reason: "Perte",
+  };
+  expect((await m.post("/inventory/corrections", waste)).status).toBe(409);
+  expect(
+    (await m.post("/inventory/corrections", { ...waste, quantityPacks: 1 }))
+      .status,
+  ).toBe(200);
+  expect(
+    (await m.browser.get("/api/inventory/movements")).body.movements,
+  ).toHaveLength(3);
+  expect(
+    (await m.browser.get("/api/inventory")).body.batches[0].remainingPacks,
+  ).toBe(7);
+});
+it("competing count corrections conflict rather than silently overwriting physical stock", async () => {
+  const m = await operator();
+  const body = {
+    batchId: m.batchId,
+    revision: 0,
+    kind: "count",
+    countedPacks: 4,
+    reason: "Compte",
+  };
+  const results = await Promise.all([
+    m.post("/inventory/corrections", { ...body, commandId: randomUUID() }),
+    m.post("/inventory/corrections", {
+      ...body,
+      commandId: randomUUID(),
+      countedPacks: 7,
+    }),
+  ]);
+  expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+  const won = results.find((r) => r.status === 200)!;
+  expect(
+    (await m.browser.get("/api/inventory")).body.batches[0].remainingPacks,
+  ).toBe(won.body.balancePacks);
+  expect(
+    (await m.browser.get("/api/inventory/movements")).body.movements,
+  ).toEqual([won.body]);
+});
+it("expiry blocks consumption at UTC midnight but allows honest disposal and count correction of expired stock", async () => {
+  time = Date.parse("2026-10-22T23:59:59.999Z");
+  const m = await operator();
+  const received = await m.post(
+    "/inventory/receiving",
+    batch(m.ref, { expiresOn: "2026-10-22", quantityPacks: 3 }),
+  );
+  const command = {
+    commandId: randomUUID(),
+    batchId: received.body.id,
+    quantityPacks: 1,
+  };
+  const opened = await m.post("/inventory/consume", command);
+  expect(opened.status).toBe(200);
+  time++;
+  expect(
+    (
+      await m.post("/inventory/consume", {
+        ...command,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(409);
+  expect((await m.post("/inventory/consume", command)).body).toEqual(
+    opened.body,
+  );
+  const disposed = await m.post("/inventory/corrections", {
+    commandId: randomUUID(),
+    batchId: received.body.id,
+    revision: 1,
+    kind: "disposal",
+    quantityPacks: 1,
+    reason: "Périmé",
+  });
+  expect(disposed.status).toBe(200);
+  const counted = await m.post("/inventory/corrections", {
+    commandId: randomUUID(),
+    batchId: received.body.id,
+    revision: 2,
+    kind: "count",
+    countedPacks: 5,
+    reason: "Stock physique",
+  });
+  expect(counted.status).toBe(200);
+  const stock = (await m.browser.get("/api/inventory")).body.batches.find(
+    (b: { id: string }) => b.id === received.body.id,
+  );
+  expect(stock).toMatchObject({
+    expired: true,
+    availablePacks: 0,
+    remainingPacks: 5,
+    stockRevision: 3,
+  });
+  expect(
+    (
+      await m.post("/inventory/consume", {
+        ...command,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(409);
+  const optional = await references(m, false);
+  const nonExpiring = await m.post(
+    "/inventory/receiving",
+    batch(optional, { expiresOn: null }),
+  );
+  expect(
+    (
+      await m.post("/inventory/consume", {
+        commandId: randomUUID(),
+        batchId: nonExpiring.body.id,
+        quantityPacks: 1,
+      })
+    ).status,
+  ).toBe(200);
+});
+it("consume and adjust permissions remain independent from receiving, manager authority and patient care", async () => {
+  const m = await operator();
+  const consumer = await employee(m, ["inventory.consume"], "doctor");
+  const adjuster = await employee(m, ["inventory.adjust"]);
+  const command = {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    quantityPacks: 1,
+  };
+  const correction = {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    revision: 1,
+    kind: "waste",
+    quantityPacks: 1,
+    reason: "Perte",
+  };
+  expect((await consumer.post("/inventory/consume", command)).status).toBe(200);
+  expect((await consumer.browser.get("/api/inventory/movements")).status).toBe(
+    403,
+  );
+  expect(
+    (await consumer.post("/inventory/corrections", correction)).status,
+  ).toBe(403);
+  expect(
+    (
+      await adjuster.post("/inventory/consume", {
+        ...command,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(403);
+  expect(
+    (await adjuster.post("/inventory/corrections", correction)).status,
+  ).toBe(200);
+  expect((await m.post("/inventory/consume", command)).status).toBe(409);
+  const receiverOnly = await employee(m, [
+    "inventory.read",
+    "inventory.receive",
+  ]);
+  expect((await receiverOnly.post("/inventory/consume", command)).status).toBe(
+    403,
+  );
+  expect(
+    (await receiverOnly.post("/inventory/corrections", correction)).status,
+  ).toBe(403);
+  expect(
+    (await receiverOnly.browser.get("/api/inventory/movements")).body.movements,
+  ).toHaveLength(2);
+  await m.post(`/accounts/${consumer.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [],
+  });
+  expect((await consumer.post("/inventory/consume", command)).status).toBe(403);
+  await m.post(`/accounts/${m.ownId}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [],
+  });
+  expect((await m.post("/inventory/consume", command)).status).toBe(403);
+  expect((await m.post("/inventory/corrections", correction)).status).toBe(403);
+});
+it("foreign batches and spoofed scope cannot cross clinics or expose movement history", async () => {
+  const m = await operator(),
+    other = await operator();
+  const body = {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    quantityPacks: 1,
+  };
+  expect((await m.post("/inventory/consume", body)).status).toBe(200);
+  expect((await other.post("/inventory/consume", body)).status).toBe(404);
+  expect(
+    (
+      await other.post("/inventory/corrections", {
+        commandId: randomUUID(),
+        batchId: m.batchId,
+        revision: 1,
+        kind: "count",
+        countedPacks: 5,
+        reason: "Intrusion",
+      })
+    ).status,
+  ).toBe(404);
+  expect(
+    (await other.browser.get("/api/inventory/movements")).body.movements,
+  ).toEqual([]);
+  expect(
+    (await other.browser.get("/api/inventory")).body.batches[0].remainingPacks,
+  ).toBe(6);
+  expect(
+    (
+      await m.post("/inventory/consume", {
+        ...body,
+        commandId: randomUUID(),
+        patientId: randomUUID(),
+      })
+    ).status,
+  ).toBe(400);
+});
+it("historical-only, disabled and unauthenticated accounts cannot use movement endpoints and CSRF is required", async () => {
+  const m = await operator();
+  const doctor = await employee(
+    m,
+    ["inventory.read", "inventory.consume", "inventory.adjust"],
+    "doctor",
+  );
+  const command = {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    quantityPacks: 1,
+  };
+  const correction = {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    revision: 0,
+    kind: "count",
+    countedPacks: 2,
+    reason: "Compte",
+  };
+  await m.post(`/accounts/${doctor.id}/status`, {
+    currentPassword: "Fictional-manager-pass-2",
+    status: "historical",
+  });
+  expect((await doctor.signIn("Fictional-employee-pass-2")).status).toBe(200);
+  expect((await doctor.post("/inventory/consume", command)).status).toBe(403);
+  expect((await doctor.post("/inventory/corrections", correction)).status).toBe(
+    403,
+  );
+  expect((await doctor.browser.get("/api/inventory/movements")).status).toBe(
+    403,
+  );
+  await m.post(`/accounts/${doctor.id}/status`, {
+    currentPassword: "Fictional-manager-pass-2",
+    status: "disabled",
+  });
+  expect((await doctor.post("/inventory/consume", command)).status).toBe(401);
+  expect((await request(app).get("/api/inventory/movements")).status).toBe(401);
+  for (const [path, body] of [
+    ["consume", command],
+    ["corrections", correction],
+  ] as const) {
+    expect(
+      (
+        await m.browser
+          .post(`/api/inventory/${path}`)
+          .set("Origin", origin)
+          .send(body)
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await m.browser
+          .post(`/api/inventory/${path}`)
+          .set("Origin", "https://foreign.invalid")
+          .send(body)
+      ).status,
+    ).toBe(403);
+  }
+  expect(
+    (await m.browser.get("/api/inventory/movements")).body.movements,
+  ).toEqual([]);
+});
+it("database failure rolls back stock and movement receipts before a successful retry", async () => {
+  const m = await operator();
+  const clinicId = (await m.browser.get("/api/identity")).body.clinicId;
+  const command = {
+    commandId: randomUUID(),
+    batchId: m.batchId,
+    quantityPacks: 1,
+  };
+  await owner.pool.query(
+    `CREATE FUNCTION inventory_movement_test_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW."clinicId"::text = '${clinicId}' THEN RAISE EXCEPTION 'FICTIONAL_MOVEMENT_FAILURE'; END IF; RETURN NEW; END $$`,
+  );
+  await owner.pool.query(
+    'CREATE TRIGGER inventory_movement_test_failure BEFORE INSERT ON "InventoryCommand" FOR EACH ROW EXECUTE FUNCTION inventory_movement_test_failure()',
+  );
+  try {
+    const failed = await m.post("/inventory/consume", command);
+    expect(failed.status).toBe(500);
+    expect(JSON.stringify(failed.body)).not.toContain(
+      "FICTIONAL_MOVEMENT_FAILURE",
+    );
+    expect(
+      (await m.browser.get("/api/inventory/movements")).body.movements,
+    ).toEqual([]);
+    expect(
+      (await m.browser.get("/api/inventory")).body.batches[0],
+    ).toMatchObject({ remainingPacks: 6, stockRevision: 0 });
+  } finally {
+    await owner.pool.query(
+      'DROP TRIGGER inventory_movement_test_failure ON "InventoryCommand"',
+    );
+    await owner.pool.query("DROP FUNCTION inventory_movement_test_failure()");
+  }
+  const result = await m.post("/inventory/consume", command);
+  expect(result.status).toBe(200);
+  expect((await m.post("/inventory/consume", command)).body).toEqual(
+    result.body,
+  );
+  expect(
+    (await m.browser.get("/api/inventory/movements")).body.movements,
+  ).toEqual([result.body]);
+});

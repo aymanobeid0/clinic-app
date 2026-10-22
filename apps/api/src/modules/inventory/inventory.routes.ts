@@ -2,6 +2,9 @@ import { Router } from "express";
 import type { InventoryController } from "./inventory.controller.js";
 export function inventoryRoutes(c: InventoryController) {
   const r = Router();
+  r.get("/inventory/movements", c.movements);
+  r.post("/inventory/corrections", c.correct);
+  r.post("/inventory/consume", c.consume);
   r.get("/inventory", c.projection);
   r.get("/inventory/receiving", c.history);
   r.get("/inventory/settings", c.settings);

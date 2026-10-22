@@ -71,7 +71,46 @@ export type InventoryProjection = {
   items: (InventoryItem & { availablePacks: number; lowStock: boolean })[];
   batches: (InventoryReceipt & {
     availablePacks: number;
+    remainingPacks: number;
+    stockRevision: number;
     expired: boolean;
     expiring: boolean;
   })[];
 };
+
+export const inventoryConsumeSchema = z
+  .object({ commandId: id, batchId: id, quantityPacks: z.literal(1) })
+  .strict();
+export type InventoryMovement = {
+  id: string;
+  batchId: string;
+  kind: "consume" | "waste" | "disposal" | "count";
+  deltaPacks: number;
+  balancePacks: number;
+  revision: number;
+  reason: string | null;
+  occurredAt: string;
+  actorId: string;
+};
+
+const correction = z.object({
+  commandId: id,
+  batchId: id,
+  revision,
+  reason: z.string().trim().min(1).max(1000),
+});
+export const inventoryCorrectionSchema = z.discriminatedUnion("kind", [
+  correction
+    .extend({
+      kind: z.literal("waste"),
+      quantityPacks: packs.refine((n) => n > 0),
+    })
+    .strict(),
+  correction
+    .extend({
+      kind: z.literal("disposal"),
+      quantityPacks: packs.refine((n) => n > 0),
+    })
+    .strict(),
+  correction.extend({ kind: z.literal("count"), countedPacks: packs }).strict(),
+]);
