@@ -4,6 +4,7 @@ import type { PatientAccess, AssignmentCandidate, PatientAccessEvent } from '@cl
 import type { ClinicTransaction } from '../../database.js';
 
 import { clinicalEligible } from './clinical-access.policy.js';
+import { HistoricalRepository } from './historical.repository.js';
 export class PatientAccessRepository {
   constructor(
     private readonly tx: ClinicTransaction,
@@ -82,6 +83,7 @@ export class PatientAccessRepository {
     });
     const names = new Map(accounts.map((account) => [account.id, account.displayName]));
     return rows.map((r) => ({
+      id: r.id,
       actorId: r.actorId,
       accountId: r.accountId,
       actorDisplayName: names.get(r.actorId)!,
@@ -100,11 +102,15 @@ export class PatientAccessRepository {
       accountId: string;
       kind?: 'assigned' | 'shared';
     },
-    action: 'share' | 'remove',
+    action: 'share' | 'remove' | 'historical' | 'revoke',
     now: number,
+    removalId?: string,
   ) {
+    // Preserve durable share/remove retry hashes from before historical grants.
+    const payload:unknown[]=[patientId,data.accountId,data.revision,action,data.kind ?? null];
+    if(action==='historical') payload.push(removalId ?? null);
     const hash = createHash('sha256')
-      .update(JSON.stringify([patientId, data.accountId, data.revision, action, data.kind ?? null]))
+      .update(JSON.stringify(payload))
       .digest('hex');
     const old = await this.tx.patientAccessHistory.findUnique({
       where: {
@@ -117,7 +123,7 @@ export class PatientAccessRepository {
     if (old) {
       if (old.actorId !== actorId || old.payloadHash !== hash)
         throw new AppError(409, 'Commande déjà utilisée.');
-      return old.snapshot as unknown as PatientAccess;
+      return {receipt:old.snapshot as unknown as PatientAccess,removal:null};
     }
     const current = await this.get(patientId);
     if (current.revision !== data.revision)
@@ -130,6 +136,21 @@ export class PatientAccessRepository {
       throw new AppError(403, 'Compte non éligible aux soins.');
     if (action === 'remove' && !(await this.active(patientId, data.accountId)))
       throw new AppError(409, 'Accès déjà retiré.');
+    const historical = new HistoricalRepository(this.tx,this.clinicId);
+    const eventId = crypto.randomUUID();
+    if(action==='historical') {
+      if(target.kind!=='doctor' || target.disabled || await this.active(patientId,data.accountId))
+        throw new AppError(403,'Ancien médecin sans accès actif requis.');
+      const removal=removalId && await historical.removal(patientId,data.accountId,removalId);
+      const last=await this.tx.patientAccessHistory.findMany({where:{clinicId:this.clinicId,patientId,accountId:data.accountId,action:{in:['share','remove','revoke']}},orderBy:{at:'desc'}});
+      const latest=last.sort((a,b)=>(b.snapshot as unknown as PatientAccess).revision-(a.snapshot as unknown as PatientAccess).revision)[0];
+      if(!removal || latest?.id!==removalId || latest.action!=='remove')
+        throw new AppError(409,'Retrait courant avec instantané conservé requis.');
+      await historical.grant(patientId,data.accountId,removalId!);
+    } else {
+      await historical.revoke(patientId,data.accountId);
+    }
+    if(action!=='historical') {
     await this.tx.patientGrant.upsert({
       where: {
         clinicId_patientId_accountId: {
@@ -150,6 +171,7 @@ export class PatientAccessRepository {
         ...(data.kind ? { kind: data.kind } : {}),
       },
     });
+    }
     await this.tx.patientAccessState.upsert({
       where: { clinicId_patientId: { clinicId: this.clinicId, patientId } },
       create: { clinicId: this.clinicId, patientId, revision: 1 },
@@ -158,6 +180,7 @@ export class PatientAccessRepository {
     const result = await this.get(patientId);
     await this.tx.patientAccessHistory.create({
       data: {
+        id: eventId,
         clinicId: this.clinicId,
         patientId,
         actorId,
@@ -169,6 +192,6 @@ export class PatientAccessRepository {
         snapshot: result,
       },
     });
-    return result;
+    return {receipt:result,removal:action==='remove' && target.kind==='doctor'?{id:eventId,cutoff:new Date(now).toISOString()}:null};
   }
 }

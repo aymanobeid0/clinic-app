@@ -231,6 +231,7 @@ it('explicit multi-doctor sharing, staff grants, lost responses and removals pre
     'actorDisplayName',
     'actorId',
     'at',
+    'id',
     'snapshot',
   ]);
   expect(history.map((h: { action: string }) => h.action)).toEqual([

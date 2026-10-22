@@ -262,6 +262,7 @@ export type AssignmentCandidate = {
   kind: 'doctor' | 'staff';
 };
 export type PatientAccessEvent = {
+  id: string;
   actorId: string;
   accountId: string;
   actorDisplayName: string;
@@ -269,6 +270,31 @@ export type PatientAccessEvent = {
   action: string;
   at: string;
   snapshot: PatientAccess;
+};
+
+export const historicalGrantSchema = z.object({
+  commandId: z.uuid(), revision: z.number().int().nonnegative(),
+  accountId: z.uuid(), removalId: z.uuid(),
+}).strict();
+export const revokePatientSchema = z.object({
+  commandId: z.uuid(), revision: z.number().int().nonnegative(), accountId: z.uuid(),
+}).strict();
+export type HistoricalPlan = Pick<TreatmentVersion,'id'|'patientId'|'revision'|'title'|'status'|'notes'|'cancellation'|'authorId'|'authorName'|'recordedAt'> & {
+  evidence?:PlanEvidence;
+  acceptance?:PlanAcceptance;
+  items:Pick<TreatmentItem,'id'|'procedureId'|'catalogRevision'|'name'|'durationMinutes'|'scope'|'teeth'|'chartCategory'>[];
+};
+export type HistoricalSnapshot = {
+  patient: Patient;
+  cutoff: string;
+  clinical: {kind:string; versions:ClinicalVersion<ClinicalContent | VisitNoteContent | PrescriptionContent>[]}[];
+  plans: HistoricalPlan[];
+  starts:Pick<ProcedureStart,'id'|'patientId'|'planId'|'itemId'|'visitId'|'acceptedRevision'|'performedBy'|'performedByName'|'at'>[];
+  visits: Visit[];
+  completions: ProcedureCompletion[];
+  financial: BillingWorkspace;
+  invoices: Invoice[];
+  attachments: AttachmentVersion[];
 };
 
 export const appointmentStatusSchema = z.enum([
@@ -1136,3 +1162,4 @@ export type FinancialCorrection = {
   reversedSettlementId?: string;
   planId?: string;
 };
+import type { AttachmentVersion } from './attachments.js';

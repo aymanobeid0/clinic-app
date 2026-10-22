@@ -17,7 +17,7 @@ export function createFileRoutes(
   store?: PrivateFileStore,
 ) {
   return filesRoutes(
-    new FilesController(new FilesService(identity, updates, now, store)),
+    new FilesController(new FilesService(identity, updates, now, store),updates,now),
   );
 }
 
@@ -41,4 +41,7 @@ export async function acceptanceAttachment(
     throw new AppError(403, "Preuve clinique ou mixte autorisée requise.");
   await r.version(patientId, reference.id, reference.revision);
   return reference;
+}
+export async function captureAttachments(tx:import('../../database.js').ClinicTransaction,clinicId:string,patientId:string) {
+  return new FilesRepository(tx,clinicId).historical(patientId);
 }

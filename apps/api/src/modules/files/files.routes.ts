@@ -16,6 +16,7 @@ export function filesRoutes(controller: FilesController) {
     next();
   };
   router.get(base, controller.list);
+  router.get('/historical/:patientId/attachments/:attachmentId/versions/:revision/content',controller.historical);
   router.get(base + "/:attachmentId/history", controller.history);
   router.get(
     base + "/:attachmentId/versions/:revision/content",

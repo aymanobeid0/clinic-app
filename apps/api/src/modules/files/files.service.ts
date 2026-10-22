@@ -16,6 +16,23 @@ type Upload = z.infer<typeof attachmentUploadSchema>;
 const digest = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
 export class FilesService {
+  async authorizeHistoricalContent(actor:Actor|undefined,patientId:string,id:string,revision:number) {
+    return this.identity.withHistoricalFile(actor,patientId,id,revision,async()=>{});
+  }
+  async historicalContent(actor:Actor|undefined,patientId:string,id:string,revision:number) {
+    const snapshot=await this.identity.historicalSnapshot(actor,patientId);
+    const permitted=snapshot.attachments.find(v=>v.id===id && v.revision===revision);
+    if(!permitted) throw new AppError(404,'Version historique introuvable.');
+    // Resolve only an immutable, authorized clinical version; no current metadata.
+    const result=await this.identity.withHistoricalFile(actor,patientId,id,revision,async(c,tx)=>{
+      const row=await new FilesRepository(tx,c.clinicId).version(patientId,id,revision);
+      let bytes:Buffer;
+      try { bytes=await this.storage().read(row.key); } catch {throw new AppError(503,'Fichier temporairement indisponible.');}
+      if(bytes.length!==permitted.size || createHash('sha256').update(bytes).digest('hex')!==permitted.sha256) throw new AppError(503,'Fichier temporairement indisponible.');
+      return {version:permitted,bytes};
+    });
+    return result;
+  }
   constructor(
     readonly identity: IdentityAccess,
     readonly updates: ClinicUpdates,

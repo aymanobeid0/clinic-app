@@ -1,4 +1,5 @@
 import type { AccountController } from './account.controller.js';
+import type { HistoricalController } from './historical.controller.js';
 import type { PatientAccessController } from './patient-access.controller.js';
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
@@ -9,6 +10,7 @@ export function identityRoutes(
   controller: IdentityController,
   accounts: AccountController,
   access: PatientAccessController,
+  historical: HistoricalController,
 ) {
   const router = Router();
   const loginLimit = rateLimit({
@@ -49,6 +51,9 @@ export function identityRoutes(
   router.post('/recovery/request', recoveryLimit, controller.requestRecovery);
   router.post('/recovery/email', recoveryLimit, controller.recoverEmail);
   router.get('/identity', controller.identity);
+  router.get('/historical', historical.patients);
+  router.get('/historical/:id', historical.snapshot);
+  router.get('/historical/:id/events', historical.events);
   router.get('/clinic', controller.clinic);
   router.post('/onboarding/password', controller.replacePassword);
   router.post('/onboarding/email', controller.requestVerification);
@@ -62,6 +67,8 @@ export function identityRoutes(
   router.get('/patient-access/:id/history', access.history);
   router.post('/patient-access/:id/share', access.share);
   router.post('/patient-access/:id/remove', access.remove);
+  router.post('/patient-access/:id/historical', access.historical);
+  router.post('/patient-access/:id/revoke', access.revoke);
   router.post('/accounts', accounts.create);
   router.post('/accounts/:id/username', accounts.rename);
   router.post('/accounts/:id/permissions', accounts.permissions);

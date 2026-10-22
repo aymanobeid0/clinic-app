@@ -1,4 +1,5 @@
 import { AccountService } from './account.service.js';
+import { HistoricalController } from './historical.controller.js';
 import { PatientAccessService } from './patient-access.service.js';
 import { PatientAccessController } from './patient-access.controller.js';
 import { ClinicUpdates } from '../../clinic-updates.js';
@@ -17,6 +18,8 @@ export type { Actor } from './identity.service.js';
 export function createIdentityAccess(database: Database, now: () => number) {
   const service = new IdentityService(new IdentityRepository(database), now, '');
   return {
+    withHistoricalFile: service.withHistoricalFile.bind(service),
+    historicalSnapshot: service.historicalSnapshot.bind(service),
     withAttachmentPermission: service.withAttachmentPermission.bind(service),
     withFinancialPermission: service.withFinancialPermission.bind(service),
     withMedicationReference: service.withMedicationReference.bind(service),
@@ -58,6 +61,7 @@ export function createIdentityRoutes(options: Options) {
       updates,
       options.now,
     ),
+    new HistoricalController(service,updates,options.now),
   );
 }
 

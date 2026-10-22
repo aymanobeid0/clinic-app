@@ -91,3 +91,19 @@ export async function completedChartWork(
     ];
   });
 }
+export async function captureTreatment(tx:import('../../database.js').ClinicTransaction,clinicId:string,patientId:string,attachments:import('@clinic/contracts').AttachmentVersion[]) {
+ const plans=await new TreatmentRepository(tx,clinicId).versions(patientId);
+ const state=await new VisitRepository(tx,clinicId).state(patientId);
+ return {
+  plans:plans.map(p=>({id:p.id,patientId:p.patientId,revision:p.revision,title:p.title,status:p.status,notes:p.notes,cancellation:p.cancellation,recordedAt:p.recordedAt,authorId:p.authorId,authorName:p.authorName,
+    evidence:p.evidence?safeEvidence(p.evidence,attachments):undefined,
+    acceptance:p.acceptance?safeEvidence(p.acceptance,attachments):undefined,
+    items:p.items.map(i=>({id:i.id,procedureId:i.procedureId,catalogRevision:i.catalogRevision,name:i.name,durationMinutes:i.durationMinutes,scope:i.scope,teeth:i.teeth,chartCategory:i.chartCategory}))})),
+  starts:state.starts.map(s=>({id:s.id,patientId:s.patientId,planId:s.planId,itemId:s.itemId,visitId:s.visitId,acceptedRevision:s.acceptedRevision,performedBy:s.performedBy,performedByName:s.performedByName,at:s.at})),
+  visits:state.visits,completions:state.completions,
+ };
+}
+function safeEvidence<T extends import('@clinic/contracts').PlanEvidence>(evidence:T,attachments:import('@clinic/contracts').AttachmentVersion[]):T {
+  const {attachment,...rest}=evidence;
+  return {...rest,...(attachment && attachments.some(v=>v.id===attachment.id && v.revision===attachment.revision)?{attachment}:{})} as T;
+}
