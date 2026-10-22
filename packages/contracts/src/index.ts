@@ -1163,3 +1163,5 @@ export type FinancialCorrection = {
   planId?: string;
 };
 import type { AttachmentVersion } from './attachments.js';
+
+export * from './inventory.js';

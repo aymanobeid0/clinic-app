@@ -421,3 +421,52 @@ model AttachmentCommand {
  receipt Json
  @@id([clinicId,commandId])
 }
+
+model InventoryItem {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ revision Int @default(0)
+ name String
+ active Boolean
+ lowStockThreshold Int
+ expiryRequired Boolean
+ @@unique([clinicId,id])
+}
+model InventorySupplier {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ revision Int @default(0)
+ name String
+ active Boolean
+ @@unique([clinicId,id])
+}
+model InventorySettings {
+ clinicId String @id @db.Uuid
+ revision Int @default(0)
+ expiryWarningDays Int @default(30)
+}
+model InventoryBatch {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ itemId String @db.Uuid
+ supplierId String @db.Uuid
+ itemName String
+ supplierName String
+ batchNumber String
+ quantityPacks Int
+ totalCostMinor BigInt
+ currency String
+ expiresOn String?
+ receivedAt DateTime @db.Timestamptz(6)
+ actorId String @db.Uuid
+ @@unique([clinicId,itemId,supplierId,batchNumber])
+ @@unique([clinicId,id])
+}
+model InventoryCommand {
+ clinicId String @db.Uuid
+ commandId String @db.Uuid
+ actorId String @db.Uuid
+ payloadHash String
+ receipt Json
+ @@id([clinicId,commandId])
+}
