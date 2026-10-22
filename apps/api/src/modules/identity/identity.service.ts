@@ -355,6 +355,24 @@ export class IdentityService {
     );
   }
 
+  withReportScope<T>(
+    actor: Actor | undefined,
+    category: 'operational' | 'financial',
+    action: (context: {clinicId:string;accountId:string;patientIds:string[] | null;ownWork:boolean;clinicalPatientIds:string[];financialClinical:boolean;permissions:readonly string[]}, tx: import('../../database.js').ClinicTransaction) => Promise<T>,
+  ) {
+    return this.withReadyAccount(actor, (account, transaction) => transaction.databaseTransaction(async tx => {
+      if (!(category === 'financial' && account.isManager) && !account.permissions.includes(`reports.${category}`))
+        throw new AppError(403, 'Autorisation de rapport requise.');
+      if (category === 'financial' && !account.isManager && !account.permissions.includes('billing.read'))
+        throw new AppError(403, 'Lecture financière requise.');
+      const ids = await new PatientAccessRepository(tx, account.clinicId).activePatientIds(account.id);
+      return action({clinicId:account.clinicId,accountId:account.id,
+        patientIds:!account.isManager && account.kind === 'doctor' ? ids : null,
+        ownWork:!account.isManager && account.kind === 'doctor',
+        clinicalPatientIds:clinicalEligible(account,'clinical.read') ? ids : [],
+        financialClinical:account.isManager,permissions:account.permissions}, tx);
+    }));
+  }
   withFinancialPermission<T>(
     actor: Actor | undefined,
     patientId: string,

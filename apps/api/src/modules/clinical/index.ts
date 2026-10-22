@@ -40,3 +40,5 @@ export function createClinicalRoutes(
   return r;
 }
 export { captureClinical } from './historical.js';
+
+export { pendingNoteTasks } from './pending-note-tasks.js';
