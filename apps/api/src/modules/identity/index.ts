@@ -21,6 +21,7 @@ export function createIdentityAccess(database: Database, now: () => number) {
     withHistoricalFile: service.withHistoricalFile.bind(service),
     historicalSnapshot: service.historicalSnapshot.bind(service),
     withAttachmentPermission: service.withAttachmentPermission.bind(service),
+    withReportScope: service.withReportScope.bind(service),
     withFinancialPermission: service.withFinancialPermission.bind(service),
     withMedicationReference: service.withMedicationReference.bind(service),
     withCatalogRead: service.withCatalogRead.bind(service),

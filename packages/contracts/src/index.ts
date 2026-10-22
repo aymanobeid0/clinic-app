@@ -1165,3 +1165,5 @@ export type FinancialCorrection = {
 import type { AttachmentVersion } from './attachments.js';
 
 export * from './inventory.js';
+
+export * from './reporting.js';

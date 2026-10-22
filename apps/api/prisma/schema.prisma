@@ -484,3 +484,19 @@ model InventoryMovement {
  actorId String @db.Uuid
  @@unique([clinicId,batchId,revision])
 }
+
+model FollowUpEvent {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ taskId String @db.Uuid
+ patientId String @db.Uuid
+ revision Int
+ actorId String @db.Uuid
+ commandId String @db.Uuid
+ payloadHash String
+ at DateTime @db.Timestamptz(6)
+ snapshot Json
+ @@unique([clinicId,commandId])
+ @@unique([clinicId,taskId,revision])
+ @@index([clinicId,patientId])
+}

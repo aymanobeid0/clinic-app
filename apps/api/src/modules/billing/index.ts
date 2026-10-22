@@ -26,3 +26,5 @@ export { projectBilling as captureBilling } from './billing.projection.js';
 export async function captureOwnInvoices(tx:ClinicTransaction,clinicId:string,patientId:string,accountId:string) {
   return (await new BillingRepository(tx,clinicId).invoices(patientId)).filter(v=>v.items.length>0 && v.items.every(i=>i.performedBy===accountId));
 }
+
+export { reportPatientBilling } from './billing.report.js';

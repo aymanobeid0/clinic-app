@@ -16,3 +16,5 @@ export function createInventoryRoutes(
     ),
   );
 }
+
+export { projectInventory as reportInventory } from './inventory.projection.js';
