@@ -64,6 +64,7 @@ export type InventoryReceipt = {
   actorId: string;
 };
 export type InventoryProjection = {
+  currencies: { code: string; precision: number }[];
   asOfDate: string;
   settings: InventorySettings;
   suppliers: InventorySupplier[];

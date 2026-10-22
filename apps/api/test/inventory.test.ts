@@ -746,3 +746,25 @@ it("inventory SSE invalidates without stock details and closes when read permiss
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });
+it("inventory readers can discover manager-enabled receiving currencies without clinical or catalog authority", async () => {
+  const m = await receiver();
+  const reader = await employee(m, ["inventory.read"]);
+  expect((await reader.browser.get("/api/catalog/currencies")).status).toBe(
+    403,
+  );
+  const projection = await reader.browser.get("/api/inventory");
+  expect(projection.status).toBe(200);
+  expect(projection.body.currencies).toEqual([{ code: "MRU", precision: 2 }]);
+  expect(
+    (
+      await m.post("/catalog/currencies", {
+        commandId: randomUUID(),
+        code: "JPY",
+      })
+    ).status,
+  ).toBe(200);
+  expect((await reader.browser.get("/api/inventory")).body.currencies).toEqual([
+    { code: "JPY", precision: 0 },
+    { code: "MRU", precision: 2 },
+  ]);
+});

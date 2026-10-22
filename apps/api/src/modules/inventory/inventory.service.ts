@@ -69,6 +69,7 @@ export class InventoryService {
         };
       });
       return {
+        currencies: await r.currencies(),
         asOfDate,
         settings,
         items,

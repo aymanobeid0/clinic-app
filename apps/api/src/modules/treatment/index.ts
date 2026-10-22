@@ -112,3 +112,7 @@ function safeEvidence<T extends import('@clinic/contracts').PlanEvidence>(eviden
 export function enabledClinicCurrency(tx: import('../../database.js').ClinicTransaction, clinicId: string, code: string) {
   return new TreatmentRepository(tx,clinicId).enabled(code);
 }
+
+export function enabledClinicCurrencies(tx: import('../../database.js').ClinicTransaction, clinicId: string) {
+  return new TreatmentRepository(tx,clinicId).currencies();
+}

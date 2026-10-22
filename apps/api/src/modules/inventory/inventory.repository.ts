@@ -1,4 +1,7 @@
-import { enabledClinicCurrency } from "../treatment/index.js";
+import {
+  enabledClinicCurrency,
+  enabledClinicCurrencies,
+} from "../treatment/index.js";
 import { createHash, randomUUID } from "node:crypto";
 import type {
   InventoryReceipt,
@@ -44,6 +47,9 @@ export class InventoryRepository {
     private readonly actorId: string,
   ) {}
 
+  currencies() {
+    return enabledClinicCurrencies(this.tx, this.clinicId);
+  }
   currency(code: string) {
     return enabledClinicCurrency(this.tx, this.clinicId, code);
   }
