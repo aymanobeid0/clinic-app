@@ -107,3 +107,12 @@ function safeEvidence<T extends import('@clinic/contracts').PlanEvidence>(eviden
   const {attachment,...rest}=evidence;
   return {...rest,...(attachment && attachments.some(v=>v.id===attachment.id && v.revision===attachment.revision)?{attachment}:{})} as T;
 }
+
+// Shared monetary reference; callers keep their own authorization and workflow.
+export function enabledClinicCurrency(tx: import('../../database.js').ClinicTransaction, clinicId: string, code: string) {
+  return new TreatmentRepository(tx,clinicId).enabled(code);
+}
+
+export function enabledClinicCurrencies(tx: import('../../database.js').ClinicTransaction, clinicId: string) {
+  return new TreatmentRepository(tx,clinicId).currencies();
+}

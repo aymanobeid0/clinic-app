@@ -1,3 +1,4 @@
+import { createInventoryRoutes } from './modules/inventory/index.js';
 import {createTreatmentRoutes} from './modules/treatment/index.js';
 import { createFileRoutes, type PrivateFileStore } from './modules/files/index.js';
 import { createBillingRoutes } from './modules/billing/index.js';
@@ -67,6 +68,7 @@ export function createApplication(options: Options) {
   app.use('/api',createTreatmentRoutes(createIdentityAccess(config.database,config.now),config.updates,config.now));
   app.use('/api', createBillingRoutes(createIdentityAccess(config.database, config.now), config.updates, config.now));
   app.use('/api',createFileRoutes(createIdentityAccess(config.database,config.now),config.updates,config.now,config.attachmentStore));
+  app.use('/api',createInventoryRoutes(createIdentityAccess(config.database,config.now),config.updates,config.now));
   installErrorHandling(app);
   return app;
 }
