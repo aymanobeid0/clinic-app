@@ -7,6 +7,8 @@ import {
   inventorySupplierUpdateSchema,
   inventorySettingsSchema,
   inventoryReceiveSchema,
+  inventoryConsumeSchema,
+  inventoryCorrectionSchema,
 } from "@clinic/contracts";
 import type { InventoryService } from "./inventory.service.js";
 import type { ClinicUpdates } from "../../clinic-updates.js";
@@ -68,6 +70,25 @@ export class InventoryController {
         inventoryReceiveSchema.parse(req.body),
       ),
     );
+  };
+  correct: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.correct(
+        req.session.actor,
+        inventoryCorrectionSchema.parse(req.body),
+      ),
+    );
+  };
+  consume: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.consume(
+        req.session.actor,
+        inventoryConsumeSchema.parse(req.body),
+      ),
+    );
+  };
+  movements: RequestHandler = async (req, res) => {
+    res.json(await this.service.movements(req.session.actor));
   };
   changeSettings: RequestHandler = async (req, res) => {
     res.json(

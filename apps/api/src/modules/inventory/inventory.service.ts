@@ -6,6 +6,8 @@ import type {
   inventorySupplierUpdateSchema,
   inventorySettingsSchema,
   inventoryReceiveSchema,
+  inventoryConsumeSchema,
+  inventoryCorrectionSchema,
   InventoryProjection,
 } from "@clinic/contracts";
 import type { Actor, IdentityAccess } from "../identity/index.js";
@@ -48,16 +50,21 @@ export class InventoryService {
       const end = new Date(asOfDate + "T00:00:00.000Z");
       end.setUTCDate(end.getUTCDate() + settings.expiryWarningDays);
       const warningEnd = end.toISOString().slice(0, 10);
-      const batches = (await r.receipts()).map((b) => {
-        const expired = b.expiresOn !== null && b.expiresOn < asOfDate;
-        return {
-          ...b,
-          expired,
-          expiring:
-            b.expiresOn !== null && !expired && b.expiresOn <= warningEnd,
-          availablePacks: expired ? 0 : b.quantityPacks,
-        };
-      });
+      const batches = await Promise.all(
+        (await r.receipts()).map(async (b) => {
+          const stock = await r.stock(b.id, b.quantityPacks);
+          const expired = b.expiresOn !== null && b.expiresOn < asOfDate;
+          return {
+            ...b,
+            expired,
+            expiring:
+              b.expiresOn !== null && !expired && b.expiresOn <= warningEnd,
+            availablePacks: expired ? 0 : stock.balance,
+            remainingPacks: stock.balance,
+            stockRevision: stock.revision,
+          };
+        }),
+      );
       const items = (await r.items()).map((i) => {
         const availablePacks = batches
           .filter((b) => b.itemId === i.id)
@@ -82,7 +89,7 @@ export class InventoryService {
     actor: Actor | undefined,
     commandId: string,
     payload: unknown,
-    manager: boolean,
+    manager: boolean | "inventory.consume" | "inventory.adjust",
     action: (r: InventoryRepository) => Promise<T>,
   ): Promise<T> {
     const perform = async (
@@ -98,9 +105,14 @@ export class InventoryService {
       await r.save(commandId, replay.hash, value);
       return { clinicId: c.clinicId, value };
     };
-    const result = manager
-      ? await this.identity.withManager(actor, perform)
-      : await this.identity.withPermission(actor, "inventory.receive", perform);
+    const result =
+      manager === true
+        ? await this.identity.withManager(actor, perform)
+        : await this.identity.withPermission(
+            actor,
+            manager || "inventory.receive",
+            perform,
+          );
     this.updates.publish(result.clinicId, "inventory");
     return result.value;
   }
@@ -218,6 +230,69 @@ export class InventoryService {
           itemName: item.name,
           supplierName: supplier.name,
           receivedAt: new Date(this.now()).toISOString(),
+        });
+      },
+    );
+  }
+  movements(actor: Actor | undefined) {
+    return this.run(actor, async (r) => ({ movements: await r.movements() }));
+  }
+  consume(
+    actor: Actor | undefined,
+    data: z.infer<typeof inventoryConsumeSchema>,
+  ) {
+    return this.mutate(
+      actor,
+      data.commandId,
+      ["consume", data],
+      "inventory.consume",
+      async (r) => {
+        const batch = await r.batch(data.batchId);
+        const stock = await r.stock(batch.id, batch.quantityPacks);
+        if (
+          batch.expiresOn !== null &&
+          batch.expiresOn < new Date(this.now()).toISOString().slice(0, 10)
+        )
+          throw new AppError(409, "Lot périmé : consommation interdite.");
+        if (stock.balance < 1) throw new AppError(409, "Stock insuffisant.");
+        return r.movement({
+          batchId: batch.id,
+          kind: "consume",
+          deltaPacks: -1,
+          balancePacks: stock.balance - 1,
+          revision: stock.revision + 1,
+          reason: null,
+          occurredAt: new Date(this.now()).toISOString(),
+        });
+      },
+    );
+  }
+  correct(
+    actor: Actor | undefined,
+    data: z.infer<typeof inventoryCorrectionSchema>,
+  ) {
+    return this.mutate(
+      actor,
+      data.commandId,
+      ["correct", data],
+      "inventory.adjust",
+      async (r) => {
+        const batch = await r.batch(data.batchId);
+        const stock = await r.stock(batch.id, batch.quantityPacks);
+        this.checkRevision(stock.revision, data.revision);
+        const balance =
+          data.kind === "count"
+            ? data.countedPacks
+            : stock.balance - data.quantityPacks;
+        if (balance < 0) throw new AppError(409, "Stock insuffisant.");
+        return r.movement({
+          batchId: batch.id,
+          kind: data.kind,
+          deltaPacks: balance - stock.balance,
+          balancePacks: balance,
+          revision: stock.revision + 1,
+          reason: data.reason,
+          occurredAt: new Date(this.now()).toISOString(),
         });
       },
     );

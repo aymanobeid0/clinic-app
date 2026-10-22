@@ -470,3 +470,17 @@ model InventoryCommand {
  receipt Json
  @@id([clinicId,commandId])
 }
+
+model InventoryMovement {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ batchId String @db.Uuid
+ kind String
+ deltaPacks Int
+ balancePacks Int
+ revision Int
+ reason String?
+ occurredAt DateTime @db.Timestamptz(6)
+ actorId String @db.Uuid
+ @@unique([clinicId,batchId,revision])
+}
