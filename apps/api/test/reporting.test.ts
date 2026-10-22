@@ -1024,3 +1024,110 @@ it("financial corrections reconcile refunds and reversals separately and never c
     },
   ]);
 });
+
+it("doctor reports reconcile their allocation when a manager reverses a mixed-doctor receipt", async () => {
+  const s = await mixedCorrectionScenario();
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["billing.read", "reports.financial"],
+  });
+  const payment = await s.m.post(s.base + "/settlements", {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: s.methodId,
+    newMoney: "100",
+    deposit: "0",
+    allocations: [
+      { chargeId: s.own.id, newMoney: "30", credit: "0" },
+      { chargeId: s.foreign.id, newMoney: "70", credit: "0" },
+    ],
+  });
+  expect(payment.status).toBe(200);
+  expect(
+    (
+      await s.m.post(s.base + "/reversals", {
+        commandId: randomUUID(),
+        settlementId: payment.body.id,
+        reason: "Mistaken mixed receipt",
+      })
+    ).status,
+  ).toBe(200);
+  const r = await s.doctor.browser.get(
+    "/api/reports/financial?date=" + new Date(time).toISOString().slice(0, 10),
+  );
+  expect(r.status).toBe(200);
+  expect(r.body.totals).toMatchObject([
+    {
+      currency: "MRU",
+      newMoneyMinor: "3000",
+      reversedMoneyMinor: "3000",
+      dueMinor: "10000",
+    },
+  ]);
+  expect(JSON.stringify(r.body)).not.toContain(s.foreign.id);
+});
+
+it("report-only SSE delivers neutral pending-note invalidations and closes after capability revocation", async () => {
+  const s = await visitScenario();
+  await s.doctor.post(s.path, s.start);
+  await s.doctor.post(s.path + "/actions", {
+    commandId: randomUUID(),
+    id: s.start.id,
+    revision: 1,
+    action: "end",
+  });
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: ["reports.operational", "clinical.read", "notes.draft"],
+  });
+  const login = await s.doctor.signIn("Fictional-employee-pass-2");
+  const cookie = (login.headers["set-cookie"] as unknown as string[])
+    .map((v) => v.split(";")[0])
+    .join("; ");
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const port = (server.address() as { port: number }).port;
+  const abort = new AbortController();
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:${port}/api/reports/events?category=operational`,
+      { headers: { Cookie: cookie }, signal: abort.signal },
+    );
+    expect(response.status).toBe(200);
+    const reader = response.body!.getReader();
+    await reader.read();
+    await s.doctor.post(
+      "/clinical/" + s.patient.id + "/notes/" + s.start.id + "/draft",
+      { commandId: randomUUID(), revision: 0, text: "Private note contents" },
+    );
+    let signal = "";
+    for (let i = 0; i < 5 && !signal.includes("event: invalidate"); i++)
+      signal += new TextDecoder().decode((await reader.read()).value);
+    expect(signal).toContain("event: invalidate");
+    expect(signal).not.toContain(s.patient.id);
+    expect(signal).not.toContain("Private");
+    expect(signal).toContain("data: {}");
+    await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+      currentPassword: "Fictional-manager-pass-2",
+      permissions: ["clinical.read", "notes.draft"],
+    });
+    let closed = false;
+    for (let i = 0; i < 5; i++)
+      if ((await reader.read()).done) {
+        closed = true;
+        break;
+      }
+    expect(closed).toBe(true);
+  } finally {
+    abort.abort();
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+  expect(
+    (await s.doctor.browser.get("/api/reports/events?category=operational"))
+      .status,
+  ).toBe(403);
+  expect(
+    (await request(app).get("/api/reports/events?category=financial")).status,
+  ).toBe(401);
+});

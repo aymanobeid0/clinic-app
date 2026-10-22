@@ -6,8 +6,31 @@ import {
   reportDateSchema,
 } from "@clinic/contracts";
 import type { ReportingService } from "./reporting.service.js";
+import { authorizedEvents } from "../../middleware/authorized-events.js";
+import type { ClinicUpdates } from "../../clinic-updates.js";
 export class ReportingController {
-  constructor(readonly service: ReportingService) {}
+  constructor(
+    readonly service: ReportingService,
+    readonly updates: ClinicUpdates,
+    readonly now: () => number,
+  ) {}
+  events: RequestHandler = (req, res, next) => {
+    const { category } = z
+      .object({ category: z.enum(["operational", "financial"]) })
+      .strict()
+      .parse(req.query);
+    let scopes = new Set<string>();
+    return authorizedEvents(
+      async (actor) => {
+        const context = await this.service.authorizeEvents(actor, category);
+        scopes = new Set(context.scopes);
+        return context.clinicId;
+      },
+      this.updates,
+      this.now,
+      (changed) => scopes.has(changed),
+    )(req, res, next);
+  };
   tasks: RequestHandler = async (req, res) => {
     res.json(await this.service.tasks(req.session.actor));
   };

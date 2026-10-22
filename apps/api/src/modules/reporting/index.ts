@@ -9,6 +9,10 @@ export function createReportingRoutes(
   updates: ClinicUpdates,
 ) {
   return reportingRoutes(
-    new ReportingController(new ReportingService(identity, now, updates)),
+    new ReportingController(
+      new ReportingService(identity, now, updates),
+      updates,
+      now,
+    ),
   );
 }

@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { ReportingController } from "./reporting.controller.js";
 export function reportingRoutes(c: ReportingController) {
   const router = Router();
+  router.get("/reports/events", c.events);
   router.get("/follow-ups", c.tasks);
   router.post("/follow-ups", c.createTask);
   router.post("/follow-ups/:id", c.updateTask);

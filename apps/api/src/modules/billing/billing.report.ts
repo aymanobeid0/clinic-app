@@ -1,6 +1,7 @@
 import type { ClinicTransaction } from "../../database.js";
 import { BillingRepository } from "./billing.repository.js";
 import { projectBilling } from "./billing.projection.js";
+import type { FinancialCorrection } from "@clinic/contracts";
 // Reporting uses billing's authoritative reconciliation; never infers debt from invoices.
 export async function reportPatientBilling(
   tx: ClinicTransaction,
@@ -24,6 +25,11 @@ export async function reportPatientBilling(
   const invoices = (await repository.invoices(patientId)).filter(
     (i) => !c.ownWork || i.items.every((it) => it.performedBy === c.accountId),
   );
+  // Mixed corrections can be hidden as documents while their attributable
+  // amounts still belong in a doctor's report. Never expose their raw history.
+  const reportCorrections = entries
+    .filter((e) => e.kind === "correction")
+    .map((e) => e.snapshot as unknown as FinancialCorrection);
   const onDay = (at: string) => at.slice(0, 10) === date;
   const sum = (values: string[]) =>
     values.reduce((n, v) => n + BigInt(v), 0n).toString();
@@ -31,7 +37,7 @@ export async function reportPatientBilling(
     const payments = settlements.filter(
       (s) => s.currency === t.currency && onDay(s.at),
     );
-    const corrections = state.corrections.filter(
+    const corrections = reportCorrections.filter(
       (v) => v.currency === t.currency && onDay(v.at),
     );
     const ownAllocations = payments.flatMap((s) =>
@@ -73,7 +79,16 @@ export async function reportPatientBilling(
       ),
       refundMinor: sum(
         corrections
-          .filter((v) => v.kind === "refund")
+          .filter(
+            (v) =>
+              v.kind === "refund" &&
+              (!c.ownWork ||
+                state.creditSources.some(
+                  (source) =>
+                    source.id === v.sourceId &&
+                    source.performedBy === c.accountId,
+                )),
+          )
           .map((v) => v.amountMinor ?? "0"),
       ),
       reversedMoneyMinor: sum(

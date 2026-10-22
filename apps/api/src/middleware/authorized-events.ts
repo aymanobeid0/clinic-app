@@ -5,7 +5,7 @@ export function authorizedEvents(
   authorize: (actor: Actor | undefined) => Promise<string>,
   updates: ClinicUpdates,
   now: () => number,
-  scope?: string | Readonly<Record<string,string>>,
+  scope?: string | Readonly<Record<string,string>> | ((changedScope:string)=>boolean),
 ): RequestHandler {
   return async (req, res) => {
     const actor = req.session.actor;
@@ -58,7 +58,7 @@ export function authorizedEvents(
       }
     };
     const unsubscribe = updates.subscribe(clinicId, (changedScope) => {
-      if (!changedScope || changedScope === scope || typeof scope==='object' && changedScope in scope) void verify(true,changedScope&&typeof scope==='object'?scope[changedScope]:undefined);
+      if (!changedScope || changedScope === scope || typeof scope==='function' && scope(changedScope) || typeof scope==='object' && changedScope in scope) void verify(true,changedScope&&typeof scope==='object'?scope[changedScope]:undefined);
     });
     const timer = setInterval(() => {
       void verify(false);

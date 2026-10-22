@@ -22,6 +22,18 @@ export class ReportingService {
     readonly now: () => number,
     readonly updates: ClinicUpdates,
   ) {}
+  authorizeEvents(
+    actor: Actor | undefined,
+    category: "operational" | "financial",
+  ) {
+    return this.identity.withReportScope(actor, category, async (c) => ({
+      clinicId: c.clinicId,
+      scopes:
+        category === "operational"
+          ? ["inventory", ...c.clinicalPatientIds.map((id) => `notes:${id}`)]
+          : [],
+    }));
+  }
   tasks(actor: Actor | undefined): Promise<FollowUpList> {
     return this.identity.withReportScope(
       actor,
