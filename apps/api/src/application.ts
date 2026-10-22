@@ -72,4 +72,3 @@ export function createApplication(options: Options) {
   installErrorHandling(app);
   return app;
 }
-

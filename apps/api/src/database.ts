@@ -40,4 +40,3 @@ export function openDatabase(connectionString: string) {
 }
 export type Database = ReturnType<typeof openDatabase>;
 export type ClinicTransaction = Prisma.TransactionClient;
-
