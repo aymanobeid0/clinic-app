@@ -1,0 +1,43 @@
+# Issue #51 independent review
+
+Date: 2026-10-23 (Africa/Bamako). One separate reviewer covers both Standards and Spec; no review fanout. Scope is backend/API evidence only. No frontend, application, schema or dependency edits made by the reviewer.
+
+## Comparison and skill checkpoint
+
+Owner selected `main`; builder pinned the fetched `origin/main` to `7b2c1affa3818a8d26ac3ef661cac9697e26fa45`. The local `main` name is stale (`a8b5ad6`), so it is not substituted for the selected fetched pin. Initial reviewed HEAD: `0c17ca76eef4c9307350f102a3c097d88c3be124`.
+
+- Confirmed resolved base and HEAD, nonempty `git diff 7b2c1affa3818a8d26ac3ef661cac9697e26fa45...HEAD`, and `git log 7b2c1affa3818a8d26ac3ef661cac9697e26fa45..HEAD --oneline`: `0c17ca7 docs: map backend acceptance evidence for #51`.
+- Fresh reads: `AGENTS.md`, `docs/agents/skill-integration.md`, `docs/agents/issue-tracker.md`; actual `D:/clinic-app/.agents/skills/code-review/SKILL.md`, including all twelve Fowler smell heuristics; actual `D:/clinic-app/.agents/skills/handoff/SKILL.md`. Applied the owner/repository override replacing parallel Standards/Spec agents with this one independent reviewer. Handoff destination override is tracked workspace plus established OS-temp mirror, maintained by builder.
+- Considered implementation/TDD workflows as builder responsibilities; reviewer reports rather than fixes. Frontend/design/browser skills excluded by explicit scope. No new discovery, specification, ticket decomposition or architectural redesign warranted.
+- Standards sources: above repository instructions, approved dependency proposal and application architecture, CONTEXT and recovery reconciliation. Product sources: live #51/#49/#1, approved identity, clinical, financial and file decisions; source #18–#27 current/reconciled and preserved criteria in builder's execution snapshots.
+
+## Standards
+
+No actionable Standards finding in the initial documentation diff. The report identifies exact runtime revision, distinguishes builder execution from independent inspection, preserves approved architecture, records scope and separates operational/UI gates. No application/frontend changes or speculative abstractions appear in the diff; Fowler heuristics yield no substantive finding in this evidence-only change. Independently ran `git diff --check` on the committed comparison: PASS.
+
+## Spec
+
+**P2 — finalized-record retention after patient archival lacks observable evidence.** Spec 001 story 59 requires “archived patients to retain finalized records”; scenario 17 explicitly requires verifying archived finalized history. The acceptance map assigns story 59 to `patients` and states archival is not deletion of clinical/financial history, but the existing archive test (`apps/api/test/patients.test.ts`, “contact edits reject stale versions, archive/reactivate retains identity and dated history with safe retries”) creates no finalized clinical/financial records and reactivates before checking personal history. Search of the suites finds archival only in patients/scheduling tests. Add bounded authenticated verification of retained finalized clinical/financial records across archive/reactivation at the approved HTTP seam, or explicitly leave this backend acceptance unpassed. Source inspection that archival only changes Patient status is useful but does not prove this required workflow.
+
+Initial disposition: **Standards 0; Spec 1 (P2), unresolved**. Full-suite/build ledger is visibly pending rather than falsely reported passed. Final review depends on the completed checks, resolution above and same-reviewer recheck of final ledger/handoff.
+
+### Same-reviewer source recheck — `d75f81b69e03da98595ac22dece1cd359dbe6158`
+
+Inspected the complete new authenticated HTTP scenario in `clinical.test.ts`. It confirms a doctor's finalized retained medical history with literal content/revision/attribution, documented MRU opening debt and an independently receipted deposit, then archives with identical replay and checks exact authorized clinical/financial/receipt output equality while archived and again after reactivation. Personal status is asserted at each stage; a non-doctor manager stays denied clinical reads. It uses the existing real-persistence application seam without runtime or frontend changes. No additional Standards or Spec defect found in the test diff. The updated map accurately describes this narrower concrete evidence, and the quota limitation is now explicit.
+
+The P2 is **resolved in source and independently executed**. The initial finding above is preserved as review provenance.
+
+### Independent execution — `d75f81b69e03da98595ac22dece1cd359dbe6158`
+
+Confirmed HEAD, then independently ran `npx vitest run apps/api/test/clinical.test.ts -t 'archiving preserves'`. Initial sandbox attempt failed before execution with `connect EACCES 127.0.0.1:55437` (all 12 skipped); supported escalated retry succeeded: **1 passed, 11 skipped, 4.90 seconds**, start 18:07:28 Africa/Bamako. The builder confirmed no concurrent database tests. This directly verifies the bounded archive scenario on the committed test revision; no independent full-suite rerun is claimed.
+
+Independently inspected the completed builder full-suite log: **235/235 tests, 18/18 files, 489.60 seconds**, start 17:58:37. Builder reports its initial launch preceded the archive test edit but the clinical worker loaded the committed final test before execution, explaining the 235 count (prior set was 234). Attribute this provenance explicitly rather than describe the full-suite launch as pinned to a commit that did not yet exist. With unchanged production runtime, the final test set included in the complete pass, and exact-pin independent execution of the added scenario, no redundant full-suite run is required by this review. Build/final ledger/handoff recheck remains pending.
+
+## Independent evidence and limitations
+
+- Live `gh issue view` reads for #51/#49/#1 initially failed with `error connecting to api.github.com`; supported escalated retry succeeded. Current #51 is open with no comments. Independently read its native blocker endpoint: only #50, closed. Independently fetched live PR metadata for #79/#80/#82–#89: all merged, merge SHAs match every prerequisite row in the acceptance map. No unresolved connection blocker remains.
+- Independently inspected representative actual HTTP assertions, not only descriptions: billing planned/debt/concurrent start and opening provenance; reporting literal totals (`newMoneyMinor=8000`, `appliedCreditMinor=3000`, `dueMinor=2200`); historical snapshot equality after later reversal/note/prescription edits and denied mutations/output; inventory racing consumption with exact winning/losing counts and stock/history; attachment exact 20,000,000-byte upload, near-quota reservation race and retained-file/core access; export private ZIP payload/checksum/CRC and failure/retry/permissions. Read shared export/inventory/report schemas, export API limits and application authorization/CSRF/no-store composition. These inspections substantiate representative map claims, not an exhaustive formal proof of every path.
+- The quota scenario seeds retained metadata near 2 GB and performs real successful file I/O, including a valid 20 MB upload. It verifies quota arithmetic/concurrency, not physical 2 GB storage/load acceptance.
+- Inspected the restricted-runtime RLS probe in onboarding: unfiltered runtime queries and transaction-local clinic switching. Did not independently rerun database tests while the builder's suite was using the isolated database; logs currently remain incomplete. No independent test-execution claim is made. Builder npm install/type/lint/migrations are attributed builder evidence pending final ledger inspection.
+- Inspected actual audit JSON and installed rate-limit dependency path. One moderate `ip-address@10.7.3` quadratic IPv6 zone parser advisory is disclosed. Current application uses default proxy trust; rate-limit calls `Address6` after Node `isIPv6`. No demonstrated application exploit or acceptance requirement demanding a clean audit is established by this review, so this disclosed advisory alone is not a #51 blocker. Remediation/exposure assessment remains unresolved; this is no vulnerability-free or deployment-readiness claim.
+- No browser/product UI, Linux deployment, production proxy/mail/provider, legal/clinical validation, restore/RPO/RTO, pilot or real-data checks performed or accepted. Final handoff/mirror and required completed checks remain builder work for recheck.
