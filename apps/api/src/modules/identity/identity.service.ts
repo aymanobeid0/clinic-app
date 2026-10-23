@@ -380,7 +380,7 @@ export class IdentityService {
   withExportScope<T>(actor:Actor|undefined, request:import('@clinic/contracts').ExportRequest, action:(context:{clinicId:string;accountId:string;stamp:string;ownWork:boolean;clinical:boolean;canReadFinancialFiles:boolean},tx:import('../../database.js').ClinicTransaction)=>Promise<T>) {
     return this.withReadyAccount(actor,(account,transaction)=>transaction.databaseTransaction(async tx=>{
       const category=request.category;
-      const capability=category==='financial' ? 'exports.financial' : category==='inventory' ? 'exports.inventory' : 'exports.patients';
+      const capability=(category==='financial' || (category==='attachments' && request.classification==='financial')) ? 'exports.financial' : category==='inventory' ? 'exports.inventory' : 'exports.patients';
       if(!(account.isManager && (category==='financial' || (category==='attachments' && request.classification==='financial'))) && !account.permissions.includes(capability)) throw new AppError(403,'Autorisation d’export requise.');
       const patients=new PatientAccessRepository(tx,account.clinicId);
       const ids=await patients.activePatientIds(account.id);

@@ -1,7 +1,7 @@
 import { randomUUID, createHash } from "node:crypto";
 import { crc32 } from "node:zlib";
 import sharp from "sharp";
-import type {ExportRequest} from '@clinic/contracts';
+import type { ExportRequest } from "@clinic/contracts";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, expect, it } from "vitest";
 import { createApplication } from "../src/application.js";
@@ -681,6 +681,48 @@ it("delivers a private ZIP with exact retained versions and checksums; failed re
       )
     ).body.usage.retainedBytes,
   ).toBe(png.length);
+  const staff = await s.create("financial-file-export", "staff", [
+    "exports.financial",
+    "billing.read",
+    "financial.history",
+    "financial.download",
+    "clinical.read",
+  ]);
+  expect(
+    (
+      await s.m.post(`/patient-access/${s.patient.id}/share`, {
+        commandId: randomUUID(),
+        revision: 0,
+        accountId: staff.id,
+        kind: "shared",
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (await staff.post("/exports", { ...command, commandId: randomUUID() }))
+      .status,
+  ).toBe(201);
+  const doctor = await s.create("opaque-file-doctor", "doctor", [
+    "exports.financial",
+    "billing.read",
+    "financial.history",
+    "financial.download",
+    "clinical.read",
+  ]);
+  expect(
+    (
+      await s.m.post(`/patient-access/${s.patient.id}/share`, {
+        commandId: randomUUID(),
+        revision: 1,
+        accountId: doctor.id,
+        kind: "shared",
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (await doctor.post("/exports", { ...command, commandId: randomUUID() }))
+      .status,
+  ).toBe(403);
 });
 async function treatmentScenario(currency = "MRU", now?: number) {
   const { m, patient, create } = await scenario(now);
@@ -1109,7 +1151,7 @@ it("holds generation admission slots until disconnected requests actually finish
   })
     .png()
     .toBuffer();
-  const commands:Extract<ExportRequest,{category:'attachments'}>[] = [];
+  const commands: Extract<ExportRequest, { category: "attachments" }>[] = [];
   for (const s of scenarios) {
     const csrf = (await s.m.browser.get("/api/session")).body.csrfToken;
     const upload = await s.m.browser
