@@ -1,0 +1,41 @@
+# Issue #27 — implementation evidence
+
+Owner explicitly said “continue implementing the #27” on2026-10-23; existing branch `codex/issue-27-authorized-exports`, base/main-at-start `973584971e64e2646317b19bd3a21331f7df7301` confirmed by owner for review. Initial work consisted of untracked incomplete exports module/contract/test; preserved and completed. No unrelated changes were present.
+
+Current GitHub #27 body/comments and native blockers directly read. Initial network failure `error connecting to api.github.com` resolved through supported escalation, without a credential-invalidity inference. Native #6/#18/#19/#23/#25/#50 all CLOSED. Current #2–#6 CLOSED. Existing merged PR88 base and PR87/reconciliation ancestors checked. Approved local identity/file/financial/clinical contracts, Spec001, reconciliation, CONTEXT, dependency proposal and application architecture govern behavior. Backend only; remaining owners #59/#73/#60/#76 retained in API docs.
+
+## Per-ticket skill checkpoint
+
+Selected/read sources: `D:/clinic-app/.agents/skills/implement/SKILL.md`; `tdd/SKILL.md` plus `tests.md` and `mocking.md`; `code-review/SKILL.md`; `handoff/SKILL.md`; `C:/Users/ayman/.agents/skills/pr/SKILL.md`. Also freshly read `docs/agents/skill-integration.md` / `issue-tracker.md`. Catalog reviewed against this ticket scope. Implement uses the existing approved authenticated HTTP/application seam, real isolated PostgreSQL and boundary-injected private storage/time/mail. No renewed seam approval required. One builder plus one independent reviewer covering Standards+Spec overrides review fanout. Tracked HANDOFF and actual OS-temp mirror override handoff's temp-only path. PR prose follows repository concise behavior/evidence/limitations guidance with the compatible PR template.
+
+Considered/skipped: codebase-design/domain/discovery/spec/ticket skills (approved contracts and terminology already settled, no new decisions/tickets); UI/design/React skills (backend-only); bug-diagnosis workflow (new capability, concrete fixture errors resolved in implementation loop); research (no changed dependencies/external API research needed). No npm install/npm ci or lock changes. Handoff/pr actual execution is recorded below when complete, not implied by reading the skills.
+
+## Builder observations
+
+Docker's initial sandbox pipe access was denied; supported escalation succeeded. Dedicated `clinic-issue7-test` fictional PostgreSQL only. `npm run db:generate --workspace @clinic/api` PASS. `npm run test:db:prepare` applied export persistence and independent cleanup migrations,38 total migrations PASS. No live database or deployment touched.
+
+Existing partial patient JSON test passed1/1 after wiring missing persistence/authorization. Next CSV tracer bullet directly observed RED: expected text/csv, received application/json; serializer implementation then JSON/CSV2/2 PASS. Expanded tests characterize approved behavior and review regressions; no blanket red-first claim. Initial expanded fixture failures were missing clinical eligibility for a share, wrong history/consumption schema fields and stale CSRF after a denied login; fixed fixtures,8/8 PASS. Independent cleanup and own-work/restricted-invoice cases then10/10 PASS21.22s. Later13-test run12/13: manager-promotion fixture used wrong property, then lacked required re-login/onboarding; corrected through actual HTTP lifecycle, targeted acceptance-file1/1 PASS5.79s. Disconnect regression first attempted aborting an async helper's Promise; replaced with cancellable Supertest requests, targeted1/1 PASS10.78s. No test-helper failure is presented as an application defect.
+
+Typecheck/lint/build PASS after expanded implementation; existing Vite chunk warning525.70kB/152.52kB gzip. Latest runtime additionally includes minimal clinical patient identity, tightened mixed-reference output permissions, retained admission until work settles, and patient-access revision stamps. Final checks/full suite and reviewed commit remain pending below.
+
+Reviewer `review_issue27` preliminarily reported manager capability bypass, raw invoice fields, opportunistic-only cleanup, stripped acceptance links, unbounded projections and direct service persistence; builder corrected each. Follow-up disconnect-slot, mixed-reference rights and clinical contact-field concerns corrected. Reviewer independently reported ZIP compatibility with .NET ZipArchive on working tree; builder received worker evidence, not a builder execution claim. Final pinned review/report and independent targeted tests remain pending.
+
+Limitations: synchronous bounded selections, no large-history pagination/job UI, no browser/product journey or load benchmark. UI ownership remains outstanding. No new dependency, Linux/native deployment, operational restore, real data or production acceptance is claimed. Backend API details: `docs/api/exports.md`.
+
+## Final implementation/review checkpoint
+
+Runtime/final reviewed commit `67ee5fb4875d2977940942d06cacb60cdf799bb2`; initial implementation `194c8ba`. Builder final typecheck/lint/committed diffcheck PASS. A newly added concurrency-test command-array type initially failed TS7034/TS7005; explicit shared ExportRequest typing fixed it before pinning. Final `npm run build` PASS on67ee5fb, existing525.70kB/152.52kB gzip frontend warning only. No runtime changes after this commit.
+
+One independent reviewer inspected the complete pinned base comparison and final delta, Standards0/Spec0 unresolved. Exact independently executed checks and attribution are in `issue-27-review.md`: exports14/14 PASS35.61s at initial pin, final ZIP1/1 PASS5.53s (13filtered), unchanged-serializer .NET ZIP interoperability PASS. Root read that report and received worker results; these are worker evidence, not root reruns. No independent full-suite/type/lint/build claim.
+
+Builder recreated only the dedicated tmpfs fictional test database via `npm run test:db:down`, `npm run test:db:up`, `npm run test:db:prepare`:38/38 migrations from scratch PASS at67ee5fb. Final `npm test` is running on that unchanged runtime; output `.local-dev/issue-27-full-tests.log`, result pending. Initial test14 suite extension source is now committed. Required full-suite completion, final handoff/mirror and PR publication remain pending.
+
+## Final full verification / pre-PR
+
+Builder directly observed complete `npm test` on unchanged67ee5fb: **234/234 tests,18/18 files PASS,504.80s**, exit0, including all14 export scenarios and220 existing regressions. Exact output remains in `.local-dev/issue-27-full-tests.log`. Expected rollback/fault-injection error logs appeared; the final suite passed. Final typecheck/lint/build and pinned committed diffcheck PASS on the same runtime. No need to repeat unchanged checks. No unresolved service or review blocker.
+
+Root reread `docs/agents/skill-integration.md` immediately before PR publication, updated existing tracked HANDOFF and refreshes the established actual OS-temp mirror from it. Required checks, selected skills/procedures and evidence provenance are accounted for above and in the independent report. No unperformed check is claimed. Remote main remains9735849, no duplicate branch PR; human review/manual merge remains required. Next authorized step: publish/attach this backend-only PR, record its URL/status and stop only the disposable test database. Large-history/bulk export limitations and outstanding frontend/browser owners remain explicit in API docs and PR.
+
+## Publication approval blocker
+
+Automatic approval review rejected the requested push to `https://github.com/aymanobeid0/clinic-app` and PR creation before command execution because explicit authorization for this code-publication destination/side effect was not recorded. No push/PR occurred and no bypass was attempted. Local implementation and verification are complete; concrete PR text is `.local-dev/issue-27-pr-body.md`. Ask owner approval for that exact push/PR action. Human merge remains separate; issue27 remains open. Disposable fictional test database stopped; no production operation. This publication blocker does not invalidate the recorded checks.

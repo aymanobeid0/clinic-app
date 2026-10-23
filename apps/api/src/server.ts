@@ -2,6 +2,7 @@ import { logger as log } from './logger.js';
 import { createApplication } from './application.js';
 import { openDatabase } from './database.js';
 import { privateFileStore } from './modules/files/index.js';
+import { cleanupExpiredExports } from './modules/exports/index.js';
 
 const { DATABASE_URL, SESSION_SECRET, APP_ORIGIN } = process.env;
 if (!DATABASE_URL || !SESSION_SECRET || !APP_ORIGIN) {
@@ -13,6 +14,16 @@ if (process.env.NODE_ENV === 'production' && process.env.COOKIE_SECURE === 'fals
 const database = openDatabase(DATABASE_URL);
 await database.connect();
 await database.assertRuntimeRole();
+let cleaning=false;
+const clean=async()=>{
+  if(cleaning) return;
+  cleaning=true;
+  try {await cleanupExpiredExports(database);} catch {log.error('Expired export cleanup failed.');}
+  finally {cleaning=false;}
+};
+await clean();
+const exportCleanup=setInterval(()=>{void clean();},60_000);
+exportCleanup.unref();
 const application = createApplication({
   database,
   sessionSecret: SESSION_SECRET,
@@ -27,6 +38,7 @@ let stopping = false;
 async function stop() {
   if (stopping) return;
   stopping = true;
+  clearInterval(exportCleanup);
   server.close(async () => {
     await database.close();
   });

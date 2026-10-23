@@ -485,6 +485,20 @@ model InventoryMovement {
  @@unique([clinicId,batchId,revision])
 }
 
+model ExportArtifact {
+ id String @id @db.Uuid
+ clinicId String @db.Uuid
+ accountId String @db.Uuid
+ request Json
+ requestHash String
+ stamp String
+ bytes Bytes
+ mediaType String
+ sha256 String
+ expiresAt DateTime @db.Timestamptz(6)
+ @@index([clinicId,expiresAt])
+}
+
 model FollowUpEvent {
  id String @id @db.Uuid
  clinicId String @db.Uuid

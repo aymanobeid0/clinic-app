@@ -111,6 +111,10 @@ export class PatientRepository {
         patient: e.patient,
       }));
   }
+  async exportHistory(id:string) {
+    if(await this.tx.patientHistory.count({where:{clinicId:this.clinicId,patientId:id}})>1000) throw new AppError(413,'Export limité à 1 000 versions.');
+    return this.history(id);
+  }
   async change(
     id: string,
     commandId: string,

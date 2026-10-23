@@ -373,6 +373,50 @@ export class IdentityService {
         financialClinical:account.isManager,permissions:account.permissions}, tx);
     }));
   }
+
+  withExportAccount<T>(actor:Actor|undefined, action:(context:{clinicId:string;accountId:string},tx:import('../../database.js').ClinicTransaction)=>Promise<T>) {
+    return this.withReadyAccount(actor,(account,transaction)=>transaction.databaseTransaction(tx=>action({clinicId:account.clinicId,accountId:account.id},tx)));
+  }
+  withExportScope<T>(actor:Actor|undefined, request:import('@clinic/contracts').ExportRequest, action:(context:{clinicId:string;accountId:string;stamp:string;ownWork:boolean;clinical:boolean;canReadFinancialFiles:boolean},tx:import('../../database.js').ClinicTransaction)=>Promise<T>) {
+    return this.withReadyAccount(actor,(account,transaction)=>transaction.databaseTransaction(async tx=>{
+      const category=request.category;
+      const capability=(category==='financial' || (category==='attachments' && request.classification==='financial')) ? 'exports.financial' : category==='inventory' ? 'exports.inventory' : 'exports.patients';
+      if(!(account.isManager && (category==='financial' || (category==='attachments' && request.classification==='financial'))) && !account.permissions.includes(capability)) throw new AppError(403,'Autorisation d’export requise.');
+      const patients=new PatientAccessRepository(tx,account.clinicId);
+      const ids=await patients.activePatientIds(account.id);
+      const patientId='patientId' in request ? request.patientId : undefined;
+      const active=patientId !== undefined && ids.includes(patientId);
+      const clinical=active && clinicalEligible(account,'clinical.read');
+      const requirePermission=(permission:string)=>{if(!account.permissions.includes(permission)) throw new AppError(403,'Autorisation d’export requise.');};
+      if(patientId) {
+        if(!account.isManager && account.kind==='doctor' && !active) throw new AppError(403,'Accès patient requis.');
+        if(!await patients.exists(patientId)) throw new AppError(404,'Patient introuvable.');
+      }
+      if(category==='patients') requirePermission('patients.read');
+      if(category==='inventory') requirePermission('inventory.read');
+      if(category==='financial' && !account.isManager) requirePermission('billing.read');
+      if(category==='clinical') {
+        if(!clinical) throw new AppError(403,'Accès clinique patient requis.');
+        requirePermission('clinical.download');
+        requirePermission('clinical.history');
+      }
+      if(category==='attachments') {
+        if(request.classification!=='financial') {
+          if(!clinical) throw new AppError(403,'Accès clinique patient requis.');
+          requirePermission('clinical.download');
+          requirePermission('clinical.history');
+        }
+        if(request.classification!=='clinical' && !account.isManager) {
+          requirePermission('exports.financial');
+          requirePermission('billing.read');
+          requirePermission('financial.download');
+          requirePermission('financial.history');
+          if(account.kind==='doctor' || !clinical) throw new AppError(403,'Le contenu financier opaque ne peut pas être séparé pour ce périmètre.');
+        }
+      }
+      return action({clinicId:account.clinicId,accountId:account.id,ownWork:!account.isManager && account.kind==='doctor',clinical:account.isManager || clinical,canReadFinancialFiles:account.isManager || (account.kind==='staff' && ['billing.read','financial.history','financial.download','exports.financial'].every(p=>account.permissions.includes(p))),stamp:digest(JSON.stringify([account.revision,account.permissions,account.isManager,account.kind,ids.sort(),patientId?await patients.exportRevision(patientId):null]))},tx);
+    }));
+  }
   withFinancialPermission<T>(
     actor: Actor | undefined,
     patientId: string,

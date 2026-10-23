@@ -1,4 +1,5 @@
 import { createReportingRoutes } from "./modules/reporting/index.js";
+import { createExportRoutes } from './modules/exports/index.js';
 import { createInventoryRoutes } from './modules/inventory/index.js';
 import {createTreatmentRoutes} from './modules/treatment/index.js';
 import { createFileRoutes, type PrivateFileStore } from './modules/files/index.js';
@@ -55,6 +56,7 @@ export function createApplication(options: Options) {
     next();
   });
   app.use('/api', requireBrowserWrite(config.origin));
+  app.use('/api', createExportRoutes(createIdentityAccess(config.database, config.now), config.now,config.attachmentStore));
   app.use('/api', createIdentityRoutes(config));
   app.use(
     '/api',

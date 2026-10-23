@@ -28,3 +28,10 @@ export async function captureOwnInvoices(tx:ClinicTransaction,clinicId:string,pa
 }
 
 export { reportPatientBilling } from './billing.report.js';
+export async function exportBilling(tx:ClinicTransaction,c:{clinicId:string;accountId:string;ownWork:boolean;clinical:boolean},patientId:string) {
+  const {projectBilling}=await import('./billing.projection.js');
+  const state=await projectBilling(tx,c,patientId);
+  const invoices=(await new BillingRepository(tx,c.clinicId).invoices(patientId)).filter(i=>!c.ownWork || i.items.every(it=>it.performedBy===c.accountId));
+  return {...state,invoices:invoices.map(i=>({...i,items:i.items.map(({name,teeth,...item})=>({...item,...(c.clinical?{name,teeth}:{})}))}))};
+}
+export {assertExportBound as boundBillingExport} from './export-bounds.repository.js';
