@@ -16,3 +16,7 @@ export function createPatientRoutes(
 export async function capturePatient(tx:import('../../database.js').ClinicTransaction,clinicId:string,patientId:string) {
   return new PatientRepository(tx,clinicId,'',Date.now).get(patientId);
 }
+export async function exportPatient(tx:import('../../database.js').ClinicTransaction,clinicId:string,patientId:string) {
+  const repository=new PatientRepository(tx,clinicId,'',Date.now);
+  return {patient:await repository.get(patientId),history:await repository.exportHistory(patientId)};
+}

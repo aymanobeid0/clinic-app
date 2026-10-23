@@ -14,6 +14,9 @@ export class PatientAccessRepository {
     const grants=await this.tx.patientGrant.findMany({where:{clinicId:this.clinicId,accountId,active:true},select:{patientId:true}});
     return grants.map(g=>g.patientId);
   }
+  async exportRevision(patientId:string) {
+    return (await this.tx.patientAccessState.findUnique({where:{clinicId_patientId:{clinicId:this.clinicId,patientId}}}))?.revision ?? 0;
+  }
   async exists(patientId: string) {
     return !!(await this.tx.patient.findFirst({
       where: { clinicId: this.clinicId, id: patientId },

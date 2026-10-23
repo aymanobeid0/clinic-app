@@ -116,3 +116,4 @@ export function enabledClinicCurrency(tx: import('../../database.js').ClinicTran
 export function enabledClinicCurrencies(tx: import('../../database.js').ClinicTransaction, clinicId: string) {
   return new TreatmentRepository(tx,clinicId).currencies();
 }
+export {assertExportBound as boundTreatmentExport} from './export-bounds.repository.js';

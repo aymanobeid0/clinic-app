@@ -8,10 +8,13 @@ import type {
 import type { ClinicTransaction } from "../../database.js";
 import { AppError } from "../../errors/app-error.js";
 export class FilesRepository {
-  async historical(patientId:string) {
-    const heads=await this.tx.attachment.findMany({where:{clinicId:this.clinicId,patientId,classification:'clinical'}});
+  async historical(patientId:string,includeMixed=false) {
+    const heads=await this.tx.attachment.findMany({where:{clinicId:this.clinicId,patientId,classification:{in:includeMixed?['clinical','mixed']:['clinical']}}});
     const rows=await this.tx.attachmentVersion.findMany({where:{clinicId:this.clinicId,patientId,attachmentId:{in:heads.map(h=>h.id)}},orderBy:{revision:'asc'}});
     return rows.map(r=>r.snapshot as unknown as AttachmentVersion);
+  }
+  async boundExport(patientId:string) {
+    if(await this.tx.attachmentVersion.count({where:{clinicId:this.clinicId,patientId}})>1000) throw new AppError(413,'Export limité à 1 000 versions de fichiers.');
   }
   constructor(
     readonly tx: ClinicTransaction,

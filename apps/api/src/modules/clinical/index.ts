@@ -42,3 +42,4 @@ export function createClinicalRoutes(
 export { captureClinical } from './historical.js';
 
 export { pendingNoteTasks } from './pending-note-tasks.js';
+export {assertExportBound as boundClinicalExport} from './export-bounds.repository.js';
