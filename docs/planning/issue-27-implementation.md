@@ -21,3 +21,17 @@ Typecheck/lint/build PASS after expanded implementation; existing Vite chunk war
 Reviewer `review_issue27` preliminarily reported manager capability bypass, raw invoice fields, opportunistic-only cleanup, stripped acceptance links, unbounded projections and direct service persistence; builder corrected each. Follow-up disconnect-slot, mixed-reference rights and clinical contact-field concerns corrected. Reviewer independently reported ZIP compatibility with .NET ZipArchive on working tree; builder received worker evidence, not a builder execution claim. Final pinned review/report and independent targeted tests remain pending.
 
 Limitations: synchronous bounded selections, no large-history pagination/job UI, no browser/product journey or load benchmark. UI ownership remains outstanding. No new dependency, Linux/native deployment, operational restore, real data or production acceptance is claimed. Backend API details: `docs/api/exports.md`.
+
+## Final implementation/review checkpoint
+
+Runtime/final reviewed commit `67ee5fb4875d2977940942d06cacb60cdf799bb2`; initial implementation `194c8ba`. Builder final typecheck/lint/committed diffcheck PASS. A newly added concurrency-test command-array type initially failed TS7034/TS7005; explicit shared ExportRequest typing fixed it before pinning. Final `npm run build` PASS on67ee5fb, existing525.70kB/152.52kB gzip frontend warning only. No runtime changes after this commit.
+
+One independent reviewer inspected the complete pinned base comparison and final delta, Standards0/Spec0 unresolved. Exact independently executed checks and attribution are in `issue-27-review.md`: exports14/14 PASS35.61s at initial pin, final ZIP1/1 PASS5.53s (13filtered), unchanged-serializer .NET ZIP interoperability PASS. Root read that report and received worker results; these are worker evidence, not root reruns. No independent full-suite/type/lint/build claim.
+
+Builder recreated only the dedicated tmpfs fictional test database via `npm run test:db:down`, `npm run test:db:up`, `npm run test:db:prepare`:38/38 migrations from scratch PASS at67ee5fb. Final `npm test` is running on that unchanged runtime; output `.local-dev/issue-27-full-tests.log`, result pending. Initial test14 suite extension source is now committed. Required full-suite completion, final handoff/mirror and PR publication remain pending.
+
+## Final full verification / pre-PR
+
+Builder directly observed complete `npm test` on unchanged67ee5fb: **234/234 tests,18/18 files PASS,504.80s**, exit0, including all14 export scenarios and220 existing regressions. Exact output remains in `.local-dev/issue-27-full-tests.log`. Expected rollback/fault-injection error logs appeared; the final suite passed. Final typecheck/lint/build and pinned committed diffcheck PASS on the same runtime. No need to repeat unchanged checks. No unresolved service or review blocker.
+
+Root reread `docs/agents/skill-integration.md` immediately before PR publication, updated existing tracked HANDOFF and refreshes the established actual OS-temp mirror from it. Required checks, selected skills/procedures and evidence provenance are accounted for above and in the independent report. No unperformed check is claimed. Remote main remains9735849, no duplicate branch PR; human review/manual merge remains required. Next authorized step: publish/attach this backend-only PR, record its URL/status and stop only the disposable test database. Large-history/bulk export limitations and outstanding frontend/browser owners remain explicit in API docs and PR.
