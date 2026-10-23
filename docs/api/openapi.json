@@ -95,6 +95,12 @@
                   "type": "string"
                 },
                 "description": "no-store under /api after the rate limiter."
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Creates/rotates or clears clinic.sid as appropriate; HttpOnly, SameSite=Lax, Secure except explicitly configured local HTTP. Let the cookie manager handle it; never paste a live cookie into examples."
               }
             }
           },
@@ -271,6 +277,12 @@
                   "type": "string"
                 },
                 "description": "no-store under /api after the rate limiter."
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Creates/rotates or clears clinic.sid as appropriate; HttpOnly, SameSite=Lax, Secure except explicitly configured local HTTP. Let the cookie manager handle it; never paste a live cookie into examples."
               }
             }
           },
@@ -450,6 +462,12 @@
                   "type": "string"
                 },
                 "description": "no-store under /api after the rate limiter."
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Creates/rotates or clears clinic.sid as appropriate; HttpOnly, SameSite=Lax, Secure except explicitly configured local HTTP. Let the cookie manager handle it; never paste a live cookie into examples."
               }
             }
           },
@@ -1092,6 +1110,12 @@
                   "type": "string"
                 },
                 "description": "no-store under /api after the rate limiter."
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Creates/rotates or clears clinic.sid as appropriate; HttpOnly, SameSite=Lax, Secure except explicitly configured local HTTP. Let the cookie manager handle it; never paste a live cookie into examples."
               }
             }
           },
@@ -1273,6 +1297,12 @@
                   "type": "string"
                 },
                 "description": "no-store under /api after the rate limiter."
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Creates/rotates or clears clinic.sid as appropriate; HttpOnly, SameSite=Lax, Secure except explicitly configured local HTTP. Let the cookie manager handle it; never paste a live cookie into examples."
               }
             }
           },
@@ -1628,6 +1658,12 @@
                   "type": "string"
                 },
                 "description": "no-store under /api after the rate limiter."
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Creates/rotates or clears clinic.sid as appropriate; HttpOnly, SameSite=Lax, Secure except explicitly configured local HTTP. Let the cookie manager handle it; never paste a live cookie into examples."
               }
             }
           },
@@ -1802,6 +1838,12 @@
                   "type": "string"
                 },
                 "description": "no-store under /api after the rate limiter."
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Creates/rotates or clears clinic.sid as appropriate; HttpOnly, SameSite=Lax, Secure except explicitly configured local HTTP. Let the cookie manager handle it; never paste a live cookie into examples."
               }
             }
           },
@@ -6039,6 +6081,12 @@
                   "type": "string"
                 },
                 "description": "no-store under /api after the rate limiter."
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Authorized inline or attachment delivery with safe filename; no public object URL."
               }
             }
           },
@@ -7250,7 +7298,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Patient"
+                  "$ref": "#/components/schemas/PatientMutation"
                 }
               }
             },
@@ -7782,7 +7830,7 @@
           "Scheduling"
         ],
         "summary": "Read UTC day agenda",
-        "description": "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
+        "description": "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
         "parameters": [
           {
             "name": "date",
@@ -7949,7 +7997,7 @@
           "Scheduling"
         ],
         "summary": "Book appointment",
-        "description": "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -8130,7 +8178,7 @@
           "Scheduling"
         ],
         "summary": "Find scheduling patients, dentists and chairs",
-        "description": "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
+        "description": "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
         "parameters": [
           {
             "name": "q",
@@ -8291,7 +8339,7 @@
           "Scheduling"
         ],
         "summary": "Read scheduling settings",
-        "description": "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
+        "description": "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
         "parameters": [],
         "responses": {
           "200": {
@@ -8439,7 +8487,7 @@
           "Scheduling"
         ],
         "summary": "Revise scheduling defaults",
-        "description": "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -8620,7 +8668,7 @@
           "Scheduling"
         ],
         "summary": "Read duration suggestions without prices",
-        "description": "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
+        "description": "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
         "parameters": [],
         "responses": {
           "200": {
@@ -8770,7 +8818,7 @@
           "Scheduling"
         ],
         "summary": "Stream agenda invalidations",
-        "description": "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
+        "description": "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
         "parameters": [],
         "responses": {
           "200": {
@@ -8921,7 +8969,7 @@
           "Scheduling"
         ],
         "summary": "Read scheduling history",
-        "description": "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
+        "description": "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
         "parameters": [
           {
             "name": "id",
@@ -9081,7 +9129,7 @@
           "Scheduling"
         ],
         "summary": "Reschedule with revision/conflict checks",
-        "description": "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -9271,7 +9319,7 @@
           "Scheduling"
         ],
         "summary": "Change appointment state or register walk-in",
-        "description": "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -12617,7 +12665,7 @@
           "Catalog"
         ],
         "summary": "Read procedure catalog",
-        "description": "catalog.manage or authorized catalog-read consumer as enforced by server; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.",
+        "description": "catalog.manage or an eligible clinical.read account for catalog reads; currencies and currency events are manager-only; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.",
         "parameters": [],
         "responses": {
           "200": {
@@ -12765,7 +12813,7 @@
           "Catalog"
         ],
         "summary": "Create or revise procedure catalog entry",
-        "description": "catalog.manage or authorized catalog-read consumer as enforced by server; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "catalog.manage or an eligible clinical.read account for catalog reads; currencies and currency events are manager-only; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -12946,7 +12994,7 @@
           "Catalog"
         ],
         "summary": "Stream catalog invalidations",
-        "description": "catalog.manage or authorized catalog-read consumer as enforced by server; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.",
+        "description": "catalog.manage or an eligible clinical.read account for catalog reads; currencies and currency events are manager-only; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.",
         "parameters": [],
         "responses": {
           "200": {
@@ -13097,7 +13145,7 @@
           "Catalog"
         ],
         "summary": "Read enabled exact currencies",
-        "description": "catalog.manage or authorized catalog-read consumer as enforced by server; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.",
+        "description": "catalog.manage or an eligible clinical.read account for catalog reads; currencies and currency events are manager-only; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.",
         "parameters": [],
         "responses": {
           "200": {
@@ -13245,7 +13293,7 @@
           "Catalog"
         ],
         "summary": "Enable supported currency",
-        "description": "catalog.manage or authorized catalog-read consumer as enforced by server; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "catalog.manage or an eligible clinical.read account for catalog reads; currencies and currency events are manager-only; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -13426,7 +13474,7 @@
           "Catalog"
         ],
         "summary": "Stream currency invalidations",
-        "description": "catalog.manage or authorized catalog-read consumer as enforced by server; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.",
+        "description": "catalog.manage or an eligible clinical.read account for catalog reads; currencies and currency events are manager-only; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.",
         "parameters": [],
         "responses": {
           "200": {
@@ -14661,7 +14709,7 @@
           "Medication reference"
         ],
         "summary": "Lookup medication reference entries",
-        "description": "Eligible doctors and managers manage clinic reference entries; authorized prescription drafters may lookup references. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.",
+        "description": "Clinic managers and eligible doctors with prescriptions.sign manage reference entries; eligible prescriptions.draft accounts may lookup references. Template reads require manager or eligible signing doctor; template writes are manager-only. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.",
         "parameters": [
           {
             "name": "q",
@@ -14832,7 +14880,7 @@
           "Medication reference"
         ],
         "summary": "Create or revise independent medication reference",
-        "description": "Eligible doctors and managers manage clinic reference entries; authorized prescription drafters may lookup references. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Clinic managers and eligible doctors with prescriptions.sign manage reference entries; eligible prescriptions.draft accounts may lookup references. Template reads require manager or eligible signing doctor; template writes are manager-only. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -15013,7 +15061,7 @@
           "Medication reference"
         ],
         "summary": "Stream reference-list invalidations",
-        "description": "Eligible doctors and managers manage clinic reference entries; authorized prescription drafters may lookup references. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.",
+        "description": "Clinic managers and eligible doctors with prescriptions.sign manage reference entries; eligible prescriptions.draft accounts may lookup references. Template reads require manager or eligible signing doctor; template writes are manager-only. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.",
         "parameters": [],
         "responses": {
           "200": {
@@ -15164,7 +15212,7 @@
           "Medication reference"
         ],
         "summary": "Read clinic prescription template",
-        "description": "Eligible doctors and managers manage clinic reference entries; authorized prescription drafters may lookup references. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.",
+        "description": "Clinic managers and eligible doctors with prescriptions.sign manage reference entries; eligible prescriptions.draft accounts may lookup references. Template reads require manager or eligible signing doctor; template writes are manager-only. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.",
         "parameters": [],
         "responses": {
           "200": {
@@ -15312,7 +15360,7 @@
           "Medication reference"
         ],
         "summary": "Revise prescription header and footer",
-        "description": "Eligible doctors and managers manage clinic reference entries; authorized prescription drafters may lookup references. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Clinic managers and eligible doctors with prescriptions.sign manage reference entries; eligible prescriptions.draft accounts may lookup references. Template reads require manager or eligible signing doctor; template writes are manager-only. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -15493,7 +15541,7 @@
           "Billing"
         ],
         "summary": "Read scoped charges, planned care, debt and credit",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
         "parameters": [
           {
             "name": "id",
@@ -15653,7 +15701,7 @@
           "Billing"
         ],
         "summary": "Record documented opening debt",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -15860,7 +15908,7 @@
           "Billing"
         ],
         "summary": "Explicitly reconcile renewed accepted price",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -16050,7 +16098,7 @@
           "Billing"
         ],
         "summary": "Read available payment methods",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
         "parameters": [],
         "responses": {
           "200": {
@@ -16198,7 +16246,7 @@
           "Billing"
         ],
         "summary": "Configure payment method",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nManager-only method configuration.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nManager-only method configuration.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -16379,7 +16427,7 @@
           "Billing"
         ],
         "summary": "Allocate new money and credit with explicit deposit",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nAtomic funds accounting; credit-only is not new cash. Explicit excess deposit.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nAtomic funds accounting; credit-only is not new cash. Explicit excess deposit.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -16569,7 +16617,7 @@
           "Billing"
         ],
         "summary": "Read retained settlement receipt",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
         "parameters": [
           {
             "name": "id",
@@ -16738,7 +16786,7 @@
           "Billing"
         ],
         "summary": "Read French receipt print/download data",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\naction=print|download; structured JSON, not a generated PDF.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\naction=print|download; structured JSON, not a generated PDF.",
         "parameters": [
           {
             "name": "id",
@@ -16919,7 +16967,7 @@
           "Billing"
         ],
         "summary": "Manually issue eligible whole-procedure invoice",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nCompleted, fully paid, reconciled whole charges only; same patient/currency; unique numbering, no duplicate issue.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nCompleted, fully paid, reconciled whole charges only; same patient/currency; unique numbering, no duplicate issue.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -17107,7 +17155,7 @@
           "Billing"
         ],
         "summary": "List scoped issued invoices",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
         "parameters": [
           {
             "name": "id",
@@ -17267,7 +17315,7 @@
           "Billing"
         ],
         "summary": "Read immutable issued invoice",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
         "parameters": [
           {
             "name": "id",
@@ -17436,7 +17484,7 @@
           "Billing"
         ],
         "summary": "Read retained invoice print/download data",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
         "parameters": [
           {
             "name": "id",
@@ -17617,7 +17665,7 @@
           "Billing"
         ],
         "summary": "Read completed-plan summary without new charges",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
         "parameters": [
           {
             "name": "id",
@@ -17786,7 +17834,7 @@
           "Billing"
         ],
         "summary": "Read plan-summary print/download data",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
         "parameters": [
           {
             "name": "id",
@@ -17967,7 +18015,7 @@
           "Billing"
         ],
         "summary": "Reduce charge with reasoned credit adjustment",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -18157,7 +18205,7 @@
           "Billing"
         ],
         "summary": "Release allocation to traceable patient credit",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -18347,7 +18395,7 @@
           "Billing"
         ],
         "summary": "Reverse erroneous receipt without returning money",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -18537,7 +18585,7 @@
           "Billing"
         ],
         "summary": "Request refund of available credit",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -18727,7 +18775,7 @@
           "Billing"
         ],
         "summary": "Approve concerned refund",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nManager or concerned own-work doctor; unassigned deposits require manager. Approval reserves no funds.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nManager or concerned own-work doctor; unassigned deposits require manager. Approval reserves no funds.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -18917,7 +18965,7 @@
           "Billing"
         ],
         "summary": "Execute explicitly approved refund once",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nAvailable funds rechecked atomically; returning money is distinct from reversal.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nAvailable funds rechecked atomically; returning money is distinct from reversal.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -19107,7 +19155,7 @@
           "Billing"
         ],
         "summary": "Cancel performed care with explicit final charges",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nDoctor clinical scope + plans.finalize/clinical.read/discount authority. Preserve care/documents; no automatic refund.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nDoctor clinical scope + plans.finalize/clinical.read/discount authority. Preserve care/documents; no automatic refund.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -19297,7 +19345,7 @@
           "Inventory"
         ],
         "summary": "Read real stock and warning projection",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
         "parameters": [],
         "responses": {
           "200": {
@@ -19447,7 +19495,7 @@
           "Inventory"
         ],
         "summary": "Read retained receiving history",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
         "parameters": [],
         "responses": {
           "200": {
@@ -19595,7 +19643,7 @@
           "Inventory"
         ],
         "summary": "Receive whole packs by batch",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -19776,7 +19824,7 @@
           "Inventory"
         ],
         "summary": "Read immutable stock movement history",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
         "parameters": [],
         "responses": {
           "200": {
@@ -19926,7 +19974,7 @@
           "Inventory"
         ],
         "summary": "Read expiry warning settings",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
         "parameters": [],
         "responses": {
           "200": {
@@ -20078,7 +20126,7 @@
           "Inventory"
         ],
         "summary": "Revise warning settings",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -20259,7 +20307,7 @@
           "Inventory"
         ],
         "summary": "Stream stock invalidations",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
         "parameters": [],
         "responses": {
           "200": {
@@ -20410,7 +20458,7 @@
           "Inventory"
         ],
         "summary": "Create stock item",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -20591,7 +20639,7 @@
           "Inventory"
         ],
         "summary": "Revise stock item",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -20781,7 +20829,7 @@
           "Inventory"
         ],
         "summary": "Create supplier",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -20962,7 +21010,7 @@
           "Inventory"
         ],
         "summary": "Revise supplier",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -21152,7 +21200,7 @@
           "Inventory"
         ],
         "summary": "Consume selected pack on opening",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -21349,7 +21397,7 @@
           "Inventory"
         ],
         "summary": "Record reasoned waste, disposal or count correction",
-        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -21530,7 +21578,7 @@
           "Attachments"
         ],
         "summary": "List class-scoped files and retained quota usage",
-        "description": "Separate clinical/financial/mixed action and content permissions. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.",
+        "description": "Clinical mutations require attachments.upload/replace/remove respectively plus active clinical scope. Financial mutations use financial.attachments.upload/replace/remove for nonmanagers; managers have intrinsic financial authority. Mixed mutations use mixed.attachments.upload/replace/remove and both clinical/financial scope. Read/download/print/history enforce corresponding content/output grants. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.",
         "parameters": [
           {
             "name": "patientId",
@@ -21701,7 +21749,7 @@
           "Attachments"
         ],
         "summary": "Upload validated raw PDF, JPEG or PNG",
-        "description": "Separate clinical/financial/mixed action and content permissions. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.\n\nMetadata is query parameters, body is raw bytes (not multipart). commandId retries bind actual bytes and metadata. Content validation/quota reservations precede atomic publication.",
+        "description": "Clinical mutations require attachments.upload/replace/remove respectively plus active clinical scope. Financial mutations use financial.attachments.upload/replace/remove for nonmanagers; managers have intrinsic financial authority. Mixed mutations use mixed.attachments.upload/replace/remove and both clinical/financial scope. Read/download/print/history enforce corresponding content/output grants. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.\n\nMetadata is query parameters, body is raw bytes (not multipart). commandId retries bind actual bytes and metadata. Content validation/quota reservations precede atomic publication.",
         "parameters": [
           {
             "name": "patientId",
@@ -21960,7 +22008,7 @@
           "Attachments"
         ],
         "summary": "Read retained file versions and removal events",
-        "description": "Separate clinical/financial/mixed action and content permissions. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.",
+        "description": "Clinical mutations require attachments.upload/replace/remove respectively plus active clinical scope. Financial mutations use financial.attachments.upload/replace/remove for nonmanagers; managers have intrinsic financial authority. Mixed mutations use mixed.attachments.upload/replace/remove and both clinical/financial scope. Read/download/print/history enforce corresponding content/output grants. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.",
         "parameters": [
           {
             "name": "patientId",
@@ -22142,7 +22190,7 @@
           "Attachments"
         ],
         "summary": "Replace file with retained version",
-        "description": "Separate clinical/financial/mixed action and content permissions. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.\n\nQuery revision=current version and reason required for replacement; old bytes remain counted.",
+        "description": "Clinical mutations require attachments.upload/replace/remove respectively plus active clinical scope. Financial mutations use financial.attachments.upload/replace/remove for nonmanagers; managers have intrinsic financial authority. Mixed mutations use mixed.attachments.upload/replace/remove and both clinical/financial scope. Read/download/print/history enforce corresponding content/output grants. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.\n\nQuery revision=current version and reason required for replacement; old bytes remain counted.",
         "parameters": [
           {
             "name": "patientId",
@@ -22410,7 +22458,7 @@
           "Attachments"
         ],
         "summary": "Read authorized retained raw file bytes",
-        "description": "Separate clinical/financial/mixed action and content permissions. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.",
+        "description": "Clinical mutations require attachments.upload/replace/remove respectively plus active clinical scope. Financial mutations use financial.attachments.upload/replace/remove for nonmanagers; managers have intrinsic financial authority. Mixed mutations use mixed.attachments.upload/replace/remove and both clinical/financial scope. Read/download/print/history enforce corresponding content/output grants. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.",
         "parameters": [
           {
             "name": "patientId",
@@ -22496,6 +22544,12 @@
                   "type": "string"
                 },
                 "description": "no-store under /api after the rate limiter."
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Authorized inline or attachment delivery with safe filename; no public object URL."
               }
             }
           },
@@ -22628,7 +22682,7 @@
           "Attachments"
         ],
         "summary": "Logically remove file with retained history",
-        "description": "Separate clinical/financial/mixed action and content permissions. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Clinical mutations require attachments.upload/replace/remove respectively plus active clinical scope. Financial mutations use financial.attachments.upload/replace/remove for nonmanagers; managers have intrinsic financial authority. Mixed mutations use mixed.attachments.upload/replace/remove and both clinical/financial scope. Read/download/print/history enforce corresponding content/output grants. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "patientId",
@@ -24737,6 +24791,12 @@
                   "type": "string"
                 },
                 "description": "no-store under /api after the rate limiter."
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Authorized inline or attachment delivery with safe filename; no public object URL."
               }
             }
           },
@@ -26183,254 +26243,6 @@
       "ClinicalHistory": {
         "type": "object",
         "properties": {
-          "events": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "revision": {
-                  "type": "number"
-                },
-                "observedAt": {
-                  "type": "string"
-                },
-                "recordedAt": {
-                  "type": "string"
-                },
-                "authorId": {
-                  "type": "string"
-                },
-                "authorName": {
-                  "type": "string"
-                },
-                "finalizerId": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "finalizerName": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "status": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "const": "draft"
-                    },
-                    {
-                      "type": "string",
-                      "const": "final"
-                    }
-                  ]
-                },
-                "content": {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "properties": {
-                        "medicalHistory": {
-                          "type": "string"
-                        },
-                        "allergies": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "medicalHistory",
-                        "allergies"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "numberingScheme": {
-                          "type": "string",
-                          "const": "FDI"
-                        },
-                        "dentition": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "const": "mixed"
-                            },
-                            {
-                              "type": "string",
-                              "const": "permanent"
-                            },
-                            {
-                              "type": "string",
-                              "const": "primary"
-                            }
-                          ]
-                        },
-                        "teeth": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "tooth": {
-                                "type": "string"
-                              },
-                              "presence": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "const": "unknown"
-                                  },
-                                  {
-                                    "type": "string",
-                                    "const": "present"
-                                  },
-                                  {
-                                    "type": "string",
-                                    "const": "missing"
-                                  },
-                                  {
-                                    "type": "string",
-                                    "const": "unerupted"
-                                  }
-                                ]
-                              },
-                              "extractionHistory": {
-                                "type": "boolean"
-                              },
-                              "conditions": {
-                                "type": "array",
-                                "items": {
-                                  "type": "object",
-                                  "properties": {
-                                    "finding": {
-                                      "anyOf": [
-                                        {
-                                          "type": "string",
-                                          "const": "restoration"
-                                        },
-                                        {
-                                          "type": "string",
-                                          "const": "sound"
-                                        },
-                                        {
-                                          "type": "string",
-                                          "const": "decay"
-                                        },
-                                        {
-                                          "type": "string",
-                                          "const": "fracture"
-                                        },
-                                        {
-                                          "type": "string",
-                                          "const": "other"
-                                        }
-                                      ]
-                                    },
-                                    "surfaces": {
-                                      "type": "array",
-                                      "items": {
-                                        "anyOf": [
-                                          {
-                                            "type": "string",
-                                            "const": "mesial"
-                                          },
-                                          {
-                                            "type": "string",
-                                            "const": "distal"
-                                          },
-                                          {
-                                            "type": "string",
-                                            "const": "outer"
-                                          },
-                                          {
-                                            "type": "string",
-                                            "const": "inner"
-                                          },
-                                          {
-                                            "type": "string",
-                                            "const": "incisal"
-                                          },
-                                          {
-                                            "type": "string",
-                                            "const": "occlusal"
-                                          }
-                                        ]
-                                      }
-                                    },
-                                    "note": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "required": [
-                                    "finding",
-                                    "surfaces"
-                                  ]
-                                }
-                              },
-                              "treatments": {
-                                "type": "array",
-                                "items": {
-                                  "anyOf": [
-                                    {
-                                      "type": "string",
-                                      "const": "crown"
-                                    },
-                                    {
-                                      "type": "string",
-                                      "const": "root_canal"
-                                    },
-                                    {
-                                      "type": "string",
-                                      "const": "implant"
-                                    }
-                                  ]
-                                }
-                              }
-                            },
-                            "required": [
-                              "tooth",
-                              "presence",
-                              "extractionHistory",
-                              "conditions",
-                              "treatments"
-                            ]
-                          }
-                        },
-                        "otherNotes": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "numberingScheme",
-                        "dentition",
-                        "teeth"
-                      ]
-                    }
-                  ]
-                }
-              },
-              "required": [
-                "revision",
-                "observedAt",
-                "recordedAt",
-                "authorId",
-                "authorName",
-                "finalizerId",
-                "finalizerName",
-                "status",
-                "content"
-              ]
-            }
-          },
           "revision": {
             "type": "number"
           },
@@ -26937,13 +26749,261 @@
                 ]
               }
             ]
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "revision": {
+                  "type": "number"
+                },
+                "observedAt": {
+                  "type": "string"
+                },
+                "recordedAt": {
+                  "type": "string"
+                },
+                "authorId": {
+                  "type": "string"
+                },
+                "authorName": {
+                  "type": "string"
+                },
+                "finalizerId": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "finalizerName": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "status": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "draft"
+                    },
+                    {
+                      "type": "string",
+                      "const": "final"
+                    }
+                  ]
+                },
+                "content": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "medicalHistory": {
+                          "type": "string"
+                        },
+                        "allergies": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "medicalHistory",
+                        "allergies"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "numberingScheme": {
+                          "type": "string",
+                          "const": "FDI"
+                        },
+                        "dentition": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "mixed"
+                            },
+                            {
+                              "type": "string",
+                              "const": "permanent"
+                            },
+                            {
+                              "type": "string",
+                              "const": "primary"
+                            }
+                          ]
+                        },
+                        "teeth": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "tooth": {
+                                "type": "string"
+                              },
+                              "presence": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "const": "unknown"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "present"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "missing"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "unerupted"
+                                  }
+                                ]
+                              },
+                              "extractionHistory": {
+                                "type": "boolean"
+                              },
+                              "conditions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "finding": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "const": "restoration"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "sound"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "decay"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "fracture"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "other"
+                                        }
+                                      ]
+                                    },
+                                    "surfaces": {
+                                      "type": "array",
+                                      "items": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "mesial"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "distal"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "outer"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "inner"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "incisal"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "occlusal"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "note": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "finding",
+                                    "surfaces"
+                                  ]
+                                }
+                              },
+                              "treatments": {
+                                "type": "array",
+                                "items": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "crown"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "const": "root_canal"
+                                    },
+                                    {
+                                      "type": "string",
+                                      "const": "implant"
+                                    }
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "tooth",
+                              "presence",
+                              "extractionHistory",
+                              "conditions",
+                              "treatments"
+                            ]
+                          }
+                        },
+                        "otherNotes": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "numberingScheme",
+                        "dentition",
+                        "teeth"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "revision",
+                "observedAt",
+                "recordedAt",
+                "authorId",
+                "authorName",
+                "finalizerId",
+                "finalizerName",
+                "status",
+                "content"
+              ]
+            }
           }
         },
         "required": [
-          "events",
           "revision",
           "current",
-          "draft"
+          "draft",
+          "events"
         ]
       },
       "Notes": {
@@ -27906,10 +27966,18 @@
         ]
       },
       "Appointments": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/Appointment"
-        }
+        "type": "object",
+        "properties": {
+          "appointments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Appointment"
+            }
+          }
+        },
+        "required": [
+          "appointments"
+        ]
       },
       "Appointment": {
         "type": "object",
@@ -28112,26 +28180,38 @@
         ]
       },
       "DurationSuggestions": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "procedureId": {
-              "type": "string"
-            },
-            "durationMinutes": {
-              "type": "number"
-            },
-            "label": {
-              "type": "string"
-            }
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
           },
-          "required": [
-            "procedureId",
-            "durationMinutes",
-            "label"
-          ]
-        }
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "procedureId": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "durationMinutes": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "procedureId",
+                "label",
+                "durationMinutes"
+              ]
+            }
+          }
+        },
+        "required": [
+          "available",
+          "suggestions"
+        ]
       },
       "Catalog": {
         "type": "object",
@@ -30595,10 +30675,18 @@
         ]
       },
       "Receiving": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/Receive"
-        }
+        "type": "object",
+        "properties": {
+          "receipts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Receive"
+            }
+          }
+        },
+        "required": [
+          "receipts"
+        ]
       },
       "Receive": {
         "type": "object",
@@ -30663,10 +30751,18 @@
         ]
       },
       "Movements": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/Movement"
-        }
+        "type": "object",
+        "properties": {
+          "movements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Movement"
+            }
+          }
+        },
+        "required": [
+          "movements"
+        ]
       },
       "Movement": {
         "type": "object",
@@ -31416,7 +31512,10 @@
             "type": "string"
           },
           "appointments": {
-            "$ref": "#/components/schemas/Appointments"
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Appointment"
+            }
           }
         },
         "required": [

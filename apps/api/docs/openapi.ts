@@ -209,6 +209,32 @@ export function buildOpenApi() {
           schema: { type: "string" },
           description: "no-store under /api after the rate limiter.",
         },
+        ...([
+          "/session",
+          "/sign-in",
+          "/sign-out",
+          "/password",
+          "/onboarding/password",
+          "/recovery/code",
+          "/recovery/email",
+        ].includes(o.path)
+          ? {
+              "Set-Cookie": {
+                schema: { type: "string" },
+                description:
+                  "Creates/rotates or clears clinic.sid as appropriate; HttpOnly, SameSite=Lax, Secure except explicitly configured local HTTP. Let the cookie manager handle it; never paste a live cookie into examples.",
+              },
+            }
+          : {}),
+        ...(["File", "ExportContent"].includes(o.response ?? "")
+          ? {
+              "Content-Disposition": {
+                schema: { type: "string" },
+                description:
+                  "Authorized inline or attachment delivery with safe filename; no public object URL.",
+              },
+            }
+          : {}),
       },
     };
     const errors: Record<number, string> = {

@@ -325,7 +325,7 @@ export const operations = [
         "post",
         "/patients/{id}/contact",
         "Revise contact details",
-        "Patient",
+        "PatientMutation",
         "editPatientSchema",
       ],
       [
@@ -346,7 +346,7 @@ export const operations = [
   ),
   ...group(
     "Scheduling",
-    "appointments.manage for operational actions; settings are manager-only and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
+    "appointments.manage for operational actions; settings writes are manager-only (reads accept manager or appointments.manage), and conflict override additionally needs appointments.override with explicit intent. Dentist/chair overlap checks commit atomically; stale revisions/changed commands409. Arrival is not clinical access.",
     [
       ["get", "/appointments", "Read UTC day agenda", "Appointments"],
       [
@@ -531,7 +531,7 @@ export const operations = [
   ),
   ...group(
     "Catalog",
-    "catalog.manage or authorized catalog-read consumer as enforced by server; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.",
+    "catalog.manage or an eligible clinical.read account for catalog reads; currencies and currency events are manager-only; clinical patient price overrides remain separate. Managers enable supported exact-precision currencies; no conversion or relabeling. Catalog changes do not rewrite agreed treatment prices.",
     [
       ["get", "/catalog", "Read procedure catalog", "Catalog"],
       [
@@ -611,7 +611,7 @@ export const operations = [
   ),
   ...group(
     "Medication reference",
-    "Eligible doctors and managers manage clinic reference entries; authorized prescription drafters may lookup references. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.",
+    "Clinic managers and eligible doctors with prescriptions.sign manage reference entries; eligible prescriptions.draft accounts may lookup references. Template reads require manager or eligible signing doctor; template writes are manager-only. Non-doctor managers gain no patient prescription access. Template editing is manager-only. Catalog writes and prescription saves are separate explicit commands.",
     [
       [
         "get",
@@ -649,7 +649,7 @@ export const operations = [
   ),
   ...group(
     "Billing",
-    "Managers have clinic-wide financial authority but no clinical authority. Others need relevant billing.read/edit, payments.record, receipts.issue, invoices.issue, discounts, reversals or refunds grants. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
+    "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.",
     [
       [
         "get",
@@ -808,7 +808,7 @@ export const operations = [
   ),
   ...group(
     "Inventory",
-    "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings. Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
+    "Independent inventory.read/receive/consume/adjust capabilities; manager-only settings mutation (reads need inventory.read). Historical-only/disabled accounts denied. Whole packs only, manually selected batch; reasoned immutable corrections. Expired consumption and concurrent negative stock blocked. UTC expiry inclusive through expiry date. Full projections/history have no pagination or load guarantee.",
     [
       [
         "get",
@@ -895,7 +895,7 @@ export const operations = [
   ),
   ...group(
     "Attachments",
-    "Separate clinical/financial/mixed action and content permissions. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.",
+    "Clinical mutations require attachments.upload/replace/remove respectively plus active clinical scope. Financial mutations use financial.attachments.upload/replace/remove for nonmanagers; managers have intrinsic financial authority. Mixed mutations use mixed.attachments.upload/replace/remove and both clinical/financial scope. Read/download/print/history enforce corresponding content/output grants. Clinical access requires active patient scope; non-doctor manager denied clinical/mixed files. Opaque financial bytes cannot be safely separated for ordinary-doctor own-work scope. Current authorization applies to metadata and bytes.20,000,000 bytes/file,2,000,000,000 retained bytes/clinic; retained replacements and logical removals count. No ordinary permanent deletion.",
     [
       [
         "get",

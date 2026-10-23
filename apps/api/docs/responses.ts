@@ -87,11 +87,15 @@ import type { IdentityService } from "../src/modules/identity/identity.service.j
 import type { NoteService } from "../src/modules/clinical/note.service.js";
 import type { VisitService } from "../src/modules/treatment/visit.service.js";
 import type { FilesService } from "../src/modules/files/files.service.js";
+import type { SchedulingService } from "../src/modules/scheduling/scheduling.service.js";
+import type { InventoryService } from "../src/modules/inventory/inventory.service.js";
 export type DocumentationEnvelopes = {
   Clinic: Awaited<ReturnType<IdentityService["getClinic"]>>;
-  ClinicalHistory: Awaited<ReturnType<ClinicalService["change"]>>;
-  ClinicalWorkspace: Awaited<ReturnType<ClinicalService["get"]>>;
   PatientMutation: Awaited<ReturnType<PatientService["change"]>>;
+  Appointments: Awaited<ReturnType<SchedulingService["agenda"]>>;
+  DurationSuggestions: Awaited<ReturnType<SchedulingService["suggestions"]>>;
+  Receiving: Awaited<ReturnType<InventoryService["history"]>>;
+  Movements: Awaited<ReturnType<InventoryService["movements"]>>;
   Note: Awaited<ReturnType<NoteService["get"]>>;
   Notes: Awaited<ReturnType<NoteService["list"]>>;
   VisitState: Awaited<ReturnType<VisitService["state"]>>;
