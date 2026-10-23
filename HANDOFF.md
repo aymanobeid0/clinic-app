@@ -644,3 +644,7 @@ Current remote main directly verified unchanged7b2c1af; no existing #51 PR. Only
 ### Issue #51 publication approval — 2026-10-23
 
 Owner replied "approved" to the exact request to push codex/issue-51-backend-verification and open its PR in https://github.com/aymanobeid0/clinic-app. This authorizes this ticket's publication, resolving the ticket-specific pending approval. Clean checkout at0dd2c0e, tested d75f81b/runtime7b2c1af and independent Standards0/Spec0 evidence unchanged. Reread skill-integration and PR skill before publication; selected procedures and handoff checkpoints remain complete. No merge/deployment/later-ticket authorization. Temp mirror refreshed before opening PR.
+
+### Issue #51 published — 2026-10-23
+
+Published PR90 https://github.com/aymanobeid0/clinic-app/pull/90 after explicit owner approval; attached to this chat. Published head70b8916, reviewed evidencee602d4d, tested d75f81b, production runtime7b2c1af. No runtime/test changes after reviewed checks;235/235 tests,38fresh migrations,type/lint/build and independent Standards0/Spec0 evidence remain as recorded. Disposable DB already stopped/removed. Publication approval resolved; no unresolved service blocker. This publication-only note is pushed to the same PR and actual OS-temp mirror refreshed. Human review/manual merge is next; no deployment/live migration/real data/next-ticket progression. No frontend changes.
