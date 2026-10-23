@@ -228,6 +228,135 @@ it('assigned staff draft medical history and a doctor confirms a retained dated 
     'Pénicilline signalée',
   );
 });
+it('archiving preserves authorized finalized clinical history, financial balances and original receipts through reactivation', async () => {
+  const { m, patient, create } = await scenario();
+  const managerId = (await m.browser.get('/api/identity')).body.accountId;
+  expect(
+    (
+      await m.post(`/accounts/${managerId}/permissions`, {
+        currentPassword: 'Fictional-manager-pass-2',
+        permissions: ['patients.create', 'patients.read', 'patients.archive', 'catalog.manage'],
+      })
+    ).status,
+  ).toBe(200);
+  const doctor = await create('archive-doctor', 'doctor', [
+    'clinical.read',
+    'clinical.history',
+    'history.draft',
+    'history.finalize',
+  ]);
+  expect(
+    (
+      await m.post(`/patient-access/${patient.id}/share`, {
+        commandId: randomUUID(),
+        revision: 0,
+        accountId: doctor.id,
+        kind: 'assigned',
+      })
+    ).status,
+  ).toBe(200);
+  const clinicalPath = `/clinical/${patient.id}/history`;
+  expect(
+    (
+      await doctor.post(clinicalPath + '/draft', {
+        commandId: randomUUID(),
+        revision: 0,
+        observedAt: '2026-10-14T10:00:00Z',
+        content: { medicalHistory: 'Antécédent conservé', allergies: 'Allergie signalée' },
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await doctor.post(clinicalPath + '/confirm', {
+        commandId: randomUUID(),
+        revision: 1,
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await m.post('/catalog/currencies', {
+        commandId: randomUUID(),
+        code: 'MRU',
+      })
+    ).status,
+  ).toBe(200);
+  const billingPath = `/billing/${patient.id}`;
+  expect(
+    (
+      await m.post(billingPath + '/opening-balances', {
+        commandId: randomUUID(),
+        id: randomUUID(),
+        currency: 'MRU',
+        amount: '100',
+        provenance: 'Registre fictif avant archivage',
+        asOf: '2026-10-01T00:00:00.000Z',
+      })
+    ).status,
+  ).toBe(200);
+  const method = await m.post('/billing/payment-methods', {
+    commandId: randomUUID(),
+    id: randomUUID(),
+    revision: 0,
+    name: 'Espèces',
+    active: true,
+  });
+  expect(method.status).toBe(200);
+  const receipt = await m.post(billingPath + '/settlements', {
+    commandId: randomUUID(),
+    currency: 'MRU',
+    methodId: method.body.id,
+    newMoney: '30',
+    deposit: '30',
+    allocations: [],
+  });
+  expect(receipt.status).toBe(200);
+  const receiptPath = `/api${billingPath}/settlements/${receipt.body.id}/print`;
+  const beforeReceipt = await m.browser.get(receiptPath);
+  expect(beforeReceipt.status).toBe(200);
+  const beforeClinical = await doctor.browser.get(`/api/clinical/${patient.id}`);
+  expect(beforeClinical.status).toBe(200);
+  expect(beforeClinical.body.history.current).toMatchObject({
+    status: 'final',
+    revision: 2,
+    finalizerId: doctor.id,
+    content: { medicalHistory: 'Antécédent conservé', allergies: 'Allergie signalée' },
+  });
+  const beforeFinancial = await m.browser.get(`/api${billingPath}`);
+  expect(beforeFinancial.status).toBe(200);
+  expect(beforeFinancial.body.totals).toMatchObject([
+    { currency: 'MRU', dueMinor: '10000', creditMinor: '3000' },
+  ]);
+  const archive = { commandId: randomUUID(), revision: 0 };
+  expect((await m.post(`/patients/${patient.id}/archive`, archive)).status).toBe(200);
+  expect((await m.post(`/patients/${patient.id}/archive`, archive)).status).toBe(200);
+  for (const archived of [true, false]) {
+    if (!archived) {
+      expect(
+        (
+          await m.post(`/patients/${patient.id}/reactivate`, {
+            commandId: randomUUID(),
+            revision: 1,
+          })
+        ).status,
+      ).toBe(200);
+    }
+    const personal = await m.browser.get(`/api/patients/${patient.id}`);
+    expect(personal.status).toBe(200);
+    expect(personal.body.archived).toBe(archived);
+    const clinical = await doctor.browser.get(`/api/clinical/${patient.id}`);
+    expect(clinical.status).toBe(200);
+    expect(clinical.body).toEqual(beforeClinical.body);
+    const financial = await m.browser.get(`/api${billingPath}`);
+    expect(financial.status).toBe(200);
+    expect(financial.body).toEqual(beforeFinancial.body);
+    const printed = await m.browser.get(receiptPath);
+    expect(printed.status).toBe(200);
+    expect(printed.body).toEqual(beforeReceipt.body);
+    expect((await m.browser.get(`/api/clinical/${patient.id}`)).status).toBe(403);
+  }
+});
 it('manual mixed FDI chart retains coexisting conditions, presence, treatment and valid surfaces', async () => {
   const { m, patient, create } = await scenario();
   const doctor = await create('chart-doctor', 'doctor', [
