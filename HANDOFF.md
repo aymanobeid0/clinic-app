@@ -606,3 +606,7 @@ Implementation/verification complete locally at runtime67ee5fb; evidence4c434d4.
 ### Issue #27 publication approved — 2026-10-23
 
 Owner explicitly replied "ok i approve open pr" to the exact branch-push/PR approval question for https://github.com/aymanobeid0/clinic-app. This resolves the prior automatic-review publication blocker and authorizes publishing codex/issue-27-authorized-exports and opening its PR. Runtime/reviewed/tested67ee5fb and recorded checks unchanged; clean initial worktree at db95d01. Fresh skill-integration/pr checkpoint reread; no duplicate branch PR. Human merge and production authorization remain separate. Actual OS-temp mirror refreshed before publication.
+
+### Issue #27 published — 2026-10-23
+
+Published and attached PR89 https://github.com/aymanobeid0/clinic-app/pull/89 following explicit owner publication approval. Direct readback: OPEN, non-draft, MERGEABLE at6973316fdc067f200d77b6473642ac15c7e382f9. Reviewed/tested runtime67ee5fb unchanged;234/234 tests plus type/lint/build and independent Standards0/Spec0 evidence remain as recorded. Disposable test DB already stopped; actual OS-temp handoff mirror refreshed. Publication blocker resolved. This documentation-only note is pushed to the same PR. Human review/manual merge is next; no deployment/live migration/real data or next-ticket progression. Backend closure leaves#59/#73/#60/#76 outstanding.
