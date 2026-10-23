@@ -26,4 +26,12 @@ Final source/artifact review pin: `c41aa5d762c05a5b541c9940b72383d968eae012`. Co
 
 Reviewer did not run a second database/full suite or infer runtime success from inspection. Builder execution is separately attributed in the implementation report/handoff. Actual Apidog desktop import/rendering, production runtime, live delivery, legal/provider/retention, restore and pilot gates remain outside this review's evidence.
 
-Standards: 0 unresolved findings. Spec: 0 unresolved findings at the final source/artifact pin. Builder's final full-suite and handoff ledger require their separately attributed completion record; independent review does not claim those were rerun here.
+## Final evidence and handoff recheck
+
+Same reviewer inspected committed `ecf1bcb186ee3ebdeaf7dc6d5a58e43fe77b5688` against the same owner-selected base. Changes after tested source pin `c41aa5d` are limited to five Markdown files (README, Apidog guide, implementation/review reports and HANDOFF). Guide additions for fixed 12-hour sessions, login-email replacement revocation, 30-minute recovery and 24-hour verification match identity/session implementation. No frontend/runtime/schema/migration change was introduced. `git diff --check` passed and the checkout was clean before this final review-report update.
+
+Reviewer read the complete available full-suite log (17 nonempty lines) and final ledger: **20 files / 241 tests passed**, started 19:08:19 UTC, duration 504.42s. This independently corroborates the builder's recorded result by log inspection; reviewer did **not** execute that full suite, fresh migrations or type/lint/build. Error entries correspond to the documented rollback/error probes; the suite summary has no failed test. Builder-reported clean install, migrations, checks, disposable-database teardown and remaining advisory/warning retain their stated provenance.
+
+Tracked HANDOFF and actual `C:/Users/ayman/AppData/Local/Temp/clinic-app-HANDOFF.md` mirror were independently compared: identical SHA256 `933AE3B004F241ECA242E5827CC6CE94A349A2B10EE19A298C95365F82CBD821`. The final ledger clearly supersedes earlier pending checkpoints and preserves tested/reviewed pins, execution attribution, actual-import limitation and exact publication approval requirement. No further check or database rerun is warranted by Markdown-only finalization.
+
+Final disposition: **Standards 0 / Spec 0 unresolved findings**. Local implementation/evidence is reviewable. Owner approval to publish this branch/PR remains pending; merge and all production/real-data gates remain separately authorized.
