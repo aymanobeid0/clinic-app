@@ -672,3 +672,7 @@ Final local completion: same reviewer rechecked ecf1bcb against82ba552 and appen
 ### Issue #91 publication authorization — 2026-10-23
 
 Owner replied "approved for you" to the exact request to push codex/apidog-openapi-documentation and open its PR in aymanobeid0/clinic-app. This authorizes #91 publication; human review/manual merge remains separate. Reread skill-integration and PR skill before publication; completed implementation/review/handoff checkpoints remain as recorded. Clean checkout at12bc0ce before this publication-only entry; tested source c41aa5d and final reviewed evidence ecf1bcb unchanged. Refresh actual temp mirror before PR opening. No deployment, real data or later-ticket authorization.
+
+### Issue #91 published — 2026-10-23
+
+Published PR92 https://github.com/aymanobeid0/clinic-app/pull/92 after explicit owner approval and attached it to this chat. Initial published head eb8502355ff17c6b8fdd82a84648818fb5ba1a32; tested source c41aa5d, reviewed evidence ecf1bcb, final local evidence12bc0ce. PR is OPEN, targets main82ba552, not merged. This publication-only note is pushed to the same PR and actual temp mirror refreshed. Checks/review and limits remain unchanged:241/241 tests, portable5/5,38fresh migrations,type/lint/build PASS, Standards0/Spec0 unresolved; no actual Apidog account import or frontend/runtime changes. No unresolved service blocker. Next step is human review/manual merge; no deployment/live data/later-ticket authorization. Disposable test infrastructure already removed.
