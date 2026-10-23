@@ -57,14 +57,16 @@ The API uses the HttpOnly `clinic.sid` cookie. Do not configure Bearer/JWT authe
 ```
 
 5. Login regenerates both the cookie and CSRF token. Add the same response extraction to sign-in and successful code/email recovery; replace the old token before another write. Check `stage`, then `GET /identity`. `ready` is the normal operational stage; an authenticated setup session is not permission to read clinic records.
-6. `POST /sign-out` requires Origin/CSRF too and returns204 without JSON. Clear local tokens and the old cookie. Password changes/temporary-password replacement return204 and revoke sessions; begin a new session/login handshake. Account disablement/kind change and completed recovery can invalidate other sessions as well.
+6. `POST /sign-out` requires Origin/CSRF too and returns 204 without JSON. Clear local tokens and the old cookie. Password changes/temporary-password replacement return204 and revoke sessions; begin a new session/login handshake. Account disablement/kind change and completed recovery can invalidate other sessions as well.
+
+Sessions have a fixed 12-hour maximum from sign-in, without remember-me. Permission/patient-grant changes apply on the next request and terminate affected streams. Completing a login-email replacement revokes sessions; sign in using the newly verified address when identity returns 401. Recovery links expire after 30 minutes and email-verification links after 24 hours; expired/replaced/single-use tokens cannot be reused.
 
 ### Restricted activation and recovery
 
-There is no public registration or test-verification route. Use the existing separately authorized operator provisioning flow and a fictional mail adapter/setup. The shipped server has no live mail provider: requests needing delivery may return503; documentation does not introduce a bypass.
+There is no public registration or test-verification route. Use the existing separately authorized operator provisioning flow and a fictional mail adapter/setup. The shipped server has no live mail provider: requests needing delivery may return 503; documentation does not introduce a bypass.
 
-- `password`: POST the temporary-password replacement; its204 destroys the session. GET `/session` and sign in again with the new password.
-- `email`: request verification for the required address, consume the actual verification token through the authenticated CSRF POST and follow the returned setup state. For a primary manager, the provisioned email must be verified. Ordinary email replacement may return JSON null with200, not a recovery-code batch.
+- `password`: POST the temporary-password replacement; its 204 destroys the session. GET `/session` and sign in again with the new password.
+- `email`: request verification for the required address, consume the actual verification token through the authenticated CSRF POST and follow the returned setup state. For a primary manager, the provisioned email must be verified. Ordinary email replacement may return JSON null with 200, not a recovery-code batch.
 - `codes`: safely retain the one-time batch locally, then confirm its `batchId` and `saved:true`. Do not capture the batch in shared Apidog examples/history. Recheck identity afterwards.
 - Recovery requests do not revoke an account just by being requested. Consuming an expiring single-use recovery link/code rotates credentials/session and enters restricted setup; recovery never lifts disabled/historical-only status.
 
@@ -77,13 +79,13 @@ Use an already activated fictional account with the relevant capabilities. Autho
 | Workflow | What to verify |
 | --- | --- |
 | Identity | Anonymous GET identity401; session/login token rotation; forged Origin/CSRF403; sign-out204; role/setup restrictions. |
-| Patient | Registration201 with name/phone/contact kind, generated patient identity and duplicate warnings; search uses `q`, `archived`, `offset` in50-result pages. Contact/archive commands require revisions; archived history remains retained. |
+| Patient | Registration201 with name/phone/contact kind, generated patient identity and duplicate warnings; search uses `q`, `archived`, `offset` in 50-result pages. Contact/archive commands require revisions; archived history remains retained. |
 | Clinical | Doctor/staff capability plus active assignment/sharing; non-doctor manager403. Draft/finalization and corrections retain versions. Dynamic `{kind}` is history/chart; note/prescription `{action}` is draft/finalize, with the corresponding input schema. |
 | Finance | Unstarted accepted treatment is planned, not due. Starting creates one charge. Preserve exact decimal input strings and currency-separated minor-unit response strings. Deposits, reused credit and new money remain distinct; invoices require completed/fully paid whole procedures. |
 | Inventory | Whole-pack receiving/selected-batch consumption; expiry and stale-count conflicts. No fractional conversions or visit linkage. |
 | Reports/tasks | UTC date activity versus current balances; authorized own-work totals; task revision conflicts and pending-note scope. Manual share prepares text and sends nothing. |
 | Historical | Only an explicit removal grant exposes frozen clinical/own-work data. Later edits are excluded. Mutations and print/download/export denied; only permitted retained clinical file bytes may be viewed inline. |
-| Exports | POST returns201 private receipt with size/checksum/expiry. GET content rechecks authorization. JSON/CSV/ZIP are file outputs; expiry410 before cleanup,404 afterwards. Oversize returns413 instead of truncation. |
+| Exports | POST returns201 private receipt with size/checksum/expiry. GET content rechecks authorization. JSON/CSV/ZIP are file outputs; expiry 410 before cleanup,404 afterwards. Oversize returns 413 instead of truncation. |
 
 Consequential commands that have `commandId` use a UUID in the body (attachment uploads use the query). After an uncertain response, retry the **same ID and identical payload**; do not regenerate the ID automatically in a preprocessor on every send. A changed payload/new action needs a new ID and current revisions. There is no generic `Idempotency-Key` header. Account/password/recovery operations have their own lifecycle and are not promised generic replay semantics.
 
@@ -91,7 +93,7 @@ For409, read current state/history and reconcile before a new command. A valid s
 
 ## Raw files, document data and streams
 
-- Upload: POST `/patients/{patientId}/attachments` with query `commandId`, `classification`, `name`. Body is a selected **raw binary** PDF/JPEG/PNG with matching `Content-Type`; not multipart/form-data or base64 JSON. Replacement `/.../{attachmentId}/versions` also requires current `revision` and reason. File limit20,000,000bytes; retained clinic limit2,000,000,000bytes. Removal/replacement never evicts retained versions to free quota.
+- Upload: POST `/patients/{patientId}/attachments` with query `commandId`, `classification`, `name`. Body is a selected **raw binary** PDF/JPEG/PNG with matching `Content-Type`; not multipart/form-data or base64 JSON. Replacement `/.../{attachmentId}/versions` also requires current `revision` and reason. File limit 20,000,000 bytes; retained clinic limit 2,000,000,000 bytes. Removal/replacement never evicts retained versions to free quota.
 - Reads/removal/history need the correct `classification` query. Content output is inline/download/print under the separately checked content/output capability. Historical content has a separate route, no classification query, and permits only omitted/inline output. No public object URL is exposed.
 - Plans, receipts, invoices, prescriptions and whole-plan summaries return **structured JSON print data**. Apidog does not turn that into the product's final French browser print layout or establish legal sufficiency. Invoices retain their original number/content and omit installment breakdown.
 - SSE endpoints return `text/event-stream`; use the client's streaming view and stop the request when finished. Minimal invalidations are not records: refetch through the normal authorized GET. Sessions/permissions/grants are rechecked during streams. Apidog stream rendering was not separately observed; existing application tests verify stream behavior.
