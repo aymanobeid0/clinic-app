@@ -21,19 +21,23 @@
     "dev:web": "npm run dev --workspace @clinic/web",
     "provision": "tsx apps/api/src/provision.ts",
     "test:browser": "npm run test:browser --workspace @clinic/web",
-    "test:db:prepare": "tsx apps/api/test/prepare.ts"
+    "test:db:prepare": "tsx apps/api/test/prepare.ts",
+    "docs:api:generate": "npm run build --workspace @clinic/contracts && tsx apps/api/docs/generate.ts",
+    "docs:api:check": "npm run build --workspace @clinic/contracts && tsx apps/api/docs/generate.ts --check && vitest run apps/api/test/openapi.test.ts"
   },
   "devDependencies": {
-    "typescript": "6.0.3",
-    "tsx": "4.23.15",
-    "vitest": "5.0.3",
-    "supertest": "7.3.1",
-    "@types/supertest": "7.2.1",
+    "@apidevtools/swagger-parser": "13.1.0",
     "@types/node": "24.19.2",
+    "@types/supertest": "7.2.1",
+    "ajv": "8.20.0",
     "eslint": "10.12.0",
-    "typescript-eslint": "8.71.1",
     "prettier": "3.9.10",
-    "prisma": "7.10.0"
+    "prisma": "7.10.0",
+    "supertest": "7.3.1",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1",
+    "vitest": "5.0.3"
   },
   "overrides": {
     "deepmerge-ts": "8.0.2",

@@ -17,6 +17,8 @@ The browser test provisions fictional data and injects a fake mail adapter in-pr
 
 ## Runtime and provisioning
 
+The complete import-ready API reference is [OpenAPI](docs/api/openapi.json). See the [Apidog guide](docs/api/apidog.md) for import/re-import, local environments, cookie/CSRF authentication and binary/document/stream behavior. Regenerate with `npm run docs:api:generate`; validate freshness, route coverage and examples with `npm run docs:api:check` (portable checks do not need PostgreSQL). Actual account import is a separate, user-selected Apidog step.
+
 Attachment backend configuration and transport are documented in [the attachment API](docs/api/attachments.md). Set `ATTACHMENT_DIRECTORY` to private persistent storage outside static web serving. Existing core APIs remain available if attachment storage is not configured. Product attachment screens are deferred to the recovery UI tickets.
 
 Revocable historical snapshot transport and retained-removal limitations are documented in [the historical access API](docs/api/historical-access.md). Historical logic and product screens remain deferred to their recovery tickets.
