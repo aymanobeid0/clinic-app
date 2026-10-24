@@ -18,4 +18,16 @@ No actionable documented-standard or heuristic-smell findings in the initial dif
 
 Reviewer directly ran typecheck successfully and pinned comparison `git diff --check` successfully on initial `2bd25e3`. Independently ran `npx vitest run apps/web/test/identity-workflow.test.ts`: **4/4 PASS, 817 ms**. At the focused rerun, the shared working tree already showed the builder's in-progress test-file edit; this rerun is attributed to that working-tree state rather than silently claiming identical committed test bytes. No reviewer database/browser/full-suite/lint/build execution: builder is using the isolated #52 database and owns those checks. The builder's browser/full-suite claims remain builder-reported, not independently rerun. No deployment, live mail, real-data, restoration or product-design acceptance established.
 
-Initial totals: Standards **0**, Spec **1 P2**. Fix and same-reviewer recheck pending; no publication approval implied.
+Initial totals: Standards **0**, Spec **1 P2**. No publication approval implied.
+
+## Same-reviewer recheck — 2026-10-24
+
+Reviewed fixed commit `3c535b21d992575da7f3326ddc490f177b338893` against the same owner baseline, the complete comparison, and the fix diff from `2bd25e3`. The common command handler now reconciles HTTP 401/403 through the registered identity query; account/clinic query denials do the same. The identity query removes cached identity as well as other sensitive records on a failed refetch, so a known password-change success followed by lost network cannot leave the old workspace available. Ordinary 409 does not trigger scope cleanup. The initial P2 is **resolved by inspection and focused regression execution**.
+
+The two added actual-application browser scenarios cover demotion followed by a denied 403 command and password-change 204 followed by network loss. Reviewer inspected them but did not execute them while the builder's full suite was using the isolated database. Also inspected the uncommitted test-only locator correction scoping the password-change fields to their form; it changes no runtime behavior. Builder must record their eventual results and the final test commit separately.
+
+Direct reviewer checks on fixed runtime: `npm run typecheck` **PASS**; `npx vitest run apps/web/test/identity-workflow.test.ts` **6/6 PASS, 853 ms**; pinned comparison `git diff --check` **PASS**. The only pre-existing working-tree modification at that rerun was the browser locator correction, so these focused test results apply to committed focused tests/runtime at `3c535b2`. No database/browser/full-suite/lint/build rerun by reviewer. Full-suite and browser completion remain builder verification, not inferred from this review pass.
+
+Additional applicable sources read for the recheck: `D:/clinic-app/.agents/skills/codebase-design/SKILL.md` for interface/seam vocabulary only; `C:/Users/ayman/.codex/plugins/cache/openai-curated-remote/build-web-apps/0.1.2/skills/react-best-practices/SKILL.md` and `rules/rerender-dependencies.md`. Approved TanStack Query/no-sensitive-persistence rules take precedence over generic SWR/storage suggestions. No alternative-design fanout was run.
+
+Final review totals at `3c535b2`: Standards **0 unresolved**, Spec **0 unresolved**. Human review and exact publication approval remain required; product UI, live mail, deployment, restoration and real-data acceptance remain excluded.

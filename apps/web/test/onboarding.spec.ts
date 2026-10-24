@@ -514,9 +514,10 @@ test('password change clears the workspace when the following session read loses
     await page.route('**/api/session', route => route.abort());
     await route.fulfill({ response });
   });
-  await page.getByLabel('Mot de passe actuel', { exact: true }).fill('Fictional-scope-manager-1');
-  await page.getByLabel('Nouveau mot de passe personnel', { exact: true }).fill('Fictional-scope-manager-2');
-  await page.getByRole('button', { name: 'Changer mon mot de passe', exact: true }).click();
+  const passwordForm = page.locator('form').filter({ has: page.getByRole('heading', { name: 'Changer mon mot de passe', exact: true }) });
+  await passwordForm.getByLabel('Mot de passe actuel', { exact: true }).fill('Fictional-scope-manager-1');
+  await passwordForm.getByLabel('Nouveau mot de passe personnel', { exact: true }).fill('Fictional-scope-manager-2');
+  await passwordForm.getByRole('button', { name: 'Changer mon mot de passe', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Connexion à votre clinique' })).toBeVisible();
   await expect(page.getByLabel('Nom affiché', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('alert')).toBeVisible();
