@@ -1,47 +1,29 @@
-import { useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { usePatientEditor } from './usePatientEditor.js';
+import { usePatientRecord } from './usePatientRecord.js';
+import { usePatients } from './usePatients.js';
 import type { Identity, Patient } from '@clinic/contracts';
-import { patientApi } from './patient.api.js';
 import { PatientForm } from './PatientForm.js';
 import { patientText as t } from './patient.messages.js';
-import { HttpError } from '../identity/identity.api.js';
 export function PatientsPanel({ identity }: { identity: Identity }) {
-  const cache = useQueryClient();
-  const [q, setQ] = useState('');
-  const [archived, setArchived] = useState(false);
-  const [offset, setOffset] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [notice, setNotice] = useState('');
-  const [error, setError] = useState('');
-  const [duplicates, setDuplicates] = useState<Patient[]>([]);
-  const read = identity.permissions.includes('patients.read');
-  const accountKey = `${identity.clinicId}:${identity.accountId}`;
-  const prefix = ['patients', accountKey];
-  const list = useQuery({
-    queryKey: [...prefix, 'list', q, archived, offset],
-    queryFn: ({ signal }) => patientApi.search(q, archived, offset, signal),
-    enabled: read,
-    gcTime: 0,
-  });
-  useEffect(() => {
-    if (!read) return;
-    const stream = new EventSource('/api/patients/events');
-    const refresh = () => {
-      void cache.invalidateQueries({ queryKey: ['patients', accountKey] });
-    };
-    stream.addEventListener('invalidate', refresh);
-    stream.onopen = refresh;
-    stream.onerror = () => {
-      refresh();
-      void cache.invalidateQueries({ queryKey: ['identity'] });
-    };
-    return () => {
-      stream.close();
-      void cache.cancelQueries({ queryKey: ['patients', accountKey] });
-      cache.removeQueries({ queryKey: ['patients', accountKey] });
-    };
-  }, [read, accountKey, cache]);
-  const refresh = () => cache.invalidateQueries({ queryKey: prefix });
+  const {
+    register,
+    q,
+    setQ,
+    archived,
+    setArchived,
+    offset,
+    setOffset,
+    selected,
+    setSelected,
+    notice,
+    setNotice,
+    error,
+    setError,
+    duplicates,
+    read,
+    accountKey,
+    list,
+  } = usePatients({ identity });
   return (
     <section aria-label={t.title} className="patients">
       <h3>{t.title}</h3>
@@ -57,19 +39,7 @@ export function PatientsPanel({ identity }: { identity: Identity }) {
         </ul>
       )}
       {identity.permissions.includes('patients.create') && (
-        <PatientForm
-          onError={setError}
-          onSave={async (details, commandId) => {
-            setError('');
-            setNotice('');
-            const result = await patientApi.register(details, commandId);
-            setNotice(
-              result.duplicateWarning ? t.duplicate : t.registered(result.patient.patientNumber),
-            );
-            setDuplicates(result.duplicates);
-            await refresh();
-          }}
-        />
+        <PatientForm onError={setError} onSave={register} />
       )}
       {read && (
         <>
@@ -117,7 +87,10 @@ export function PatientsPanel({ identity }: { identity: Identity }) {
           )}
           {!list.error && list.data?.patients.length === 0 && <p>{t.empty}</p>}
           <div className="patient-pagination">
-            <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>
+            <button
+              disabled={offset === 0}
+              onClick={() => setOffset(Math.max(0, offset - 50))}
+            >
               Précédents
             </button>
             <button
@@ -158,52 +131,10 @@ function PatientRecord({
   onNotice: (value: string) => void;
   onClose: () => void;
 }) {
-  const cache = useQueryClient();
-  const current = useQuery({
-    queryKey: ['patients', accountKey, 'record', id],
-    queryFn: ({ signal }) => patientApi.get(id, signal),
-    gcTime: 0,
-  });
-  const history = useQuery({
-    queryKey: ['patients', accountKey, 'history', id],
-    queryFn: ({ signal }) => patientApi.history(id, signal),
-    gcTime: 0,
-  });
-  const [busy, setBusy] = useState(false);
-  const statusRequest = useRef<{
-    patient: Patient;
-    action: 'archive' | 'reactivate';
-    commandId: string;
-  } | null>(null);
+  const { current, history, busy, statusRequest, patient, status } =
+    usePatientRecord({ id, accountKey, onError, onNotice, onClose });
   if (current.error) return <p role="alert">{current.error.message}</p>;
   if (!current.data) return <p role="status">{t.loading}</p>;
-  const patient = current.data;
-  async function status() {
-    if (!statusRequest.current) {
-      if (!confirm(patient.archived ? t.reactivateConfirm : t.archiveConfirm)) return;
-      statusRequest.current = {
-        patient,
-        action: patient.archived ? 'reactivate' : 'archive',
-        commandId: crypto.randomUUID(),
-      };
-    }
-    setBusy(true);
-    onError('');
-    onNotice('');
-    try {
-      const request = statusRequest.current;
-      await patientApi.status(request.patient, request.action, request.commandId);
-      onNotice(request.action === 'archive' ? 'Patient archivé.' : 'Patient réactivé.');
-      statusRequest.current = null;
-      await cache.invalidateQueries({ queryKey: ['patients', accountKey] });
-      onClose();
-    } catch (error) {
-      if (error instanceof HttpError && error.status < 500) statusRequest.current = null;
-      onError(error instanceof Error ? error.message : t.unavailable);
-    } finally {
-      setBusy(false);
-    }
-  }
   return (
     <article className="patient-record">
       <h4>
@@ -211,7 +142,9 @@ function PatientRecord({
       </h4>
       <p>
         {patient.phone} ·{' '}
-        {patient.contactKind === 'guardian' ? `${t.guardian} : ${patient.contactName}` : t.patient}
+        {patient.contactKind === 'guardian'
+          ? `${t.guardian} : ${patient.contactName}`
+          : t.patient}
       </p>
       {identity.permissions.includes('patients.edit') && (
         <PatientEditor
@@ -225,7 +158,12 @@ function PatientRecord({
         <button
           disabled={busy}
           onClick={() => {
-            void status();
+            void status(
+              !!statusRequest.current ||
+                confirm(
+                  patient.archived ? t.reactivateConfirm : t.archiveConfirm,
+                ),
+            );
           }}
         >
           {busy
@@ -244,8 +182,8 @@ function PatientRecord({
         <ol>
           {history.data?.map((e) => (
             <li key={e.patient.revision}>
-              {t.actions[e.action] ?? e.action} · {new Date(e.at).toLocaleString('fr-FR')} ·{' '}
-              {e.actorId}
+              {t.actions[e.action] ?? e.action} ·{' '}
+              {new Date(e.at).toLocaleString('fr-FR')} · {e.actorId}
               <p>
                 {e.patient.name} · {e.patient.phone} · {e.patient.contactName}
               </p>
@@ -267,10 +205,12 @@ function PatientEditor({
   onError: (value: string) => void;
   onNotice: (value: string) => void;
 }) {
-  const cache = useQueryClient();
-  const [revision, setRevision] = useState(patient.revision);
-  const submitted = useRef<{ commandId: string; revision: number } | null>(null);
-  const [reconciled, setReconciled] = useState(false);
+  const { reconciled, save, reload } = usePatientEditor({
+    patient,
+    accountKey,
+    onError,
+    onNotice,
+  });
   return (
     <>
       {reconciled && <p>{t.current(patient.name)}</p>}
@@ -278,36 +218,9 @@ function PatientEditor({
         initial={patient}
         blocked={patient.archived}
         onError={onError}
-        onSave={async (details, commandId) => {
-          onError('');
-          onNotice('');
-          if (submitted.current?.commandId !== commandId)
-            submitted.current = { commandId, revision };
-          const result = await patientApi.edit(
-            patient.id,
-            details,
-            commandId,
-            submitted.current.revision,
-          );
-          setRevision(result.revision);
-          onNotice('Coordonnées enregistrées.');
-          await cache.invalidateQueries({ queryKey: ['patients', accountKey] });
-        }}
+        onSave={save}
       />
-      <button
-        onClick={async () => {
-          try {
-            const latest = await patientApi.get(patient.id);
-            cache.setQueryData(['patients', accountKey, 'record', patient.id], latest);
-            setRevision(latest.revision);
-            setReconciled(true);
-          } catch (error) {
-            onError(error instanceof Error ? error.message : t.unavailable);
-          }
-        }}
-      >
-        {t.reload}
-      </button>
+      <button onClick={reload}>{t.reload}</button>
     </>
   );
 }
