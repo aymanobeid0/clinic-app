@@ -485,6 +485,20 @@ test('a denied manager write reconciles demotion and removes confidential accoun
   await page.getByLabel('Mot de passe temporaire', { exact: true }).fill('Fictional-new-account-1');
   await page.getByLabel('Votre mot de passe actuel', { exact: true }).fill('Fictional-scope-manager-1');
 
+  // Hold an earlier identity response until the denied write. Otherwise live
+  // SSE can legitimately reconcile demotion before the command is submitted.
+  const observedIdentity = await (await page.request.get('/api/identity')).json();
+  let deniedWrite = false;
+  await page.route('**/api/identity', async route => {
+    if (!deniedWrite) await route.fulfill({ json: observedIdentity });
+    else await route.continue();
+  });
+  await page.route('**/api/accounts', async route => {
+    const response = await route.fetch();
+    if (route.request().method() === 'POST' && [401, 403].includes(response.status())) deniedWrite = true;
+    await route.fulfill({ response });
+  });
+
   const other = request.agent(app);
   let csrf = (await other.get('/api/session')).body.csrfToken;
   csrf = (await other.post('/api/sign-in').set('Origin', 'http://127.0.0.1:4173')
@@ -495,7 +509,7 @@ test('a denied manager write reconciles demotion and removes confidential accoun
   expect(result.status).toBe(200);
   const denied = page.waitForResponse(response => response.url().endsWith('/api/accounts') && response.request().method() === 'POST');
   await page.getByRole('button', { name: 'Créer le compte', exact: true }).click();
-  expect((await denied).status()).toBe(403);
+  expect((await denied).status()).toBe(401);
   await expect(page.getByLabel('Nom affiché', { exact: true })).toHaveCount(0);
 });
 

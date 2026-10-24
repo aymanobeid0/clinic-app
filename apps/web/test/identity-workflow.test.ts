@@ -25,6 +25,11 @@ test("a denied command reconciles revoked identity immediately but conflicts ret
   expect(cache.getQueryData(["accounts"])).toEqual([
     "confidential draft owner",
   ]);
+  current = { ...manager, isManager: false };
+  await workflow.reconcileDenied(new HttpError(403, 'Permission revoked'));
+  expect(cache.getQueryData(['identity'])).toEqual(current);
+  expect(cache.getQueryData(['accounts'])).toBeUndefined();
+  cache.setQueryData(['accounts'], ['confidential draft owner']);
   current = null;
   await workflow.reconcileDenied(new HttpError(401, "Session expired"));
   expect(cache.getQueryData(["identity"])).toBeNull();
