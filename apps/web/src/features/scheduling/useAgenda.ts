@@ -9,6 +9,7 @@ import type {
   Appointment,
   AppointmentStatus,
   Identity,
+  SchedulingChoices,
 } from '@clinic/contracts';
 import { HttpError } from '../identity/identity.api.js';
 import { schedulingApi } from './scheduling.api.js';
@@ -43,12 +44,33 @@ export function useAgenda(
   });
   const choices = useQuery({
     queryKey: [...scope, 'choices', appliedSearch],
-    queryFn: ({ signal }) => schedulingApi.choices(appliedSearch, signal),
+    queryFn: async ({ signal }) => {
+      try {
+        return await schedulingApi.choices(appliedSearch, signal);
+      } catch (error) {
+        await createIdentityWorkflow(client).reconcileDenied(error);
+        throw error;
+      }
+    },
     retry: false,
-    gcTime: 0,
+    // Keep successful choices in the scoped Query cache for transient failures.
+    // The existing lifecycle cleanup removes the entire scope on unmount.
+    gcTime: Infinity,
     placeholderData: keepPreviousData,
   });
-  const displayedChoices = choices.data;
+  const choicesDenied =
+    choices.error instanceof HttpError &&
+    (choices.error.status === 401 || choices.error.status === 403);
+  const previousChoices = client
+    .getQueryCache()
+    .findAll({ queryKey: [...scope, 'choices'] })
+    .filter((query) => query.state.data !== undefined)
+    .sort(
+      (left, right) => right.state.dataUpdatedAt - left.state.dataUpdatedAt,
+    )[0]?.state.data as SchedulingChoices | undefined;
+  const displayedChoices = choicesDenied
+    ? undefined
+    : (choices.data ?? previousChoices);
   const settings = useQuery({
     queryKey: [...scope, 'settings'],
     queryFn: ({ signal }) => schedulingApi.settings(signal),
