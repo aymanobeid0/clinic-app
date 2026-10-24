@@ -31,3 +31,22 @@ First browser run:7/9 PASS, then reproducible patient failure. Baseline experime
 Typecheck and lint passed regularly after extraction cleanup. One intermediate undefined translation import was fixed; one focused combined run failed to read a Vite temporary module cache inside the sandbox while identity6/6 passed. Supported escalated focused retry succeeded. Build PASS with existing large-bundle warning532.55kB/154.88kB gzip. These are working-tree/intermediate checks, not yet final pinned full-suite evidence. No test-source changes remain in the original browser files.
 
 Full suite, final exact source pin and independent formal review are pending. Do not substitute historical #52 results. No live mail, product design/print/accessibility certification, deployment, restoration, performance/security benchmark or real-data acceptance. Unrelated API error plan remains unchanged/excluded (SHA256 `82E186AF080DB25098E44EEA1B9B097122245C0447967E1D4827528162E64A6A`). Exact branch/PR publication requires separate owner approval; no automatic merge or #54 progression.
+
+## Final builder verification — 2026-10-24
+
+The preceding pending builder-check statements are superseded by this ledger. Runtime/test pin: `864f3c7132514146cbf0ad990a7c8b32210ae38a`. Only evidence/handoff changes follow. All entries below were directly executed and observed by the builder; reviewer preparation is separately attributed.
+
+| Check | Result and revision provenance |
+| --- | --- |
+| `npm test` | **248/248 PASS,22/22 files,493.24s**, exit0. Launched21:13:57 UTC from864f3c7; no source/test edits during execution. Log `.local-dev/issue-53-full-tests.log`. Expected injected database/storage failures logged during passing failure-path tests. No mixed-launch provenance. |
+| French rendered application | **9/9 PASS,29.5s**, original unchanged patients3/patient-access4/scheduling2 suites, isolated real PostgreSQL/API and French scaffold. Same runtime/test bytes as864f3c7 except subsequent LF normalization of three scaffold files. No unsuccessful diagnostic fixture edits retained. |
+| Focused patient/identity integration | **7/7 PASS,2files,1.14s**, final committed864f3c7; direct escalated execution after the earlier sandbox temporary-cache read failure. Patient cache test1, existing identity6. |
+| Typecheck / lint | Both **PASS**, exit0, final committed864f3c7. Earlier cleanup/import and CRLF diff-check failures are corrected, not hidden. |
+| `npm run build` | **PASS**, exit0, final864f3c7. Existing large-chunk warning532.63kB/154.91kB gzip; no bundle or dependency project added. |
+| Comparison / preservation | `git diff --check origin/main...HEAD` **PASS** at864f3c7; no API/contracts/schema/migration/style/routing changes. API error plan hash remains identical; pre-existing #52 publication handoff entry preserved. |
+| Independent review | `/root/reviewer53` reports skill/source/live-read preparation complete; initial sandbox network failure resolved through escalation. **No formal diff review, test execution or pass claimed.** Required owner comparison-ref confirmation is still pending. |
+| Cleanup | Directly observed `docker compose -p clinic-issue53-test -f infra/compose.test.yml down` remove only that disposable container/network after full suite completion. No owner-used database or unrelated ERP resources touched. |
+
+No new `npm ci` or Linux/bash `scripts/verify-app.sh` wrapper run: existing unchanged pinned dependencies reused, individual Windows checks executed as above. No broader clinical/UI browser suite, production HTTP/2/SSE deployment verification, visual/accessibility/print certification, live mail, workload/security benchmark, restore or real-data checks. These checks certify this behavior extraction's tested scope only; designed UI and final coverage remain their recorded owners.
+
+Builder implementation/checks are complete; ticket acceptance and publication remain incomplete until formal independent review. Next step is owner confirmation of proposed comparison `15e01b3771435b1260147295508a70f5080515f0` (or another supplied ref), then the same reviewer runs the pinned two-axis review, builder resolves findings, reviewer rechecks and records disposition. Exact branch/PR publication approval follows completed review/handoff; nothing has been pushed or published for #53.
