@@ -236,6 +236,27 @@ test('promoted doctor signs in with clinic code and username, without a login em
   await expect(page.getByText('Configuration terminée', { exact: true })).toBeVisible();
   await expect(page.getByText('Bonjour Docteur responsable.', { exact: false })).toBeVisible();
 });
+
+test('account drafts are discarded when the observed access scope changes', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Mode de connexion').selectOption('clinic_username');
+  await page.getByLabel('Code de la clinique', { exact: true }).fill(clinicCode);
+  await page.getByLabel('Identifiant', { exact: true }).fill('doctor');
+  await page.getByLabel('Mot de passe', { exact: true }).fill('Fictional-doctor-browser-1');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page.getByRole('heading', { name: 'Comptes individuels' })).toBeVisible();
+  await page.getByLabel('Nom affiché', { exact: true }).fill('Brouillon confidentiel');
+  // Transport-level permission change models a change made on another PC.
+  // Browser behavior, not hook internals, is the assertion surface.
+  await page.route('**/api/identity', async route => {
+    const response = await route.fetch();
+    const actor = await response.json();
+    await route.fulfill({ response, json: { ...actor, permissions: ['patients.read'] } });
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
+  await expect(page.getByLabel('Nom affiché', { exact: true })).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'Créer le compte', exact: true })).toBeEnabled();
+});
 test('French manager creates a staff account, changes its permissions and disables access from another PC', async ({
   page,
   browser,
@@ -437,4 +458,81 @@ test('concurrent manager permission edits keep the stale draft until explicit re
   await expect(editor(page).getByLabel('Stock — Consulter', { exact: true })).not.toBeChecked();
   await expect(editor(page).getByLabel('Rendez-vous — Gérer', { exact: true })).toBeChecked();
   await other.close();
+});
+
+async function readyManagerFixture() {
+  const clinic = await operator.client.clinic.findUniqueOrThrow({ where: { code: clinicCode } });
+  const username = `scope-${randomUUID().slice(0, 8)}`;
+  const account = await operator.client.account.create({ data: {
+    clinicId: clinic.id, username, displayName: 'Responsable fictif',
+    passwordHash: await hash('Fictional-scope-manager-1'), isManager: true,
+    verifiedEmail: `${username}@example.invalid`, recoveryEmail: `${username}@example.invalid`,
+    codesSaved: true,
+  } });
+  return account;
+}
+
+test('a denied manager write reconciles demotion and removes confidential account drafts', async ({ page }) => {
+  const account = await readyManagerFixture();
+  await page.goto('/');
+  await page.getByLabel('Mode de connexion').selectOption('clinic_username');
+  await page.getByLabel('Code de la clinique', { exact: true }).fill(clinicCode);
+  await page.getByLabel('Identifiant', { exact: true }).fill(account.username);
+  await page.getByLabel('Mot de passe', { exact: true }).fill('Fictional-scope-manager-1');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.getByLabel('Nom affiché', { exact: true }).fill('Brouillon confidentiel');
+  await page.getByLabel('Nouvel identifiant', { exact: true }).fill(`new-${randomUUID().slice(0, 8)}`);
+  await page.getByLabel('Mot de passe temporaire', { exact: true }).fill('Fictional-new-account-1');
+  await page.getByLabel('Votre mot de passe actuel', { exact: true }).fill('Fictional-scope-manager-1');
+
+  // Hold an earlier identity response until the denied write. Otherwise live
+  // SSE can legitimately reconcile demotion before the command is submitted.
+  const observedIdentity = await (await page.request.get('/api/identity')).json();
+  let deniedWrite = false;
+  await page.route('**/api/identity', async route => {
+    if (!deniedWrite) await route.fulfill({ json: observedIdentity });
+    else await route.continue();
+  });
+  await page.route('**/api/accounts', async route => {
+    const response = await route.fetch();
+    if (route.request().method() === 'POST' && [401, 403].includes(response.status())) deniedWrite = true;
+    await route.fulfill({ response });
+  });
+
+  const other = request.agent(app);
+  let csrf = (await other.get('/api/session')).body.csrfToken;
+  csrf = (await other.post('/api/sign-in').set('Origin', 'http://127.0.0.1:4173')
+    .set('x-csrf-token', csrf).send({ method: 'clinic_username', clinicCode, username: 'doctor', password: 'Fictional-doctor-browser-1' })).body.csrfToken;
+  const result = await other.post(`/api/accounts/${account.id}/manager`)
+    .set('Origin', 'http://127.0.0.1:4173').set('x-csrf-token', csrf)
+    .send({ revision: account.revision, isManager: false, currentPassword: 'Fictional-doctor-browser-1' });
+  expect(result.status).toBe(200);
+  const denied = page.waitForResponse(response => response.url().endsWith('/api/accounts') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Créer le compte', exact: true }).click();
+  expect((await denied).status()).toBe(401);
+  await expect(page.getByLabel('Nom affiché', { exact: true })).toHaveCount(0);
+});
+
+test('password change clears the workspace when the following session read loses the network', async ({ page }) => {
+  const account = await readyManagerFixture();
+  await page.goto('/');
+  await page.getByLabel('Mode de connexion').selectOption('clinic_username');
+  await page.getByLabel('Code de la clinique', { exact: true }).fill(clinicCode);
+  await page.getByLabel('Identifiant', { exact: true }).fill(account.username);
+  await page.getByLabel('Mot de passe', { exact: true }).fill('Fictional-scope-manager-1');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.getByLabel('Nom affiché', { exact: true }).fill('Brouillon confidentiel');
+  await page.route('**/api/password', async route => {
+    const response = await route.fetch();
+    expect(response.status()).toBe(204);
+    await page.route('**/api/session', route => route.abort());
+    await route.fulfill({ response });
+  });
+  const passwordForm = page.locator('form').filter({ has: page.getByRole('heading', { name: 'Changer mon mot de passe', exact: true }) });
+  await passwordForm.getByLabel('Mot de passe actuel', { exact: true }).fill('Fictional-scope-manager-1');
+  await passwordForm.getByLabel('Nouveau mot de passe personnel', { exact: true }).fill('Fictional-scope-manager-2');
+  await passwordForm.getByRole('button', { name: 'Changer mon mot de passe', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Connexion à votre clinique' })).toBeVisible();
+  await expect(page.getByLabel('Nom affiché', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('alert')).toBeVisible();
 });

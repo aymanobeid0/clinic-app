@@ -125,7 +125,7 @@ export function IdentityPage() {
   }
 
   return (
-    <IdentityLayout>
+    <IdentityLayout key={session.scopeKey}>
       <div className="step">
         {stage && stage !== 'ready' ? 'CONFIGURATION DU COMPTE' : 'BIENVENUE'}
       </div>
