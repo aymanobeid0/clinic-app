@@ -64,7 +64,11 @@ export const identityApi = {
     signal?: AbortSignal,
   ): Promise<{ code: string; name: string }> {
     const response = await fetch("/api/clinic", { cache: "no-store", signal });
-    if (!response.ok) throw new Error("Accès indisponible. Reconnectez-vous.");
+    if (!response.ok)
+      throw new HttpError(
+        response.status,
+        "Accès indisponible. Reconnectez-vous.",
+      );
     return response.json();
   },
   signIn(input: SignIn) {

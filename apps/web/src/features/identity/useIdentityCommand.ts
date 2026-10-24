@@ -1,8 +1,11 @@
 import { useRef, useState } from "react";
 import { ZodError } from "zod";
+import { useQueryClient } from "@tanstack/react-query";
+import { createIdentityWorkflow } from "./identity.workflow.js";
 
 // No useMutation: it would retain sensitive command variables/results in cache.
 export function useIdentityCommand() {
+  const cache = useQueryClient();
   const running = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -17,6 +20,7 @@ export function useIdentityCommand() {
       await action();
       return true;
     } catch (error) {
+      await createIdentityWorkflow(cache).reconcileDenied(error);
       setError(
         error instanceof ZodError
           ? "Vérifiez les champs saisis."

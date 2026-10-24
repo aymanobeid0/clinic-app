@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Identity, SignIn } from "@clinic/contracts";
-import { identityApi, refreshSession } from "./identity.api.js";
+import { HttpError, identityApi, refreshSession } from "./identity.api.js";
 
 // Deliberately use commands rather than cached mutations: passwords and recovery
 // material must never become TanStack mutation variables/results.
@@ -56,6 +56,7 @@ export function createIdentityWorkflow(cache: QueryClient) {
           if (!signal?.aborted) {
             observed = "";
             await clearSensitiveQueries();
+            cache.setQueryData(["identity"], null);
           }
           throw error;
         }
@@ -68,6 +69,14 @@ export function createIdentityWorkflow(cache: QueryClient) {
       });
     },
     transition,
+    async reconcileDenied(error: unknown) {
+      if (
+        error instanceof HttpError &&
+        (error.status === 401 || error.status === 403)
+      ) {
+        await cache.invalidateQueries({ queryKey: ["identity"] });
+      }
+    },
     clearSensitiveQueries,
   };
 }

@@ -37,6 +37,9 @@ export function useIdentitySession() {
       ? codes
       : null;
   useEffect(() => {
+    if (clinic.error) void workflow.reconcileDenied(clinic.error);
+  }, [clinic.error, workflow]);
+  useEffect(() => {
     setCodes(null);
   }, [accountKey]);
   const [verificationToken, setVerificationToken] = useState(
