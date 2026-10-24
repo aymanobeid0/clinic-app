@@ -236,6 +236,27 @@ test('promoted doctor signs in with clinic code and username, without a login em
   await expect(page.getByText('Configuration terminée', { exact: true })).toBeVisible();
   await expect(page.getByText('Bonjour Docteur responsable.', { exact: false })).toBeVisible();
 });
+
+test('account drafts are discarded when the observed access scope changes', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Mode de connexion').selectOption('clinic_username');
+  await page.getByLabel('Code de la clinique', { exact: true }).fill(clinicCode);
+  await page.getByLabel('Identifiant', { exact: true }).fill('doctor');
+  await page.getByLabel('Mot de passe', { exact: true }).fill('Fictional-doctor-browser-1');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await expect(page.getByRole('heading', { name: 'Comptes individuels' })).toBeVisible();
+  await page.getByLabel('Nom affiché', { exact: true }).fill('Brouillon confidentiel');
+  // Transport-level permission change models a change made on another PC.
+  // Browser behavior, not hook internals, is the assertion surface.
+  await page.route('**/api/identity', async route => {
+    const response = await route.fetch();
+    const actor = await response.json();
+    await route.fulfill({ response, json: { ...actor, permissions: ['patients.read'] } });
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
+  await expect(page.getByLabel('Nom affiché', { exact: true })).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'Créer le compte', exact: true })).toBeEnabled();
+});
 test('French manager creates a staff account, changes its permissions and disables access from another PC', async ({
   page,
   browser,
