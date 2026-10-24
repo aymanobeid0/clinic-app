@@ -274,3 +274,73 @@ test('lost booking responses retry the same command, stale edits reconcile, and 
     '42',
   );
 });
+
+test('a failed patient search preserves the booking draft until choices can be retried', async ({
+  page,
+}) => {
+  const p = await patient();
+  await login(page);
+  const panel = page.getByRole('region', {
+    name: 'Agenda des rendez-vous',
+    exact: true,
+  });
+  await panel.getByLabel('Jour', { exact: true }).fill('2026-12-02');
+  await panel.getByLabel('Patient', { exact: true }).selectOption(p.id);
+  await panel.getByLabel('Dentiste', { exact: true }).selectOption(doctorId);
+  await panel
+    .getByLabel('Début · heure de Nouakchott (UTC)')
+    .fill('2026-12-02T11:00');
+  await panel.getByLabel('Durée (minutes)', { exact: true }).fill('65');
+  await page.route('**/api/appointments/choices?*', (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Recherche temporairement indisponible.' }),
+    }),
+  );
+  await panel
+    .getByLabel('Rechercher un patient par nom ou numéro')
+    .fill('autre recherche');
+  await panel
+    .getByRole('button', { name: 'Rechercher dans les patients' })
+    .click();
+  await expect(panel.getByRole('alert')).toContainText(
+    'Recherche temporairement indisponible.',
+  );
+  await expect(panel.getByLabel('Patient', { exact: true })).toHaveValue(p.id);
+  await expect(
+    panel.getByLabel('Durée (minutes)', { exact: true }),
+  ).toHaveValue('65');
+  await expect(
+    panel.getByLabel('Début · heure de Nouakchott (UTC)'),
+  ).toHaveValue('2026-12-02T11:00');
+  await page.unroute('**/api/appointments/choices?*');
+  await panel
+    .getByLabel('Rechercher un patient par nom ou numéro')
+    .fill(p.name);
+  await panel
+    .getByRole('button', { name: 'Rechercher dans les patients' })
+    .click();
+  await expect(panel.getByRole('alert')).toHaveCount(0);
+  await expect(panel.getByLabel('Patient', { exact: true })).toHaveValue(p.id);
+  await expect(
+    panel.getByLabel('Durée (minutes)', { exact: true }),
+  ).toHaveValue('65');
+  await panel
+    .getByRole('button', { name: 'Enregistrer le rendez-vous', exact: true })
+    .click();
+  await expect(
+    panel.getByText('Modification enregistrée.', { exact: true }),
+  ).toBeVisible();
+  const saved = (await manager.get('/api/appointments?date=2026-12-02')).body
+    .appointments;
+  expect(saved).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        patientId: p.id,
+        durationMinutes: 65,
+        startsAt: '2026-12-02T11:00:00.000Z',
+      }),
+    ]),
+  );
+});
