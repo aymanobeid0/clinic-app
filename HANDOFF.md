@@ -1,27 +1,25 @@
 # Current handoff
 
-Updated 2026-10-25 UTC. Current continuation only; detailed evidence stays in linked per-ticket reports. Earlier work: [small history index](HANDOFF.history-2026-10-25.md).
+Updated 2026-10-25 UTC. Detailed earlier evidence: [history index](HANDOFF.history-2026-10-25.md).
 
-## Current authorized work
+## Owner direction — apply to future work
 
-- Owner explicitly requested closing #55 and opening this chat to implement #56 with Matt skills. #55 was directly closed COMPLETED at14:47:27Z; current live read confirms CLOSED. No other issue state changed. #56 is authorized through implementation, checks, one separate reviewer/fixes/recheck, commits and PR publication. No #57 progression.
-- Branch `codex/issue-56-care-logic`; freshly fetched main/base `c62917bb179e92fe9e3d9d65a8eac25106144ff2`. Owner answered “fresh main” for this ticket's review comparison, pinned to that base. Initial source `c3061aa7517498f87344ec38231af92afa7d3528`; fixed/final source `8fb859acbd4a00585f22c74e903a49201c6f0b63`.
-- Live #56/comments/native blocker read directly: #55 CLOSED, criteria unchanged. #51 backend gate CLOSED. PR96 verified MERGED at `695fcb1f7f0f407e14dfedb3b66ad140662b1c2c`, ancestor of base; PR97 docs cleanup verified MERGED at base. Prior #55 evidence: [implementation](docs/planning/issue-55-implementation.md), [review](docs/planning/issue-55-review.md).
-- #56 separates visit/procedure, note/prescription, reference/suggestion and authorized print logic from temporary scaffold presentation. No new product UI/pages/routes/backend/contracts/schema. Final UI remains #66/#67/#74, pending task presentation #73 and scaffold replacement #76.
+The owner reports excessive execution time, token consumption, code/test volume and repeated rework despite the small feature scope. They want direct delivery of a usable application, with effort proportional to the change. This is an operating instruction, not authorization to rebuild or start another ticket.
 
-## Evidence and remaining work
+Follow [AGENTS.md — Execution economy](AGENTS.md#execution-economy--owner-instruction-2026-10-25): targeted reads, reuse stable context, minimal clear changes, proportionate checks and concise communication. Explain a mandatory procedure's disproportionate cost before executing it. Apply required safety/review gates without expanding them into unnecessary process. Preserve working code; any simplification must address an identified problem within authorized scope.
 
-[Issue56 implementation record](docs/planning/issue-56-implementation.md) contains exact selected/read skills/references, overrides, requirement trace, isolation evidence, red/green results, failures and omissions. Fresh per-ticket checkpoint completed with installed Matt implement/TDD/review/handoff/codebase-design and PR/React guidance. Approved authenticated application/browser + real isolated PostgreSQL seams reused.
+## Current project state
 
-Builder directly observed final fixed-source browsers14/14 PASS53.7s, complete tests259/259 (26files) PASS496.62s, then typecheck/lint/build/diffcheck PASS, all at unchanged `8fb859a`. Source/time/result log is linked in the implementation report. Build advisory:542.47kB/157.58kB gzip. Earlier exploratory failure and interrupted superseded full run remain documented, not counted as final passes.
+- Direct GitHub verification: PR98 merged into main at `b50448fe5a6bb815438ebf25b9cd75eafa370930`; #56 is closed. PR93/#52 and PR94/#53 were also merged but their issues remained stale-open; owner requested accurate tracking, so both were closed COMPLETED after checking the merged scope and review evidence. #50–#56 are now closed. #57 (billing frontend logic) is the next planned scope; its native prerequisite #53 is complete. No implementation of #57 is authorized by this tracking correction.
+- #56 delivered frontend visit/note/prescription/reference/chart-confirmation/print logic, with final product UI deferred. Evidence: [implementation](docs/planning/issue-56-implementation.md), [independent review](docs/planning/issue-56-review.md). Last tested app source `8fb859acbd4a00585f22c74e903a49201c6f0b63`; published branch head `ce68a7073e0d6813790dee1c239a2882e2f360e0`.
+- Historical checks:259 tests and14 browser checks passed; typecheck/lint/build passed. Same reviewer rechecked two fixes, zero residual findings. These are prior results, not checks rerun for this documentation update. Bundle-size advisory remains in the report.
 
-One independent reviewer `/root/reviewer56` initially found Standards0 / Spec2 (P2). Builder reproduced/fixed both; same-reviewer recheck reports **Standards0 / Spec0 residual**. Builder read [actual report](docs/planning/issue-56-review.md). Reviewer independently inspected final full-suite source/result output and source identity, not rerun the full suite/browser. Same reviewer accepted evidence/publish head `1c43b7ce691fbeda7ec84dc77d31256b8ffda417` and matching actual mirror. Builder pushed it and opened/attached [PR98](https://github.com/aymanobeid0/clinic-app/pull/98) at15:24:35Z. Direct readback: OPEN, non-draft, MERGEABLE/CLEAN, exact accepted head/base. No remote CI checks reported. Publication-only metadata follows; app source stays `8fb859a`. Next action: owner review and manual merge. #56 remains open; no #57 work.
+Tracking instruction: keep Issues and the Clinic MVP Project aligned with verified merged work. Reconcile both before recommending the next task; do not mistake stale status for unimplemented code. The current project reconciliation adds missing recovery tasks and marks verified closed work Done; future work stays Backlog.
 
 ## Preserve and operate safely
 
-- Unrelated untracked planned-only `docs/planning/api-validation-errors-plan.md` unchanged, excluded and unimplemented. SHA256 `82E186AF080DB25098E44EEA1B9B097122245C0447967E1D4827528162E64A6A` directly verified.
-- Only disposable `clinic-issue56-test` was created, on verified free loopback55438; direct label/port/mount inspect before existing38 migrations. All tests completed; direct reinspection then removed only the disposable issue56 container/network. Owner `clinic-issue7-test` remains stopped on55437, untouched. Do not disturb Apidog/manual resources or read ignored credentials.
-- Sandbox Git/Docker/CIM failures were retried through supported escalation successfully. Corrected comments connector parameter retry succeeded. No current connection blocker. No production/live migration, real data, provider/mail, restore or pilot acceptance.
-- Actual mirror: `C:/Users/ayman/AppData/Local/Temp/clinic-app-HANDOFF.md`. Refreshed/hash-compared before PR; refresh both with this publication status before final metadata push. Preserve compact status, with evidence in linked reports.
+- Preserve unrelated untracked, planned-only `docs/planning/api-validation-errors-plan.md`, excluded and unimplemented. Original SHA256 `82E186AF080DB25098E44EEA1B9B097122245C0447967E1D4827528162E64A6A`.
+- Disposable issue56 test resources were removed. Owner issue7 database was stopped and untouched at last direct check. Reinspect resources before future database writes; preserve Apidog/manual resources and keep credentials private.
+- Existing mirror: `C:/Users/ayman/AppData/Local/Temp/clinic-app-HANDOFF.md`; refresh from this tracked file and hash-compare when updating the handoff.
 
-Suggested continuation skills: same Matt reviewer for findings/recheck; builder implement/TDD for any fix, handoff/PR for final publication. Follow [workflow](docs/agents/skill-integration.md) and [tracker](docs/agents/issue-tracker.md).
+Suggested skills: use only those applicable to the next explicit request; Matt implement/TDD/review for authorized implementation, writing-for-agents for instruction edits. Next action: await the owner's concrete request; do not restart or expand the project on your own.

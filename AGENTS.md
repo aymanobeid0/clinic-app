@@ -9,11 +9,23 @@ Online dental clinic MVP. Scope overview: docs/planning/mvp-scope.md. Behavior c
 - Read the assigned GitHub issue, its acceptance criteria and open blockers. For tracker/readiness rules, read docs/agents/issue-tracker.md.
 - For dependencies or architecture, read docs/planning/dependency-proposal.md and docs/architecture/application-architecture.md. Preserve the approved stack and Zustand/TanStack Query state boundaries.
 - For interface work, read design/design.md and design/designtokens.md (or the root design.md and designtokens.md before their relocation is published); prototypes are visual references, with the approved spec governing behavior.
-- Before every authorized ticket implementation, review, and PR opening, read docs/agents/skill-integration.md and complete its applicable per-ticket skill and handoff checkpoints. A previous ticket's skill check does not satisfy the current ticket.
+- For each authorized ticket, read docs/agents/skill-integration.md and complete its applicable skill, review and handoff checkpoints. Reuse unchanged instructions already read within that ticket; reopen relevant sections when requirements or scope change. A previous ticket's skill check does not satisfy the current ticket.
+
+## Execution economy — owner instruction, 2026-10-25
+
+Prioritize a working, usable clinic application and the requested outcome. Keep time, token use and change size proportional to the task; lines of code, test counts and process activity are not measures of delivery.
+
+- Read the files and current service data needed for the change. Reuse stable context already established in the session; follow historical evidence only to resolve a concrete question.
+- Make the smallest clear change that satisfies the request. Add abstractions, layers and documentation only when they solve an actual problem in that scope.
+- Test observable behavior in proportion to impact. Reuse existing coverage; add focused regressions for meaningful risks. Run broader suites when required or justified by shared behavior, and repeat them only after relevant changes or failures.
+- Keep updates brief and useful: findings, blockers, decisions and results. Avoid repeated unchanged status, long plans and duplicated evidence; keep detailed evidence in its existing report.
+- When a required procedure would add disproportionate time or token cost, explain the concrete requirement and cost before doing it. This instruction narrows broader workflow/skill guidance that would otherwise create unnecessary work; preserve applicable safety boundaries and required independent implementation review.
 
 ## Boundaries
 
 Use codex/ branch names and human-reviewed pull requests. Every merge requires human approval. Production deployment, live migrations and real patient data require separate authorization.
+
+Keep GitHub Issues and the Clinic MVP Project synchronized with verified delivery. After an owner-approved merge, confirm its scope/evidence, close the completed issue and mark its project item Done. Before recommending work, reconcile issue/project status with merged PRs; a stale open issue is not evidence of missing implementation. Preserve native dependencies and keep deferred UI scope separate. Use closing issue references in implementation PRs where appropriate.
 
 Resolve prerequisite decision issues #2-#6 against their current criteria and recorded owner decisions before dependent implementation. The ready-for-agent label records preparation, not execution authorization.
 
