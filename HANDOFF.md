@@ -18,10 +18,10 @@ Known limits: browser HTTP boundary mocks, no new live inventory journey or fina
 
 ## Tracker and safety
 
-Direct live #58 OPEN/no comments; native blocker #52 CLOSED/COMPLETED, prerequisites present in fetched main. Project moved Backlog to Building. After checks/recheck: push/open human-review PR, attach and verify head/base/state, then Project Review. Close/Done only after owner-approved merge. No changes to other criteria/dependencies.
+Direct live #58 OPEN/no comments; native blocker #52 CLOSED/COMPLETED, prerequisites present in fetched main. Published/attached [PR100](https://github.com/aymanobeid0/clinic-app/pull/100) at20:26:42Z; direct OPEN/non-draft/MERGEABLE/CLEAN, base main ba12e8a, initial publication head27d4a4df6956d166103b5b6ce1db9d9c1a1f002d. No remote CI checks reported. Project Review directly verified. Close/Done only after owner-approved merge. No changes to other criteria/dependencies.
 
 Only disposable `clinic-issue58-test` on verified free127.0.0.1:55438 created; project/service labels, binding/no mounts inspected before existing38 migrations/runtime preparation. Owner `clinic-issue7-test-database-1` remains stopped55437 and untouched; preserve ERP/Apidog/manual resources. Ownership/port/no mounts reverified after checks; disposable issue58 container/network removed; owner issue7 directly remains stopped55437. No ignored credentials read. GitHub/Git/Docker/browser sandbox failures resolved by supported escalation; no current connection blocker.
 
-Preserve excluded untracked planned-only `docs/planning/api-validation-errors-plan.md`, SHA256 `82E186AF080DB25098E44EEA1B9B097122245C0447967E1D4827528162E64A6A`. Established mirror `C:/Users/ayman/AppData/Local/Temp/clinic-app-HANDOFF.md` must refresh/hash-match before PR.
+Preserve excluded untracked planned-only `docs/planning/api-validation-errors-plan.md`, SHA256 `82E186AF080DB25098E44EEA1B9B097122245C0447967E1D4827528162E64A6A`. Established mirror `C:/Users/ayman/AppData/Local/Temp/clinic-app-HANDOFF.md` refreshed/hash-matched before PR; refresh again after publication metadata.
 
-Final evidence checkpoint396c91b accepted by the same reviewer after direct log/diff/mirror inspection. Next: push/open PR under existing authorization. Suggested skills: already-read repository Matt implement/TDD/code-review/handoff and installed PR guidance. Reuse this ticket's stable context; do not start #59.
+Final evidence checkpoint396c91b accepted by the same reviewer after direct log/diff/mirror inspection. Next: owner review/manual merge of PR100. Suggested skills: already-read repository Matt implement/TDD/code-review/handoff and installed PR guidance. Reuse this ticket's stable context; do not start #59.
