@@ -8,6 +8,8 @@ The former 231,059-byte, 833-line chronology is retained exactly in Git at `b939
 
 [View the fixed original](https://github.com/aymanobeid0/clinic-app/blob/b939251f5cc8fd177e638255b3d116e0d2a4321e/HANDOFF.history-2026-10-25.md), or use `git show b939251f5cc8fd177e638255b3d116e0d2a4321e:HANDOFF.history-2026-10-25.md` locally. Git preserves the original mixed line endings; redirecting terminal output may normalize them. No history was rewritten. This reduces the checked-out file, not existing Git storage or clone history.
 
+If PR commits are not retained in main ancestry (for example, after squash merge/branch deletion), ordinary future clones may lack that exact snapshot. The existing main ancestor `695fcb1f7f0f407e14dfedb3b66ad140662b1c2c:HANDOFF.md` retains the first 823 lines as text; use `git show` with that ref/path as fallback. It is not byte-identical and excludes the final ten publication lines. Their distinct facts are retained below and in the #55 publication record; current scope reports remain the primary lookup.
+
 ## Distinct historical notes
 
 Current contracts and workflow remain authoritative. These dated notes preserve provenance rather than repeat their rules:
@@ -23,7 +25,7 @@ Current contracts and workflow remain authoritative. These dated notes preserve 
 
 ## Evidence by scope
 
-Ranges cover all 833 original lines without gaps. Each issue implementation has a corresponding `issue-N-review.md` beside it; read both for pins/checks/provenance/limits. Missing report detail remains recoverable from the fixed original. These links do not imply sentence-for-sentence duplication.
+Ranges cover all 833 original lines without gaps. Issue implementations normally have `issue-N-review.md` beside them; #7 instead has [initial](docs/planning/issue-7-initial-review.md), [continuation](docs/planning/issue-7-continuation-review.md) and [email](docs/planning/issue-7-email-login-review.md) reviews. Read both implementation and review for pins/checks/provenance/limits. Historical detail is in the Git locators above; the final #55 publication note is also preserved in its record. These links do not imply sentence-for-sentence duplication.
 
 | Original lines | Scope | Focused record |
 | --- | --- | --- |
