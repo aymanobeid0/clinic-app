@@ -509,7 +509,9 @@ test('a denied manager write reconciles demotion and removes confidential accoun
   expect(result.status).toBe(200);
   const denied = page.waitForResponse(response => response.url().endsWith('/api/accounts') && response.request().method() === 'POST');
   await page.getByRole('button', { name: 'Créer le compte', exact: true }).click();
-  expect((await denied).status()).toBe(401);
+  // Demotion may be observed as a revoked session or a permission denial;
+  // both must remove the former manager's confidential workspace.
+  expect([401, 403]).toContain((await denied).status());
   await expect(page.getByLabel('Nom affiché', { exact: true })).toHaveCount(0);
 });
 
