@@ -132,3 +132,44 @@ test("transient clinical read failures retain the tab draft, denial removes the 
   ).toHaveCount(0);
   await expect(page.getByText("Dossier confidentiel")).toHaveCount(0);
 });
+
+test("unmounting one shared clinical reader keeps the other connected to invalidation", async ({
+  page,
+}) => {
+  let text = "Version initiale";
+  await page.route("**/api/**", (route) => route.fulfill({ json: [{ text }] }));
+  await page.goto("/test/care-workflows.harness.html?shared");
+  await expect(page.getByTestId("remaining-reader")).toHaveText(
+    "Version initiale",
+  );
+  await page
+    .getByRole("button", { name: "Retirer le premier lecteur" })
+    .click();
+  text = "Version distante actualisée";
+  await page.getByRole("button", { name: "Actualiser les lecteurs" }).click();
+  await expect(page.getByTestId("remaining-reader")).toHaveText(
+    "Version distante actualisée",
+  );
+});
+
+test("a remote plan revision cannot be submitted by another consumer before explicit rereview", async ({
+  page,
+}) => {
+  await page.goto("/test/care-workflows.harness.html?visit");
+  await page.getByRole("checkbox", { name: "Acte", exact: true }).check();
+  await page
+    .getByRole("button", { name: "Recevoir une révision distante" })
+    .click();
+  await page
+    .getByRole("button", { name: "Soumettre par une autre interface" })
+    .click();
+  await expect(page.getByTestId("submitted")).toHaveText("[]");
+  await expect(page.getByRole("alert")).toBeVisible();
+  await page.getByRole("button", { name: "Relire explicitement" }).click();
+  await page
+    .getByRole("button", { name: "Soumettre par une autre interface" })
+    .click();
+  await expect(page.getByTestId("submitted")).toHaveText(
+    '[{"planId":"plan","itemId":"item","planRevision":2}]',
+  );
+});

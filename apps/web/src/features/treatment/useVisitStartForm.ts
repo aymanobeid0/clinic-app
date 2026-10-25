@@ -35,6 +35,10 @@ export function useVisitStartForm(
     .watch("selected")
     .some((key) => !choices.some((c) => `${c.plan.id}:${c.item.id}` === key));
   const onSubmit = f.handleSubmit((v) => {
+    if (changed || invalid) {
+      f.setError("selected", { message: t.stale });
+      return;
+    }
     const selected = choices.filter((c) =>
       v.selected.includes(`${c.plan.id}:${c.item.id}`),
     );
@@ -54,6 +58,7 @@ export function useVisitStartForm(
     );
   });
   function review() {
+    f.clearErrors("selected");
     setReviewed(plans.map(({ id, revision }) => ({ id, revision })));
     const available = new Set(
       plans.flatMap((p) =>

@@ -37,8 +37,12 @@ export function useCareQuery<T>(
     }
     return () => {
       stream?.close();
-      void cache.cancelQueries({ queryKey, exact: true });
-      cache.removeQueries({ queryKey, exact: true });
+      // Equal-key readers share a Query. Retiring one must not orphan others.
+      const query = cache.getQueryCache().find({ queryKey, exact: true });
+      if (!query?.getObserversCount()) {
+        void cache.cancelQueries({ queryKey, exact: true });
+        cache.removeQueries({ queryKey, exact: true });
+      }
     };
   }, [cache, scope, events, enabled]);
   return {
