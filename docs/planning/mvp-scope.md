@@ -1,6 +1,6 @@
 # Dental clinic MVP — consolidated discovery
 
-Status: user-confirmed discovery baseline, approved on 2026-10-10 with the open items below explicitly carried forward into specification. Discovery is complete. This is a product planning baseline, not a production-ready technical specification. Detailed answers and evolution are in `discovery.md`; the latest explicit decisions supersede earlier alternatives.
+Approved scope overview, reconciled with recorded amendments on 2026-10-25. The [implementation specification](spec-001-clinic-mvp.md) and its linked identity, clinical, financial and file amendments govern behavior; [delivery status](delivery-status.md) carries the dated progress snapshot. Read `discovery.md` for historical reasoning, not current execution status. This overview does not establish production readiness.
 
 ## Pilot and delivery
 
@@ -37,7 +37,7 @@ Ordinary doctors see/perform permitted financial actions only for dental work pe
 
 Removal ends active care access. Historical access needs an explicit manager grant at the removal cutoff: permitted clinical versions plus read-only own-work financial snapshots, never later changes or other doctors' finances. No historical edits, printing/download/export. Inseparable unauthorized mixed attachments are hidden. Account-wide historical-only status and disabled status cannot be lifted by recovery/reassignment. Full revocation removes all patient grants. Browser capture cannot be prevented.
 
-Login uses stable globally unique clinic code plus case-insensitive clinic-unique username; detailed syntax/no-reuse rules are in the reviewed contract. Manager-issued passwords require replacement before clinic access on first login/reset. Phone sign-in is deferred; doctor/staff phone/email are contact-only. Managers require verified distinct recovery email, an explicit real-accessible-email warning and saved offline single-use codes before setup completion. Recovery, token expiry and session invalidation follow the contract; sessions have a fixed 12-hour maximum, no remember-me. MFA and configurable idle locking remain deferred. Live manager onboarding requires working verified email delivery.
+Primary clinic managers sign in with globally unique normalized verified email/password. Employees and doctors promoted to manager retain stable clinic code plus case-insensitive clinic-unique username/password; manager authority never changes the login method. Detailed syntax, uniqueness and no-reuse rules are in [the approved identity contract](identity-access-decisions.md). Manager-issued passwords require replacement before clinic access on first login/reset. Phone sign-in is deferred; doctor/staff phone/email are contact-only. Managers require verified distinct recovery email, an explicit real-accessible-email warning and saved offline single-use codes before setup completion. Recovery, token expiry and session invalidation follow the contract; sessions have a fixed 12-hour maximum, no remember-me. MFA and configurable idle locking remain deferred. Live manager onboarding requires working verified email delivery.
 
 ## Reliability and transition
 

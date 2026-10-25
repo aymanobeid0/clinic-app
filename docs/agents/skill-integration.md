@@ -29,9 +29,9 @@ The checkpoint is complete when relevant skills, sources, procedures, applicable
 
 ## Before each PR: update the existing handoff
 
-Update the existing workspace HANDOFF.md for the ticket before opening its PR, and refresh the established OS-temp clinic-app-HANDOFF.md mirror from it. This existing owner convention overrides the handoff skill's temp-only destination; preserve the current tracking status. Keep the workflow instructions here and the execution record in that handoff, referencing existing issues, commits, reports and tool outputs instead of copying them or creating another tracker.
+Update the existing workspace HANDOFF.md for the ticket before opening its PR, and refresh the established OS-temp clinic-app-HANDOFF.md mirror from it. This existing owner convention overrides the handoff skill's temp-only destination; preserve the current tracking status. Keep workflow instructions here. Keep HANDOFF.md focused on current scope, authorization, pins, blockers, evidence links and the next action (aim below 5 KB). Replace resolved status instead of appending another chronology. Detailed execution and review records remain in their existing per-ticket reports; link them rather than duplicate them. The dated handoff archive preserves earlier history and is read only when needed; subsequent changes remain recoverable in Git.
 
-Record a compact per-ticket entry containing:
+The current handoff and linked per-ticket records together must account for:
 
 - Ticket (or explicit owner-approved scope), authorization reference, branch, base and reviewed/tested commit.
 - Relevant skills: exact SKILL.md source, instructions read, procedures actually performed and any applicable overrides. Record relevant skills considered but skipped and why; unrelated installed skills need no exhaustive exclusion list.
@@ -40,6 +40,10 @@ Record a compact per-ticket entry containing:
 - Review findings and disposition, unresolved blockers and the next authorized step. Record required procedures that were skipped or incomplete, including the reason and any explicit owner override; resolve unmet requirements before opening the PR, or obtain an explicit owner exception.
 
 The PR checkpoint is complete when this entry and the required independent review account for the applicable procedures and checks, with unsupported claims identified. After publication, add the PR URL/status to the same handoff. These are procedural requirements, not automated proof that an agent complied. Preserve manual human review/merge and separate production/live-data authorization.
+
+## Automation memory
+
+Keep each automation's memory as a small current-state pointer (aim below 2 KB): last-run UTC time, current outcome, essential source/review/publication pins, unresolved actions and links to evidence. Replace resolved pending states; keep detailed run history in the existing evidence records. Before a first compaction, preserve the previous memory unchanged in a dated history file beside it. Archive history is consulted only for a specific investigation. Credentials never belong in these records.
 
 ## Sources of truth
 

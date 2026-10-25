@@ -1,8 +1,10 @@
-# Spec 002 — recovery ticket index
+# Spec 002 — published recovery ticket index
+
+> Published planning snapshot (2026-10-18). Tables and local `recovery-r*.md` copies preserve original planning. Read each linked GitHub issue for current acceptance criteria, comments and native blockers; read [delivery status](delivery-status.md) for the dated progress summary.
 
 Parent: [#49](https://github.com/aymanobeid0/clinic-app/issues/49). Owner approved the breakdown and specified the frontend architecture: business logic → components → pages → app routing → main app.
 
-Current execution boundary: backend/API first, then presentation-independent frontend business logic. No product UI coding is authorized by ticket publication. R11–R27 are deferred and require separate implementation authorization after the preceding gates. Keep backend authoritative rules and permissions on the server; clean frontend architecture does not mean copying database/repository layers into the browser.
+Approved execution sequence: backend/API first, then presentation-independent frontend business logic. No product UI coding is authorized by ticket publication. R11–R27 are deferred and require separate implementation authorization after the preceding gates. Keep backend authoritative rules and permissions on the server; clean frontend architecture does not mean copying database/repository layers into the browser.
 
 R1–R2 establish preservation/reconciliation and the backend gate. Existing #18–#27 retain their scope/history; their backend acceptance evidence can satisfy R2 while their outstanding UI criteria remain mapped to later tickets. Do not require whole-issue closure as a backend gate because that would create a cycle. Existing #28/#29 remain operational/pilot gates, not replacements for frontend acceptance. Parent issues are not modified by this publication.
 
@@ -36,5 +38,5 @@ R1–R2 establish preservation/reconciliation and the backend gate. Existing #18
 | R26 | [#75](https://github.com/aymanobeid0/clinic-app/issues/75) | Build the restricted historical workspace | #63, #64, #66, #67, #70, #74 |
 | R27 | [#76](https://github.com/aymanobeid0/clinic-app/issues/76) | Retire the scaffold and verify the connected application | #61, #62, #63, #64, #65, #66, #67, #68, #69, #70, #71, #72, #73, #74, #75 |
 
-All new tickets carry ready-for-agent. Native links represent new recovery-ticket dependencies; existing-feature backend evidence dependencies are explicit in R2, rather than cyclic whole-issue closure requirements. Every new page must consume the separate logic layer, follow approved Dentara references, and be demonstrated locally before proceeding to further pages. Publishing does not authorize implementation, deletion, deployment, real patient data or merge.
+At publication, all new tickets carried ready-for-agent; that label is preparation, not implementation authorization. Native links represent new recovery-ticket dependencies; existing-feature backend evidence dependencies are explicit in R2, rather than cyclic whole-issue closure requirements. Every new page must consume the separate logic layer, follow approved Dentara references, and be demonstrated locally before proceeding to further pages. Publishing does not authorize implementation, deletion, deployment, real patient data or merge.
 

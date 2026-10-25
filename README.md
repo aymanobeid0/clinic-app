@@ -1,6 +1,6 @@
 # Clinic app — implementation in progress
 
-Issues #7/#8/#9 are merged/closed through PR #35/#36/#38. Issue #9 adds permission-controlled patient registration, contact search/editing, duplicate warnings, archive/reactivation and essential per-record history, with functional French forms and SSE invalidation. No public clinic registration. Live patient data, deployment, live migrations and live email are not authorized.
+Delivery follows the approved recovery sequence: backend/API, separate frontend logic, then designed UI. See [delivery status](docs/planning/delivery-status.md) for dated progress and evidence, and GitHub for live criteria. The existing scaffold is a temporary verification consumer. Production, real patient data and live email retain separate authorization.
 
 ## Local fictional-data checks
 
@@ -33,7 +33,7 @@ The temporary password expires after 24 hours and must be replaced before access
 
 A replaceable mail adapter is accepted by createApplication. The shipped runtime intentionally has no live provider adapter; verification returns 503 until delivery is configured. No fake verification fallback exists in the runtime. Test-only delivery proves the onboarding flow, not live email readiness. Verification URLs use fragments so tokens are not sent in HTTP request URLs; verification remains an authenticated, CSRF-protected POST. Code regeneration requires the current password and invalidates the previous batch; losing the one-time display requires regeneration. Manager recovery consumption and staff administration are implemented in #8. The mail adapter additionally supports sendRecovery and sendNotification; recovery/email replacement remains blocked where the required delivery method is absent.
 
-Production Linux API/native compatibility, ingress/secure-cookie/SSE configuration, actual email delivery, recovery rehearsal and real-data gates remain unproven. See docs/planning/delivery-status.md and issue-7-implementation.md. #7/#8 are complete through merged PR #35/#36. #9 is merged through PR #38. #10 adds explicit multi-account patient assignment/sharing/removal, retained grant history, assignment-specific personal search, French forms and a production clinical authorized-transaction interface; see docs/planning/issue-10-implementation.md for verification and the future clinical-content endpoint integration boundary. Independent review and human PR merge remain required.
+Production Linux API/native compatibility, ingress/secure-cookie/SSE configuration, actual email delivery, recovery rehearsal and real-data gates remain separately tracked. [Delivery status](docs/planning/delivery-status.md) links current evidence and limitations; historical per-ticket reports retain their original checks and scope. Merged backend or logic evidence does not establish completed product UI or production readiness.
 
 ## File organization
 
