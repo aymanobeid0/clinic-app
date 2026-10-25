@@ -1,0 +1,48 @@
+# Issue #55 — treatment plan and catalog frontend logic
+
+Authorized by the one-time owner automation on 2026-10-25, started 09:00 UTC. Builder: primary agent. Branch `codex/issue-55-treatment-catalog-logic`; freshly fetched base `f8f085e877287875243d248e2f17d4e6c49de662` includes merged PR95. Direct connector reads: #55 OPEN/no comments; #54 CLOSED/COMPLETED; native GitHub blocker read confirms #54 closed. #2–#6 are closed with owner acceptance comments. No issue mutations. Owner comparison ref requested; formal independent review awaits that answer.
+
+## Per-ticket skills and seams
+
+Fresh discovery used the current catalog and repository skills. Actually read `.agents/skills/implement/SKILL.md`, `.agents/skills/tdd/SKILL.md` plus `tests.md`/`mocking.md`, `.agents/skills/code-review/SKILL.md`, `.agents/skills/handoff/SKILL.md`, `.agents/skills/codebase-design/SKILL.md`, and `C:/Users/ayman/.agents/skills/pr/SKILL.md`. Also read the installed `build-web-apps/0.1.2/skills/react-best-practices/SKILL.md` and applicable `rules/rerender-dependencies.md` / `rules/async-parallel.md`. Procedures: vertical red/green observable tracers, regular typechecking, full suite once on stable source, single independent reviewer for Standards and Spec, fixes and same-reviewer recheck, tracked handoff plus actual OS-temp mirror before PR. Owner overrides review fanout and temp-only handoff destination; standing publication authorization applies after checks/review. No new product discovery is required. Frontend design/prototype skills skipped: no redesign or new product UI. Research skipped: contracts and approved seams already exist. Domain-modeling skipped: no terminology/ADR changes.
+
+Approved seams reused: rendered French authenticated application with real isolated PostgreSQL; minimal rendered test-only consumers for lifecycle/late-response contracts; public QueryClient/QueryObserver only for otherwise hidden query contracts. No new seam approval needed under #49 and this authorization. Do not test private helpers or duplicate backend invariants.
+
+## Requirement trace
+
+| Source | #55 responsibility / evidence target |
+| --- | --- |
+| Live #55, #49, recovery-reconciliation | presentation-independent transport/query/form/workflow logic; scaffold remains temporary; no product UI/backend/schema change |
+| Spec001 stories23–29,54,57; #13 | catalog/defaults, exact copied prices/currency, tooth/multi-tooth/whole-mouth proposals, overrides/discount reasons; server authoritative |
+| #11/#13 duration integration | preserve existing scheduling suggestion interface, explicit editable duration application |
+| Spec001 stories27–29; #14 | presentation/evidence/doctor acceptance/cancellation; retained versions; notes preserve acceptance, scope/prices/extras require renewal |
+| #14, file-data-decisions, attachment API | retained printable version and signed evidence via existing #54 attachment interface; no new upload UI |
+| clinical/financial/identity-access amendments | active patient/capability scope, staff draft versus doctor confirmation, non-doctor/historical restrictions, exact amounts, accepted prices unchanged by catalog updates |
+| #49 reliability | observable loading/empty/denied/conflict/network/retry; memory-only drafts; identity/cache cleanup and StrictMode-safe lifetimes |
+
+Read live #49/#54/#11/#13/#14 and their comments, Spec001, CONTEXT, tracker, reconciliation, dependency proposal, architecture, approved clinical/financial/access/file contracts, design and tokens. Later approved amendments govern conflicting archival wording. Final designed UI/document layout remains #64/#65/#68/#74/#76. #56 is not authorized.
+
+## Isolation and connection evidence
+
+Initial sandbox Git fetch/native-blocker CLI reads failed DNS/connection; supported escalation succeeded. Connector reads succeeded. Docker pipe access initially denied; escalated read-only inventory succeeded and proved owner `clinic-issue7-test-database-1` owns55437. It must remain untouched. Use only separately created `clinic-issue55-test` on another verified free port; test-only port configuration preserves defaults. Do not read ignored Apidog credentials or disturb its resources.
+
+## Implemented interface and state ownership
+
+`useTreatmentQueries.ts` owns catalog/currency/plan queries, scoped denial handling and SSE invalidation. Existing treatment stream supplies plan-consumer refreshes; only catalog administration opens the additional catalog stream, avoiding redundant refreshes. `usePlanForm`, `usePlanItems`, `usePlanExtras`, `useCatalogForm` and `useCurrencyForm` own RHF fields, default copying, exact string amounts, draft autosave and explicit reconciliation. `usePlanLifecycle` owns review/confirmation coordination, role/capability affordances and optional existing signed-attachment references. The server independently validates every action and decides acceptance/revision semantics. Retained printable reads and reauthorization use `useTreatmentRead`; the scaffold retains modal/focus/DOM printing and private selection state. No server records moved to Zustand, and no persistent browser storage was added. Forms are mounted for a selected proposal/catalog-entry lifetime, using the existing consumer keys; the existing identity-scope boundary remounts consumers on account/clinic/permission changes.
+
+The existing command hook now uses a synchronously serialized, disposable command workflow and the approved StrictMode-safe `useWorkflowLifetime`. Uncertain retries retain a cloned payload/command ID and cannot be replaced with changed input. Closed scopes cannot emit late feedback; denied reads clear cached snapshots. Explicit close aborts a pending preview read. Catalog transient failures retain its mounted form; denied reads remove it. Existing visits continue consuming the command hook; visit/note behavior remains #56.
+
+Only test URLs/Compose gain `CLINIC_TEST_PORT` (default55437) so the full suite can use the separate55438 project. No backend runtime, contracts, migrations, schema or dependencies changed. README records isolation. Owner's local implementation-brief instruction is preserved for the reviewed commit. API validation plan stays untracked, unimplemented and hash-identical.
+
+## Builder verification so far (directly observed, working tree)
+
+- Red/green rendered tracer: same-turn duplicate submissions produced2 requests before synchronous serialization; after fix1/1 PASS2.5s under StrictMode.
+- Red/green rendered close-read tracer: pending response reopened a closed confidential snapshot before fix. After abort/stale-response guard, rendered lifecycle3/3 PASS3.5s, including late old-patient failure isolation.
+- Focused public workflow/QueryObserver tests3/3 PASS1.93s: immutable nested retry payload/ID, active cached snapshot removal on denial, disposed command isolation. Only these otherwise hidden contracts use the lower seam.
+- French treatment/browser run after encoding correction7/8 PASS30.7s; acceptance journey failed after extra catalog subscriptions exceeded the existing API request budget. Narrowed subscriptions/invalidation; exact acceptance/retained-print journey then1/1 PASS9.4s (workflow4.1s).
+- New signed-evidence rendered consumer crosses actual authenticated HTTP/session/CSRF, private file storage and real PostgreSQL:1/1 PASS9.2s (workflow3.7s), uploads clinical evidence, links its exact revision and confirms as doctor. Earlier fixture attempts failed because a sample PNG was invalid, then because the consumer had not explicitly reviewed the newly linked evidence revision. Valid browser PNG and explicit review corrected the fixture; backend protections were preserved.
+- Actual French catalog transient503 preserves typed draft; denied403 removes it:1/1 PASS7.8s (workflow2.2s).
+- Typecheck/lint PASS after extraction; build PASS, existing bundle warning538.75kB/157.06kB gzip. Final source-pinned checks pending.
+-38 existing migrations applied successfully only to `clinic-issue55-test-database-1` on55438. Direct Docker inspect confirmed project label, exclusive port and no persistent mounts. The owner55437 container is stopped, not a running service; its state was not changed by this task. Initial inventory included stopped containers.
+
+Failures/omissions: initial root npm browser invocation mis-forwarded grep and was stopped; overlapping attempted launch hit its occupied4173 port. Subsequent sandbox browser readiness could not access loopback; stopped our own launch and supported escalation succeeded. Early extraction emitted four CP1252 files and CRLF churn; corrected to UTF-8/LF, and affected French tests passed. No connection blocker remains. No full-suite pass, independent formal review, publication, product UI, live mail, Linux wrapper/npm-ci, deployment, restore, physical-quota or pilot acceptance claimed yet. Reviewer `/root/reviewer55` reports preparatory skill/spec/live-criteria reads only; builder received that report, not an independent review pass. Owner comparison-ref input remains pending.

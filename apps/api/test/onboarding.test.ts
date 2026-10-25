@@ -5,12 +5,12 @@ import { createApplication } from '../src/application.js';
 import { openDatabase } from '../src/database.js';
 import { provisionClinic } from '../src/modules/identity/index.js';
 
-const url = 'postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7';
+const url = `postgresql://clinic_test:fictional-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`;
 const database = openDatabase(url);
 const origin = 'http://localhost:4173';
 const deliveries: { to: string; token: string }[] = [];
 const runtime = openDatabase(
-  'postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:55437/clinic_issue7',
+  `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
 );
 const options = {
   database: runtime,

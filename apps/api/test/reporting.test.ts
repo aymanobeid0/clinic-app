@@ -5,10 +5,10 @@ import { createApplication } from "../src/application.js";
 import { openDatabase } from "../src/database.js";
 import { provisionClinic } from "../src/modules/identity/index.js";
 const owner = openDatabase(
-  "postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7",
+  `postgresql://clinic_test:fictional-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
 );
 const runtime = openDatabase(
-  "postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:55437/clinic_issue7",
+  `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
 );
 const origin = "http://localhost:4173";
 let time = Date.now();

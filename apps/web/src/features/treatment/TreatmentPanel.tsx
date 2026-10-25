@@ -1,19 +1,20 @@
-import { VisitPanel } from './VisitPanel.js';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTreatmentPlans, useCatalog } from "./useTreatmentQueries.js";
+import { VisitPanel } from "./VisitPanel.js";
+import { useCallback, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   verifiedCurrencies,
   type Catalog,
   type Identity,
   type TreatmentPlan,
-} from '@clinic/contracts';
-import { HttpError } from '../identity/identity.api.js';
-import { treatmentApi, formatMinor } from './treatment.api.js';
-import { treatmentMessages as t } from './treatment.messages.js';
-import { PlanForm } from './PlanForm.js';
-import { PlanLifecycle } from './PlanLifecycle.js';
-import { PlanVersionDetails } from './PlanVersionDetails.js';
-import { planStatus } from './treatment.messages.js';
+} from "@clinic/contracts";
+import { HttpError } from "../identity/identity.api.js";
+import { formatMinor } from "./treatment.api.js";
+import { treatmentMessages as t } from "./treatment.messages.js";
+import { PlanForm } from "./PlanForm.js";
+import { PlanLifecycle } from "./PlanLifecycle.js";
+import { PlanVersionDetails } from "./PlanVersionDetails.js";
+import { planStatus } from "./treatment.messages.js";
 export function TreatmentPanel({
   id,
   identity,
@@ -24,57 +25,12 @@ export function TreatmentPanel({
   onLock: (kind: string, v: boolean) => void;
 }) {
   const cache = useQueryClient();
-  const key = ['plans', identity.clinicId, identity.accountId, id];
-  const query = useQuery({
-    queryKey: key,
-    queryFn: ({ signal }) => treatmentApi.plans(id, signal),
-    gcTime: 0,
-    retry: false,
-  });
-  const catalog = useQuery({
-    queryKey: ['catalog', identity.clinicId, identity.accountId],
-    queryFn: ({ signal }) => treatmentApi.catalog(signal),
-    gcTime: 0,
-    retry: false,
-  });
-  const [selected, setSelected] = useState(''),
+  const { key, query, connected } = useTreatmentPlans(id, identity);
+  const catalog = useCatalog(identity);
+  const [selected, setSelected] = useState(""),
     [epoch, setEpoch] = useState(0),
     [locked, setLocked] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [connected, setConnected] = useState(true);
-  useEffect(() => {
-    const stream = new EventSource(`/api/treatment/${id}/events`);
-    const refresh = () => {
-      setConnected(true);
-      void cache.invalidateQueries({
-        queryKey: ['visits', identity.clinicId, identity.accountId, id],
-      });
-      void cache.invalidateQueries({
-        queryKey: ['plans', identity.clinicId, identity.accountId, id],
-      });
-      void cache.invalidateQueries({
-        queryKey: ['catalog', identity.clinicId, identity.accountId],
-      });
-    };
-    stream.addEventListener('invalidate', refresh);
-    // The server sends an authorized invalidate on each connection/reconnect.
-    stream.onopen = () => setConnected(true);
-    stream.onerror = () => {
-      setConnected(false);
-      void cache.invalidateQueries({
-        queryKey: ['plans', identity.clinicId, identity.accountId, id],
-      });
-    };
-    return () => {
-      stream.close();
-      void cache.cancelQueries({
-        queryKey: ['plans', identity.clinicId, identity.accountId, id],
-      });
-      cache.removeQueries({
-        queryKey: ['plans', identity.clinicId, identity.accountId, id],
-      });
-    };
-  }, [id, identity.clinicId, identity.accountId, cache]);
   const lockKinds = useRef(new Set<string>());
   const lock = useCallback(
     (kind: string, v: boolean) => {
@@ -94,7 +50,7 @@ export function TreatmentPanel({
     <section className="treatment" aria-label={t.title}>
       <h4>{t.title}</h4>
       {!query.data?.some((p) =>
-        ['in_progress', 'completed'].includes(p.status),
+        ["in_progress", "completed"].includes(p.status),
       ) && <p>{t.noDebt}</p>}
       {!connected && (
         <p role="alert">
@@ -140,17 +96,17 @@ export function TreatmentPanel({
           }}
         />
       )}
-      {identity.permissions.includes('plans.draft') &&
+      {identity.permissions.includes("plans.draft") &&
         catalog.data &&
-        !['cancelled', 'completed', 'in_progress'].includes(
-          plan?.status ?? '',
+        !["cancelled", "completed", "in_progress"].includes(
+          plan?.status ?? "",
         ) && (
           <>
             <button
               disabled={locked}
               onClick={() => {
                 if (confirm(t.patientSwitch)) {
-                  setSelected('');
+                  setSelected("");
                   setEpoch((x) => x + 1);
                 }
               }}
@@ -171,13 +127,13 @@ export function TreatmentPanel({
         )}
       {query.data &&
         (query.data.some((p) =>
-          ['in_progress', 'completed'].includes(p.status),
+          ["in_progress", "completed"].includes(p.status),
         ) ||
-          (query.data.some((p) => p.status === 'accepted') &&
+          (query.data.some((p) => p.status === "accepted") &&
             identity.permissions.some((p) =>
-              ['procedures.start', 'procedures.complete'].includes(p),
+              ["procedures.start", "procedures.complete"].includes(p),
             )) ||
-          lockKinds.current.has('visit')) && (
+          lockKinds.current.has("visit")) && (
           <VisitPanel
             patientId={id}
             identity={identity}
@@ -193,8 +149,8 @@ export function PlanSummary({ plan }: { plan: TreatmentPlan }) {
   return (
     <details>
       <summary>
-        Proposition {plan.id} · {planStatus[plan.status]} · total{' '}
-        {formatMinor(plan.totalMinor, verifiedCurrencies[plan.currency])}{' '}
+        Proposition {plan.id} · {planStatus[plan.status]} · total{" "}
+        {formatMinor(plan.totalMinor, verifiedCurrencies[plan.currency])}{" "}
         {plan.currency}
       </summary>
       <PlanVersionDetails version={plan} />

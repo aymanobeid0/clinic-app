@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useFieldArray, type Control } from 'react-hook-form';
-import type { PlanFields } from './PlanForm.js';
+import { usePlanExtras } from "./usePlanExtras.js";
+import type { Control } from "react-hook-form";
+import type { PlanFields } from "./usePlanForm.js";
 export function PlanExtras({
   control,
   index,
@@ -10,13 +10,8 @@ export function PlanExtras({
   index: number;
   canOverride: boolean;
 }) {
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: `items.${index}.extras`,
-    keyName: 'fieldKey',
-  });
-  const [label, setLabel] = useState(''),
-    [amount, setAmount] = useState('');
+  const { fields, remove, label, setLabel, amount, setAmount, add } =
+    usePlanExtras(control, index);
   return (
     <div>
       <ul>
@@ -55,9 +50,7 @@ export function PlanExtras({
             type="button"
             disabled={!label.trim() || !amount.trim()}
             onClick={() => {
-              append({ id: crypto.randomUUID(), label, amount });
-              setLabel('');
-              setAmount('');
+              add();
             }}
           >
             Ajouter les frais · acte {index + 1}

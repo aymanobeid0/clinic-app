@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import {mkdtemp, rm} from 'node:fs/promises';
+import {privateFileStore} from '../../api/src/modules/files/index.js';
 import type { Server } from 'node:http';
 import request from 'supertest';
 import { test, expect, type Page } from '@playwright/test';
@@ -8,10 +10,10 @@ import { openDatabase } from '../../api/src/database.js';
 import { createApplication } from '../../api/src/application.js';
 import { provisionClinic } from '../../api/src/modules/identity/index.js';
 const owner = openDatabase(
-  'postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7',
+  `postgresql://clinic_test:fictional-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
 );
 const runtime = openDatabase(
-  'postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:55437/clinic_issue7',
+  `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
 );
 const code = `patients-${randomUUID()}`.slice(0, 32);
 const email = `${code}@example.invalid`;
@@ -21,12 +23,14 @@ let token = '';
 let manager: ReturnType<typeof request.agent>;
 let csrf = '';
 let doctorId = '';
+let attachmentDirectory = '';
 const createBrowserApp = () =>
   createApplication({
     database: runtime,
     sessionSecret: 'fictional-patient-browser-secret-long-enough',
     origin: 'http://127.0.0.1:4173',
     secureCookies: false,
+    attachmentStore: privateFileStore(attachmentDirectory),
     mail: {
       async sendVerification(m) {
         token = m.token;
@@ -40,6 +44,7 @@ const post = (path: string, body: object) =>
     .set('x-csrf-token', csrf)
     .send(body);
 test.beforeAll(async () => {
+  attachmentDirectory = await mkdtemp(join(tmpdir(), 'clinic-issue55-browser-'));
   await owner.connect();
   await runtime.connect();
   await provisionClinic(owner, {
@@ -105,6 +110,7 @@ test.beforeAll(async () => {
       'prices.override',
       'discounts',
       'appointments.manage',
+      'attachments.upload',
     ],
   });
   const employee = request.agent('http://127.0.0.1:3000');
@@ -162,6 +168,30 @@ test.afterAll(async () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   await runtime.close();
   await owner.close();
+  await rm(attachmentDirectory, {recursive:true, force:true});
+});
+
+test('separate lifecycle hook links uploaded signed evidence and doctor confirmation through the authenticated application', async ({page}) => {
+  const {panel, p} = await openProposals(page);
+  await fillProposal(panel);
+  await panel.getByRole('button', {name:'Enregistrer le brouillon',exact:true}).click();
+  await expect(panel.getByText('Brouillon enregistré',{exact:true}).first()).toBeVisible();
+  await panel.getByRole('button',{name:/Soins proposés fictifs · MRU/}).click();
+  await panel.getByRole('button',{name:'Présenter cette version',exact:true}).click();
+  await expect(panel.getByText('État : Présentée',{exact:true})).toBeVisible();
+  await page.goto(`/test/treatment-signed.harness.html?patient=${p.id}`);
+  await page.getByRole('button',{name:'Téléverser la preuve fictive'}).click();
+  await expect(page.getByTestId('uploaded')).not.toBeEmpty();
+  const uploaded = await page.getByTestId('uploaded').textContent();
+  await page.getByLabel('Personne',{exact:true}).fill('Patiente fictive');
+  await page.getByLabel('Date accord').fill('2026-10-25T09:00');
+  await page.getByLabel('Méthode').fill('Document signé');
+  await page.getByRole('button',{name:'Lier la preuve'}).click();
+  await expect(page.getByTestId('linked')).toHaveText(uploaded!);
+  await page.getByRole('button',{name:'Relire la preuve liée'}).click();
+  await page.getByRole('button',{name:'Confirmer',exact:true}).click();
+  await expect(page.getByTestId('accepted')).toHaveText(uploaded!);
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });
 async function patient() {
   return (
@@ -174,6 +204,28 @@ async function patient() {
     })
   ).body.patient;
 }
+
+test('catalog refetch errors preserve the current-tab draft and denied reads remove it', async ({page}) => {
+  await page.goto('/');
+  await page.getByLabel('Adresse e-mail de connexion',{exact:true}).fill(email);
+  await page.getByLabel('Mot de passe',{exact:true}).fill(password);
+  await page.getByRole('button',{name:'Se connecter',exact:true}).click();
+  const panel = page.getByRole('region',{name:'Catalogue des actes',exact:true});
+  const name = panel.getByLabel('Nom de l’acte',{exact:true});
+  await name.fill('Saisie catalogue conservée');
+  let status = 503;
+  await page.route('**/api/catalog', route => route.request().method() === 'GET'
+    ? route.fulfill({status, json:{error: status === 503 ? 'Catalogue temporairement indisponible' : 'Catalogue refusé'}})
+    : route.continue());
+  const change = () => post('catalog', {commandId:randomUUID(), id:randomUUID(), revision:0, name:'Acte de rafraîchissement fictif', currency:'MRU', price:'100', durationMinutes:30, active:true});
+  await change();
+  await expect(panel.getByText('Catalogue temporairement indisponible',{exact:true})).toBeVisible();
+  await expect(name).toHaveValue('Saisie catalogue conservée');
+  status = 403;
+  await change();
+  await expect(panel.getByText('Catalogue refusé',{exact:true})).toBeVisible();
+  await expect(name).toHaveCount(0);
+});
 
 async function loginDoctor(page: Page) {
   await page.goto('/');

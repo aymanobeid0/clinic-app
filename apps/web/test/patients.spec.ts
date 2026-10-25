@@ -7,9 +7,9 @@ import { test, expect, type Page } from '@playwright/test';
 import { openDatabase } from '../../api/src/database.js';
 import { createApplication } from '../../api/src/application.js';
 import { provisionClinic } from '../../api/src/modules/identity/index.js';
-const owner = openDatabase('postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7');
+const owner = openDatabase(`postgresql://clinic_test:fictional-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`);
 const runtime = openDatabase(
-  'postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:55437/clinic_issue7',
+  `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
 );
 const code = `patients-${randomUUID()}`.slice(0, 32);
 const email = `${code}@example.invalid`;

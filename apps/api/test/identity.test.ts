@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApplication } from '../src/application.js';
 import { openDatabase } from '../src/database.js';
 
-const testUrl = process.env.TEST_DATABASE_URL ?? 'postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7';
+const testUrl = process.env.TEST_DATABASE_URL ?? `postgresql://clinic_test:fictional-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`;
 const parsedUrl = new URL(testUrl);
 if (!['localhost', '127.0.0.1'].includes(parsedUrl.hostname) || parsedUrl.pathname !== '/clinic_issue7') {
   throw new Error('Tests require the dedicated local clinic_issue7 fictional-data database.');

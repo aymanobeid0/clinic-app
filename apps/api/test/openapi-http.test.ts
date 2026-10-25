@@ -9,7 +9,7 @@ const artifact = new URL("../../../docs/api/openapi.json", import.meta.url);
 it("describes real anonymous-session and denied-write HTTP responses", async () => {
   const document = JSON.parse(await readFile(artifact, "utf8"));
   const database = openDatabase(
-    "postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:55437/clinic_issue7",
+    `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
   );
   const ajv = new Ajv2020({ strict: false, validateFormats: false });
   const validate = (schema: object, value: unknown) => {
