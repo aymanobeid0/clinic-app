@@ -29,7 +29,6 @@ export function useCatalog(identity: Identity, live = false) {
         predicate: ({ queryKey }) =>
           queryKey[0] === "scheduling" && queryKey[3] === "suggestions",
       });
-      void cache.invalidateQueries({ queryKey: ["identity"] });
     };
     stream.addEventListener("invalidate", refresh);
     stream.onopen = refresh;
@@ -74,7 +73,6 @@ export function useCurrencies(identity: Identity) {
     stream.onopen = refresh;
     stream.onerror = () => {
       refresh();
-      void cache.invalidateQueries({ queryKey: ["identity"] });
     };
     return () => {
       stream.close();
@@ -119,7 +117,6 @@ export function useTreatmentPlans(id: string, identity: Identity) {
       void cache.invalidateQueries({
         queryKey: ["plans", clinicId, accountId, id],
       });
-      void cache.invalidateQueries({ queryKey: ["identity"] });
     };
     return () => {
       stream.close();
