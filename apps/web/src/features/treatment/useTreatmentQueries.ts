@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Identity } from "@clinic/contracts";
+import type { Identity, TreatmentPlan } from "@clinic/contracts";
 import { treatmentApi, treatmentGet } from "./treatment.api.js";
 import { treatmentRead, treatmentDenied } from "./treatment.workflow.js";
 
@@ -132,6 +132,10 @@ export function useTreatmentPlans(id: string, identity: Identity) {
   return {
     key,
     connected,
+    updatePlan: (value: TreatmentPlan) =>
+      cache.setQueryData<TreatmentPlan[]>(key, (rows) =>
+        rows?.map((plan) => (plan.id === value.id ? value : plan)),
+      ),
     query: {
       ...query,
       data: treatmentDenied(query.error) ? undefined : query.data,

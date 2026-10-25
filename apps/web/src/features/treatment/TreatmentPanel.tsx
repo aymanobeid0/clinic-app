@@ -1,7 +1,6 @@
 import { useTreatmentPlans, useCatalog } from "./useTreatmentQueries.js";
 import { VisitPanel } from "./VisitPanel.js";
 import { useCallback, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   verifiedCurrencies,
   type Catalog,
@@ -24,8 +23,7 @@ export function TreatmentPanel({
   identity: Identity;
   onLock: (kind: string, v: boolean) => void;
 }) {
-  const cache = useQueryClient();
-  const { key, query, connected } = useTreatmentPlans(id, identity);
+  const { key, query, connected, updatePlan } = useTreatmentPlans(id, identity);
   const catalog = useCatalog(identity);
   const [selected, setSelected] = useState(""),
     [epoch, setEpoch] = useState(0),
@@ -89,9 +87,7 @@ export function TreatmentPanel({
           onLock={lock}
           dirty={dirty || locked}
           onDone={(value) => {
-            cache.setQueryData<TreatmentPlan[]>(key, (rows) =>
-              rows?.map((p) => (p.id === value.id ? value : p)),
-            );
+            updatePlan(value);
             setEpoch((x) => x + 1);
           }}
         />

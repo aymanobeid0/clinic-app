@@ -24,7 +24,6 @@ export function useCatalogForm({
   const [revision, setRevision] = useState(entry?.revision ?? 0);
   const reloadState = useTreatmentRead<Catalog>(cacheKey);
   const reloadError = reloadState.error;
-  const [remote, setRemote] = useState<CatalogEntry>();
   const f = useForm({
     defaultValues: {
       name: entry?.name ?? "",
@@ -57,7 +56,6 @@ export function useCatalogForm({
     );
     if (catalog) {
       const latest = catalog.entries.find((e) => e.id === id);
-      setRemote(latest);
       setRevision(latest?.revision ?? 0);
     }
   }
@@ -73,7 +71,10 @@ export function useCatalogForm({
   return {
     f,
     command,
-    remote: command.denied || reloadState.denied ? undefined : remote,
+    remote:
+      command.denied || reloadState.denied
+        ? undefined
+        : reloadState.data?.entries.find((e) => e.id === id),
     reloadError,
     submit,
     reload,

@@ -1,9 +1,8 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { PrintablePlan } from "./treatment.api.js";
-import { useTreatmentRead } from "./useTreatmentRead.js";
+import { usePlanPrint } from "./usePlanPrint.js";
 import { PlanVersionDetails } from "./PlanVersionDetails.js";
-import { treatmentGet } from "./treatment.api.js";
 export function PlanPrint({
   plan,
   close,
@@ -15,19 +14,14 @@ export function PlanPrint({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef(document.activeElement as HTMLElement | null);
-  const state = useTreatmentRead<PrintablePlan>(cacheKey);
+  const state = usePlanPrint(plan, cacheKey);
   useEffect(() => {
     dialog.current?.showModal();
     const previous = trigger.current;
     return () => previous?.focus();
   }, []);
   async function print() {
-    const authorized = await state.read((signal) =>
-      treatmentGet<PrintablePlan>(
-        `treatment/${plan.patientId}/plans/${plan.id}/versions/${plan.revision}/print`,
-        signal,
-      ),
-    );
+    const authorized = await state.authorize();
     if (authorized) window.print();
   }
 

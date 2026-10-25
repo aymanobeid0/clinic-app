@@ -1,3 +1,4 @@
+import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
@@ -44,10 +45,17 @@ export function usePlanForm({
   onLock: (kind: string, v: boolean) => void;
   onDirty: (v: boolean) => void;
 }) {
-  const [snapshot, setSnapshot] = useState(plan);
+  const cache = useQueryClient();
   const [id] = useState(() => plan?.id ?? crypto.randomUUID());
   const [revision, setRevision] = useState(plan?.revision ?? 0);
-  const [remote, setRemote] = useState<TreatmentPlan | undefined>();
+  const snapshotKey = [...cacheKey, "editor", id];
+  const snapshotQuery = useQuery<TreatmentPlan>({
+    queryKey: snapshotKey,
+    queryFn: skipToken,
+    initialData: plan,
+    gcTime: 0,
+  });
+  const snapshot = snapshotQuery.data;
   const [reconciled, setReconciled] = useState("");
   const reloadState = useTreatmentRead<TreatmentPlan[]>(cacheKey);
   const reloadError = reloadState.error;
@@ -94,7 +102,7 @@ export function usePlanForm({
   const command = useTreatmentCommand<TreatmentPlan>(
     cacheKey,
     (v) => {
-      setSnapshot(v);
+      cache.setQueryData(snapshotKey, v);
       setRevision(v.revision);
       f.reset(f.getValues());
       setReconciled("");
@@ -147,7 +155,7 @@ export function usePlanForm({
     if (rows) {
       const current = rows.find((p) => p.id === id);
       setRevision(current?.revision ?? 0);
-      setRemote(current);
+
       setReconciled(t.review);
     }
   }
@@ -158,7 +166,10 @@ export function usePlanForm({
     snapshot,
     id,
     revision,
-    remote: command.denied || reloadState.denied ? undefined : remote,
+    remote:
+      command.denied || reloadState.denied
+        ? undefined
+        : reloadState.data?.find((p) => p.id === id),
     reconciled,
     reloadError,
     command,
