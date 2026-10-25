@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useWorkflowLifetime } from '../../hooks/useWorkflowLifetime.js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AttachmentClass, AttachmentUsage } from '@clinic/contracts';
 import {
@@ -19,8 +20,7 @@ export function useAttachments(
     ...workflow.listQuery(classification),
     enabled: !!patientId,
   });
-  const current = useRef(workflow);
-  current.current = workflow;
+  const current = useWorkflowLifetime(workflow);
   const [feedback, setFeedback] = useState({
     owner: workflow,
     busy: false,
@@ -53,12 +53,6 @@ export function useAttachments(
         });
     }
   }
-  useEffect(
-    () => () => {
-      void workflow.dispose();
-    },
-    [workflow],
-  );
   return {
     list,
     busy: visible.busy,

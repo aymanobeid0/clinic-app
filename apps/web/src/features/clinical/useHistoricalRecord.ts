@@ -1,12 +1,14 @@
 import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createHistoricalWorkflow } from './historical.workflow.js';
+import { useWorkflowLifetime } from '../../hooks/useWorkflowLifetime.js';
 export function useHistoricalRecord(accountKey: string, patientId: string) {
   const cache = useQueryClient();
   const workflow = useMemo(
     () => createHistoricalWorkflow(cache, accountKey),
     [cache, accountKey],
   );
+  useWorkflowLifetime(workflow);
   const patients = useQuery(workflow.patientsQuery);
   const snapshot = useQuery({
     ...workflow.snapshotQuery(patientId),
@@ -25,12 +27,6 @@ export function useHistoricalRecord(accountKey: string, patientId: string) {
     stream.onerror = refresh;
     return () => stream.close();
   }, [patientId, accountKey, cache]);
-  useEffect(
-    () => () => {
-      void workflow.dispose();
-    },
-    [workflow],
-  );
   return {
     patients,
     snapshot,
