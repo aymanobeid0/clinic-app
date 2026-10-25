@@ -1,47 +1,40 @@
+import {
+  useMedicationReferences,
+  useMedicationForm,
+  usePrescriptionTemplate,
+  usePrescriptionTemplateForm,
+} from "./useMedicationReferences.js";
 import { referenceMessages as r } from "./reference.messages.js";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import type {
   Identity,
   MedicationEntry,
   PrescriptionTemplate,
 } from "@clinic/contracts";
-import { treatmentGet } from "../treatment/treatment.api.js";
-import {
-  useTreatmentCommand,
-  CommandState,
-} from "../treatment/useTreatmentCommand.js";
+import { CommandState } from "../treatment/useTreatmentCommand.js";
 export function MedicationPanel({ identity }: { identity: Identity }) {
-  const [initialized,setInitialized]=useState(false);
+  const [initialized, setInitialized] = useState(false);
   const allowed =
     identity.isManager ||
     (identity.kind === "doctor" &&
       identity.permissions.includes("prescriptions.sign"));
-  return allowed ? <details onToggle={e=>{if(e.currentTarget.open)setInitialized(true);}}><summary>{r.title}</summary>{initialized&&<MedicationList identity={identity}/>}</details> : null;
+  return allowed ? (
+    <details
+      onToggle={(e) => {
+        if (e.currentTarget.open) setInitialized(true);
+      }}
+    >
+      <summary>{r.title}</summary>
+      {initialized && <MedicationList identity={identity} />}
+    </details>
+  ) : null;
 }
 function MedicationList({ identity }: { identity: Identity }) {
-  const cache = useQueryClient(),
-    key = ["medications", identity.clinicId, identity.accountId],
-    query = useQuery({
-      queryKey: key,
-      queryFn: ({ signal }) =>
-        treatmentGet<MedicationEntry[]>("medications?retired=true", signal),
-      gcTime: 0,
-      retry: false,
-    });
-  const [selected, setSelected] = useState<MedicationEntry | null>(null),
+  const { query } = useMedicationReferences(identity);
+  const [selectedId, setSelectedId] = useState(""),
     [epoch, setEpoch] = useState(0),
     [locked, setLocked] = useState(false);
-  useEffect(() => {
-    const stream = new EventSource("/api/medications/events");
-    const refresh = () => {
-      void cache.invalidateQueries({ queryKey: ["medications"] });
-    };
-    stream.addEventListener("invalidate", refresh);
-    stream.onerror = refresh;
-    return () => stream.close();
-  }, [cache]);
+  const selected = query.data?.find((m) => m.id === selectedId) ?? null;
   return (
     <section aria-label={r.title} className="treatment">
       <h3>{r.title}</h3>
@@ -55,7 +48,7 @@ function MedicationList({ identity }: { identity: Identity }) {
             <button
               disabled={locked}
               onClick={() => {
-                setSelected(m);
+                setSelectedId(m.id);
                 setEpoch((v) => v + 1);
               }}
             >
@@ -68,55 +61,40 @@ function MedicationList({ identity }: { identity: Identity }) {
       <button
         disabled={locked}
         onClick={() => {
-          setSelected(null);
+          setSelectedId("");
           setEpoch((v) => v + 1);
         }}
       >
         {r.new}
       </button>
-      <MedicationForm key={epoch} entry={selected} onLock={setLocked} />
-      {identity.isManager && <TemplateForm />}
+      {!query.denied && (
+        <MedicationForm
+          key={epoch}
+          entry={selected}
+          onLock={setLocked}
+          identity={identity}
+        />
+      )}
+      {identity.isManager && <TemplateForm identity={identity} />}
     </section>
   );
 }
 function MedicationForm({
   entry,
   onLock,
+  identity,
 }: {
   entry: MedicationEntry | null;
   onLock: (v: boolean) => void;
+  identity: Identity;
 }) {
-  const [id] = useState(() => entry?.id ?? crypto.randomUUID()),
-    [revision, setRevision] = useState(entry?.revision ?? 0),
-    [remote, setRemote] = useState<MedicationEntry | null>(null),
-    [readError, setReadError] = useState("");
-  const f = useForm({
-      defaultValues: {
-        name: entry?.name ?? "",
-        strength: entry?.strength ?? "",
-        form: entry?.form ?? "",
-        active: entry?.active ?? true,
-      },
-    }),
-    command = useTreatmentCommand<MedicationEntry>(
-      ["medications"],
-      (v) => {
-        setRevision(v.revision);
-        f.reset(f.getValues());
-      },
-      undefined,
-      r.saved,
-    );
-  useEffect(() => {
-    onLock(command.busy || command.uncertain || f.formState.isDirty);
-    return () => onLock(false);
-  }, [onLock, command.busy, command.uncertain, f.formState.isDirty]);
+  const { f, command, remote, readError, reload, submit } = useMedicationForm(
+    entry,
+    onLock,
+    identity,
+  );
   return (
-    <form
-      onSubmit={f.handleSubmit((v) => {
-        void command.save("medications", { ...v, id, revision });
-      })}
-    >
+    <form onSubmit={submit}>
       <fieldset disabled={command.busy || command.uncertain}>
         <legend>{entry ? r.edit : r.add}</legend>
         <label>
@@ -139,23 +117,7 @@ function MedicationForm({
       </fieldset>
       <CommandState state={command} />
       {command.error && !command.uncertain && (
-        <button
-          type="button"
-          onClick={() => {
-            void treatmentGet<MedicationEntry[]>("medications?retired=true")
-              .then((rows) => {
-                const value = rows.find((m) => m.id === id) ?? null;
-                setRemote(value);
-                setRevision(value?.revision ?? 0);
-                setReadError("");
-              })
-              .catch((e) =>
-                setReadError(
-                  e instanceof Error ? e.message : "Relecture indisponible.",
-                ),
-              );
-          }}
-        >
+        <button type="button" onClick={() => void reload()}>
           {r.reload}
         </button>
       )}
@@ -169,37 +131,32 @@ function MedicationForm({
     </form>
   );
 }
-function TemplateForm() {
-  const query = useQuery({
-    queryKey: ["prescription-template"],
-    queryFn: () => treatmentGet<PrescriptionTemplate>("prescription-template"),
-    retry: false,
-    gcTime: 0,
-  });
+function TemplateForm({ identity }: { identity: Identity }) {
+  const query = usePrescriptionTemplate(identity);
   return (
     <details>
       <summary>{r.templateTitle}</summary>
       {query.data && (
-        <TemplateEditor key={query.data.revision} value={query.data} />
+        <TemplateEditor
+          key={query.data.revision}
+          value={query.data}
+          identity={identity}
+        />
       )}{" "}
       {query.error && <p role="alert">{query.error.message}</p>}
     </details>
   );
 }
-function TemplateEditor({ value }: { value: PrescriptionTemplate }) {
-  const f = useForm({
-      defaultValues: { header: value.header, footer: value.footer },
-    }),
-    command = useTreatmentCommand(["prescription-template"]);
+function TemplateEditor({
+  value,
+  identity,
+}: {
+  value: PrescriptionTemplate;
+  identity: Identity;
+}) {
+  const { f, command, submit } = usePrescriptionTemplateForm(value, identity);
   return (
-    <form
-      onSubmit={f.handleSubmit((v) => {
-        void command.save("prescription-template", {
-          ...v,
-          revision: value.revision,
-        });
-      })}
-    >
+    <form onSubmit={submit}>
       <fieldset disabled={command.busy || command.uncertain}>
         <legend>{r.templateLegend}</legend>
         <p>{r.templateHelp}</p>

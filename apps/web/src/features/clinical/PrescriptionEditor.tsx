@@ -12,13 +12,15 @@ export function PrescriptionEditor({
   record,
   identity,
   onLock,
+  cacheKey,
 }: {
   patientId: string;
   record: Prescription;
   identity: Identity;
   onLock: (kind: string, value: boolean) => void;
+  cacheKey: string[];
 }) {
-  const e = usePrescriptionEditor(patientId, record, onLock),
+  const e = usePrescriptionEditor(patientId, record, onLock, cacheKey),
     fields = useFieldArray({
       control: e.form.control,
       name: "content.medicines",
@@ -39,6 +41,7 @@ export function PrescriptionEditor({
           <div key={field.id}>
             <PrescriptionMedicine
               form={e.form}
+              identity={identity}
               index={index}
               lookupAllowed={identity.permissions.includes(
                 "prescriptions.draft",
@@ -70,7 +73,15 @@ export function PrescriptionEditor({
         )}
         <button>{t.save}</button>
       </fieldset>
-      <p role="status">{e.busy ? t.saving : e.dirty ? t.unsaved : e.revision === 0 ? t.newDraft : t.saved}</p>
+      <p role="status">
+        {e.busy
+          ? t.saving
+          : e.dirty
+            ? t.unsaved
+            : e.revision === 0
+              ? t.newDraft
+              : t.saved}
+      </p>
       {e.error && <p role="alert">{e.error}</p>}
       {e.uncertain && (
         <button type="button" disabled={e.busy} onClick={() => void e.save()}>
