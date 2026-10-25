@@ -1,0 +1,34 @@
+# Issue #57 — billing frontend workflows
+
+Owner authorization: task creation prompt explicitly authorizes #57 through implementation, checks, one independent reviewer/fixes/recheck and push/PR. No #58, merge, product UI or backend/contracts/schema changes. Builder: primary agent. Branch `codex/issue-57-billing-logic`; freshly fetched main and owner-approved comparison `b50448fe5a6bb815438ebf25b9cd75eafa370930` (owner answered “main بعد الجلب وتثبيت SHA” in this chat).
+
+## Preparation and provenance
+
+Direct live #57 criteria, native dependency endpoint (#53 CLOSED), #53 and original source issues #18/#20–#23 read. Fresh main contains prerequisite implementation, including PR98 merge at base. Project #57 moved Backlog → Building; no criteria/dependencies/other tickets changed. Existing local owner changes to AGENTS/HANDOFF/delivery-status were preserved separately in `df8a916`, not attributed to billing implementation. Planned-only untracked API plan remains excluded with original SHA256 `82E186AF080DB25098E44EEA1B9B097122245C0447967E1D4827528162E64A6A`.
+
+Fresh skill selection: read repository `.agents/skills/implement/SKILL.md`, `tdd/SKILL.md` with `tests.md`/`mocking.md`, `code-review/SKILL.md`, `codebase-design/SKILL.md`, `handoff/SKILL.md`; installed `C:/Users/ayman/.agents/skills/pr/SKILL.md`; React guidance `C:/Users/ayman/.codex/plugins/cache/openai-curated-remote/build-web-apps/0.1.2/skills/react-best-practices/SKILL.md` plus `rules/rerender-dependencies.md`/`rules/async-parallel.md`. Matt implement → TDD and review applied; existing approved rendered-hook consumers and authenticated application/PostgreSQL seams reused. Single reviewer covers both Standards/Spec per owner override; tracked handoff and existing temp mirror override temp-only handoff destination. No new testing seam approval needed. Prototype/design/research/domain-modeling skipped: no visual work, unsettled product decision or terminology change. Architecture/dependency proposal, CONTEXT, relevant Spec001 financial/access/reliability clauses, financial/access/file amendments, recovery reconciliation and workflow/tracker instructions read. Design/tokens introduction consulted as visual reference only.
+
+## Requirement mapping and interfaces
+
+| Contract | Delivered frontend responsibility |
+| --- | --- |
+| #57/#49, Spec001 37–46/54/57, #20 | Scoped billing workspace keeps server planned/due/credit totals separate by currency; documented opening balances and accepted-price reconciliation use shared schemas and explicit confirmation. No invented historical payment. |
+| #21, financial amendment | Settlement form keeps new money, existing credit allocations and explicit deposit separate; configured payment methods; retained server receipt data, exact strings without rounding; immutable command ID/payload on uncertain retry. |
+| #22 | Invoice issuance takes explicit whole-charge selection; invoices, receipts and plan summaries read independently; print/download always request current server authorization. Eligibility, numbering and immutable corrections remain server authoritative. |
+| #23 | Separate reasoned credit adjustment, allocation release, reversal, refund request/approval/execution and charged-plan cancellation commands. No optimistic money updates or automatic approval. Reallocation uses explicit release then settlement against existing server credit. |
+| #18/access/file amendments | Existing `useHistoricalRecord` already supplies cutoff-limited `financial` and `invoices` snapshots; retained unchanged. Current workspace disables historical-only operational reads; all commands/documents still authorize on server. No new historical mutation/output bypass. |
+| State/reliability | TanStack Query owns read snapshots; RHF owns current-tab drafts; existing StrictMode-safe command/read lifetimes reused. Account/clinic/permission scope supplied via `identityScope`, patient/action changes retire pending commands and reset inputs; no persistent storage or new Zustand state. |
+
+New files under `apps/web/src/features/billing`: schema/action map, `useBillingForm`, `useBillingWorkspace`/`usePaymentMethods`, `useBillingDocument`. Existing transport, command/read orchestration, denial reconciliation and lifecycle helpers are reused. No product components/pages/routing/main-app, backend, schema, contracts or dependency changes. Test-only consumers do not count as final UI; #69/#70/#75/#76 retain their delivery ownership.
+
+## Direct builder evidence and limitations
+
+- Initial red rendered settlement tracer failed because the interface did not exist; green passed 1/1 after implementation. Confirms explicit confirmation and identical retry payload/command ID despite newer invalid fields. Subsequent rendered set 4/4 PASS (4.3s): late command isolation, separate currency/balance fields, repeated output authorization/403 snapshot cleanup and selected-document late-result isolation.
+- Real authenticated application journey passed 1/1 (5.7s including server): documented debt70 without settlement/receipt, separate deposit120/numbered receipt, due70 and credit120 remain separate, authorized receipt output. Setup failures were test-helper empty204/202 handling and missing currency activation; corrected helper/fictional setup, no backend changes. A socket-close error occurred during failed-test teardown, not a passing check.
+- Typecheck and lint PASS before final source pin; final required results to be appended after source review.
+- Read-only actual inventory: owner `clinic-issue7-test-database-1` stopped on55437, no selected-port listeners. Created only `clinic-issue57-test` on free loopback55438; direct inspect proved project labels, exclusive binding and no mounts. Existing38 migrations applied there successfully. No ignored credentials, manual/Apidog resources, live data or real mail used.
+- Sandbox Git fetch denied `.git/FETCH_HEAD`; supported escalation succeeded. GitHub CLI network failed while connector reads worked; supported read-only escalation succeeded and project update succeeded. Sandbox browser readiness attempt was stopped; escalated local browser execution succeeded. No invalid-credential inference or unresolved service blocker.
+
+Integration limitation: backend has no billing-specific SSE endpoint. Workspace uses existing clinic invalidations only when manager/patients.read permits `patients/events`; other financial readers have normal Query focus/reconnect refresh and successful-command invalidation. No backend access expansion. Server authorization, financial concurrency/currency/precision/eligibility/history rules are reused, not reimplemented. Physical print/download UI and final French product pages remain deferred. No production/legal/pilot/restore acceptance claimed.
+
+Independent review, final checked pins/results, cleanup and publication: pending in this in-progress record.
