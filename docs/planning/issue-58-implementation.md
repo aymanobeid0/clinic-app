@@ -40,4 +40,3 @@ Full Vitest completed from the original run. Its existing26 test files and impor
 
 
 Final fixed-source checks: typecheck/lint/build/diffcheck PASS after91d343d; builder directly observed outputs. Same reviewer accepted implementation with zero residual findings. Full259/259 result and fixture cleanup directly observed by builder; final reviewer inspects evidence without claiming independent full-suite execution.
-

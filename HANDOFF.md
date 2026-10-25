@@ -25,5 +25,3 @@ Only disposable `clinic-issue58-test` on verified free127.0.0.1:55438 created; p
 Preserve excluded untracked planned-only `docs/planning/api-validation-errors-plan.md`, SHA256 `82E186AF080DB25098E44EEA1B9B097122245C0447967E1D4827528162E64A6A`. Established mirror `C:/Users/ayman/AppData/Local/Temp/clinic-app-HANDOFF.md` must refresh/hash-match before PR.
 
 Next: final same-reviewer evidence checkpoint, then push/open PR under existing authorization. Suggested skills: already-read repository Matt implement/TDD/code-review/handoff and installed PR guidance. Reuse this ticket's stable context; do not start #59.
-
-
