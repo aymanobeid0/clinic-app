@@ -45,9 +45,22 @@ function Documents({
 }) {
   const [selected, setSelected] = useState("first");
   const workspace = useBillingWorkspace(identity, patient);
-  const doc = useBillingDocument(identityScope(identity), patient, {
-    kind: "settlement",
-    id: selected,
+  const account = identityScope(identity);
+  const doc = useBillingDocument(
+    account,
+    patient,
+    location.search.includes("summary")
+      ? { kind: "summary", planId: "plan" }
+      : {
+          kind: "settlement",
+          id: selected,
+        },
+  );
+  const credit = useBillingForm("credit", account, patient, {
+    chargeId,
+    revision: 0,
+    finalCharge: "60",
+    reason: "Correction explicite",
   });
   return (
     <section>
@@ -60,6 +73,9 @@ function Documents({
         Télécharger
       </button>
       <button onClick={() => setSelected("second")}>Autre reçu</button>
+      <button onClick={() => void credit.submit(true)}>
+        Ajuster la charge
+      </button>
       {doc.error && <p role="alert">{doc.error}</p>}
     </section>
   );

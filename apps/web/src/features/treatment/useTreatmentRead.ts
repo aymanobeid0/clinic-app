@@ -5,7 +5,10 @@ import { treatmentRead, treatmentDenied } from "./treatment.workflow.js";
 
 // Server snapshots live in Query; React owns only request feedback. Each
 // mounted reader has its own cache entry and abortable, StrictMode-safe lifetime.
-export function useTreatmentRead<T>(key: readonly string[]) {
+export function useTreatmentRead<T>(
+  key: readonly string[],
+  denialScope?: readonly string[],
+) {
   const cache = useQueryClient();
   const readerId = useId();
   const scope = JSON.stringify([...key, "read", readerId]);
@@ -57,7 +60,13 @@ export function useTreatmentRead<T>(key: readonly string[]) {
         staleTime: 0,
         queryFn: ({ signal: querySignal }) => {
           const signal = AbortSignal.any([querySignal, controller.signal]);
-          return treatmentRead(cache, key, () => action(signal), signal);
+          return treatmentRead(
+            cache,
+            denialScope ?? key,
+            () => action(signal),
+            signal,
+            denialScope ? owner.queryKey : undefined,
+          );
         },
       });
       if (current.current !== owner || controller.signal.aborted) return;

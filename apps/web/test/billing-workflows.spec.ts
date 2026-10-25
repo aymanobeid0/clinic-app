@@ -147,3 +147,109 @@ test("changing the selected receipt cancels late output and removes the former d
   await expect(page.getByTestId("document")).toBeEmpty();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
+
+test("denied output cancels an older workspace read before it can restore confidential data", async ({
+  page,
+}) => {
+  let hold = false,
+    release = () => {},
+    delivered = () => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const delivery = new Promise<void>((resolve) => {
+    delivered = resolve;
+  });
+  await page.route("**/api/**", async (route) => {
+    if (route.request().url().endsWith("/print")) {
+      await route.fulfill({ status: 403, json: { error: "Accès retiré" } });
+    } else {
+      const delayed = hold;
+      if (delayed) await held;
+      await route.fulfill({
+        json: { totals: [{ currency: "EUR", dueMinor: "confidential" }] },
+      });
+      if (delayed) delivered();
+    }
+  });
+  await page.goto("/test/billing-workflows.harness.html?read");
+  await expect(page.getByTestId("workspace")).toContainText("confidential");
+  hold = true;
+  const older = page.waitForRequest("**/api/billing/first");
+  await page.getByRole("button", { name: "Actualiser" }).click();
+  const oldRequest = await older;
+  await page.getByRole("button", { name: "Imprimer", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveText("Accès retiré");
+  await expect(page.getByTestId("workspace")).toBeEmpty();
+  release();
+  await delivery;
+  await (await oldRequest.response())?.finished();
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  await expect(page.getByTestId("workspace")).toBeEmpty();
+});
+
+test("successful correction retires a prepared summary until an authorized fresh read", async ({
+  page,
+}) => {
+  let changed = false;
+  await page.route("**/api/**", async (route) => {
+    if (route.request().method() === "POST") {
+      changed = true;
+      await route.fulfill({ json: { id: "correction" } });
+    } else if (route.request().url().endsWith("/summary"))
+      await route.fulfill({
+        json: { dueMinor: changed ? "6000" : "10000", invoiceReferences: [] },
+      });
+    else await route.fulfill({ json: { totals: [] } });
+  });
+  await page.goto("/test/billing-workflows.harness.html?read&summary");
+  await page.getByRole("button", { name: "Lire le reçu" }).click();
+  await expect(page.getByTestId("document")).toContainText("10000");
+  const correction = page.waitForResponse("**/api/billing/first/credits");
+  await page.getByRole("button", { name: "Ajuster la charge" }).click();
+  await correction;
+  await expect(page.getByTestId("document")).toBeEmpty();
+  await page.getByRole("button", { name: "Lire le reçu" }).click();
+  await expect(page.getByTestId("document")).toContainText("6000");
+});
+
+test("workspace denial cancels pending document output as well", async ({
+  page,
+}) => {
+  let denied = false,
+    release = () => {},
+    delivered = () => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const delivery = new Promise<void>((resolve) => {
+    delivered = resolve;
+  });
+  await page.route("**/api/**", async (route) => {
+    if (route.request().url().endsWith("/print")) {
+      await held;
+      await route.fulfill({ json: { title: "Confidential receipt" } });
+      delivered();
+    } else
+      await route.fulfill(
+        denied
+          ? { status: 404, json: { error: "Dossier retiré" } }
+          : { json: { totals: [] } },
+      );
+  });
+  await page.goto("/test/billing-workflows.harness.html?read");
+  await expect(page.getByTestId("workspace")).toContainText("totals");
+  const pending = page.waitForRequest("**/settlements/first/print");
+  await page.getByRole("button", { name: "Imprimer", exact: true }).click();
+  const request = await pending;
+  denied = true;
+  const response = page.waitForResponse("**/api/billing/first");
+  await page.getByRole("button", { name: "Actualiser" }).click();
+  await response;
+  release();
+  await delivery;
+  await (await request.response())?.finished();
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  await expect(page.getByTestId("document")).toBeEmpty();
+  await expect(page.getByTestId("workspace")).toBeEmpty();
+});

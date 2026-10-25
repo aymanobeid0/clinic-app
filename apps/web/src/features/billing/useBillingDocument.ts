@@ -5,9 +5,9 @@ import type {
   PlanSummaryOutput,
   Settlement,
 } from "@clinic/contracts";
-import { useTreatmentRead } from "../treatment/useTreatmentRead.js";
+import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { treatmentRead } from "../treatment/treatment.workflow.js";
+import { useTreatmentRead } from "../treatment/useTreatmentRead.js";
 import { treatmentGet } from "../treatment/treatment.api.js";
 import { billingKey } from "./billing.actions.js";
 
@@ -45,16 +45,26 @@ export function useBillingDocument(
       : document.kind === "summary"
         ? `plans/${encodeURIComponent(document.planId)}/summary`
         : `${document.kind === "invoice" ? "invoices" : "settlements"}/${encodeURIComponent(document.id)}`);
-  const read = useTreatmentRead<DocumentData>([...prefix, path]);
+  const read = useTreatmentRead<DocumentData>([...prefix, path], prefix);
+  const scope = JSON.stringify([...prefix, path]);
+  const clear = read.clear;
+  useEffect(
+    () =>
+      cache.getQueryCache().subscribe((event) => {
+        if (
+          event.type === "updated" &&
+          event.action.type === "invalidate" &&
+          JSON.stringify(event.query.queryKey.slice(0, 4)) === scope
+        ) {
+          // Imperative readers cannot refetch on invalidation. Retire their preview
+          // and require a new authorized read instead of showing stale balances.
+          clear();
+        }
+      }),
+    [cache, scope, clear],
+  );
   const load = (target: string) =>
-    read.read((signal) =>
-      treatmentRead(
-        cache,
-        prefix,
-        () => treatmentGet<DocumentData>(target, signal),
-        signal,
-      ),
-    );
+    read.read((signal) => treatmentGet<DocumentData>(target, signal));
   return {
     busy: read.busy,
     error: read.error,

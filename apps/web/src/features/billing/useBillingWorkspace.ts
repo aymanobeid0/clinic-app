@@ -16,6 +16,7 @@ export function useBillingWorkspace(identity: Identity, patientId: string) {
       ? "patients/events"
       : undefined,
     !!patientId && !identity.historicalOnly,
+    key,
   );
 }
 export function usePaymentMethods(accountKey: string) {

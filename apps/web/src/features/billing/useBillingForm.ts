@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { z } from "zod";
 import { useTreatmentCommand } from "../treatment/useTreatmentCommand.js";
 import { treatmentDenied } from "../treatment/treatment.workflow.js";
+import { billingMessages as t } from "./billing.messages.js";
 import {
   billingActions,
   billingKey,
@@ -46,7 +47,7 @@ export function useBillingForm<K extends BillingAction>(
       void cache.invalidateQueries({ queryKey: ["billing", accountKey] });
     },
     undefined,
-    "Opération financière enregistrée.",
+    t.saved,
   );
   useEffect(() => {
     form.reset(initial.current);
@@ -73,7 +74,7 @@ export function useBillingForm<K extends BillingAction>(
     if (!parsed.success) {
       setValidation({
         scope,
-        error: "Vérifiez les champs et les montants exacts avant de confirmer.",
+        error: t.invalid,
       });
       return;
     }
