@@ -1,19 +1,16 @@
-import { useState } from 'react';
-import { useForm, useFieldArray, type UseFormReturn } from 'react-hook-form';
+import type { UseFormReturn } from 'react-hook-form';
 import type {
-  ChartContent,
   ClinicalContent,
   ClinicalRecord,
   Identity,
 } from '@clinic/contracts';
-import { useClinicalSave } from './useClinicalSave.js';
+import {
+  useChartForm,
+  useToothEditor,
+  type ChartValues,
+} from './useChartForm.js';
 import { ClinicalActions } from './ClinicalActions.js';
 import { clinicalMessages as t } from './clinical.messages.js';
-type Values = ChartContent & { observedAt: string };
-const positions = (primary: boolean) =>
-  [...(primary ? [5, 6, 7, 8] : [1, 2, 3, 4])].flatMap((q) =>
-    Array.from({ length: primary ? 5 : 8 }, (_, i) => `${q}${i + 1}`),
-  );
 export function ChartForm({
   id,
   record,
@@ -27,69 +24,20 @@ export function ChartForm({
   cacheKey: readonly string[];
   onLock: (kind: string, locked: boolean) => void;
 }) {
-  const initial = record.draft ?? record.current;
-  const form = useForm<Values>({
-    defaultValues: {
-      numberingScheme: 'FDI',
-      dentition: 'permanent',
-      teeth: [],
-      otherNotes: '',
-      ...(initial?.content as ChartContent | undefined),
-      observedAt:
-        initial?.observedAt.slice(0, 16) ??
-        new Date().toISOString().slice(0, 16),
-    },
-  });
-  const [selected, setSelected] = useState<string>('');
-  const mode = form.watch('dentition');
-  const teeth = form.watch('teeth');
-  const index = teeth.findIndex((t) => t.tooth === selected);
-  const state = useClinicalSave(
-    id,
-    'chart',
-    record.revision,
-    cacheKey,
-    onLock,
-    () => form.reset(form.getValues()),
-  );
-  const canDraft = identity.permissions.includes('chart.draft');
-  const codes = [
-    ...(mode !== 'primary' ? positions(false) : []),
-    ...(mode !== 'permanent' ? positions(true) : []),
-  ];
-  function select(code: string) {
-    if (!teeth.some((t) => t.tooth === code))
-      form.setValue(
-        'teeth',
-        [
-          ...teeth,
-          {
-            tooth: code,
-            presence: 'unknown',
-            extractionHistory: false,
-            conditions: [],
-            treatments: [],
-          },
-        ],
-        { shouldDirty: true },
-      );
-    setSelected(code);
-  }
+  const {
+    form,
+    state,
+    canDraft,
+    selected,
+    codes,
+    teeth,
+    index,
+    select,
+    submit,
+    removeTooth,
+  } = useChartForm({ id, record, identity, cacheKey, onLock });
   return (
-    <form
-      aria-label={t.chart}
-      onSubmit={form.handleSubmit(async (v) => {
-        const { observedAt, ...content } = v;
-        if (
-          await state.save(
-            'draft',
-            content,
-            new Date(observedAt + 'Z').toISOString(),
-          )
-        )
-          form.reset(v);
-      })}
-    >
+    <form aria-label={t.chart} onSubmit={submit}>
       <fieldset disabled={!canDraft || state.busy || state.uncertain}>
         <label>
           {t.chartDate}
@@ -136,14 +84,7 @@ export function ChartForm({
             key={selected}
             form={form}
             index={index}
-            onRemove={() => {
-              form.setValue(
-                'teeth',
-                teeth.filter((t) => t.tooth !== selected),
-                { shouldDirty: true },
-              );
-              setSelected('');
-            }}
+            onRemove={removeTooth}
           />
         )}
       </fieldset>
@@ -166,16 +107,14 @@ function ToothEditor({
   index,
   onRemove,
 }: {
-  form: UseFormReturn<Values>;
+  form: UseFormReturn<ChartValues>;
   index: number;
   onRemove: () => void;
 }) {
-  const conditions = useFieldArray({
-    control: form.control,
-    name: `teeth.${index}.conditions`,
-  });
-  const tooth = form.watch(`teeth.${index}.tooth`);
-  const anterior = Number(tooth[1]) <= 3;
+  const { conditions, tooth, anterior, addFinding } = useToothEditor(
+    form,
+    index,
+  );
   return (
     <section aria-label={t.tooth(tooth)} className="tooth-editor">
       <h5>{t.tooth(tooth)}</h5>
@@ -265,12 +204,7 @@ function ToothEditor({
           </button>
         </fieldset>
       ))}
-      <button
-        type="button"
-        onClick={() =>
-          conditions.append({ finding: 'other', surfaces: [], note: '' })
-        }
-      >
+      <button type="button" onClick={addFinding}>
         {t.addFinding}
       </button>
       <button type="button" onClick={onRemove}>

@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { HttpError } from '../identity/identity.api.js';
 import { clinicalMessages as t } from './clinical.messages.js';
 import { clinicalApi } from './clinical.api.js';
+import { createIdentityWorkflow } from '../identity/identity.workflow.js';
 export function useClinicalSave(
   id: string,
   kind: string,
@@ -54,6 +55,7 @@ export function useClinicalSave(
       await cache.invalidateQueries({ queryKey: cacheKey });
       return true;
     } catch (e) {
+      await createIdentityWorkflow(cache).reconcileDenied(e);
       setError(e instanceof Error ? e.message : t.unavailable);
       if (e instanceof HttpError && e.status < 500) {
         pending.current = null;
@@ -73,6 +75,7 @@ export function useClinicalSave(
       setRevision(latest[kind as 'history' | 'chart'].revision);
       setNotice(t.reconciled);
     } catch (e) {
+      await createIdentityWorkflow(cache).reconcileDenied(e);
       setError(e instanceof Error ? e.message : t.reloadUnavailable);
     } finally {
       setBusy(false);
