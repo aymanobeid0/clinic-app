@@ -1,15 +1,12 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import type { Identity, TreatmentPlan } from '@clinic/contracts';
-import { useTreatmentCommand, CommandState } from './useTreatmentCommand.js';
+import { usePlanLifecycle } from "./usePlanLifecycle.js";
+import type { Identity, TreatmentPlan } from "@clinic/contracts";
+import { CommandState } from "./useTreatmentCommand.js";
 import {
   planLifecycleMessages as t,
   planStatus,
-} from './treatment.messages.js';
-import { PlanPrint } from './PlanPrint.js';
-import { treatmentGet } from './treatment.api.js';
-import type { PrintablePlan } from './PlanPrint.js';
-import { PlanVersionDetails } from './PlanVersionDetails.js';
+} from "./treatment.messages.js";
+import { PlanPrint } from "./PlanPrint.js";
+import { PlanVersionDetails } from "./PlanVersionDetails.js";
 export function PlanLifecycle({
   plan,
   patientId,
@@ -27,57 +24,58 @@ export function PlanLifecycle({
   dirty: boolean;
   onDone: (plan: TreatmentPlan) => void;
 }) {
-  const f = useForm<{
-    acceptedBy: string;
-    acceptedAt: string;
-    method: string;
-    reason: string;
-  }>();
-  const [print, setPrint] = useState<PrintablePlan>();
-  const [printError, setPrintError] = useState('');
-  const [printRevision, setPrintRevision] = useState('');
-  const [reviewedRevision, setReviewedRevision] = useState(plan.revision);
-  const [reviewing, setReviewing] = useState(false);
-  const command = useTreatmentCommand<TreatmentPlan>(
+  const {
+    f,
+    command,
+    evidence,
+    cancel,
+    send,
+    reviewedRevision,
+    reviewing,
+    review,
+    printState,
+    printRevision,
+    setPrintRevision,
+    preview,
+    canPresent,
+    canAccept,
+    canCancel,
+    canRecordEvidence,
+    canPrint,
+  } = usePlanLifecycle({
+    plan,
+    patientId,
+    identity,
     cacheKey,
-    onDone,
     onLock,
-    t.saved,
-  );
-  const send = (action: string, extra: object = {}) => {
-    if (confirm(t.confirm))
-      void command.save(`treatment/${patientId}/plans/lifecycle`, {
-        id: plan.id,
-        revision: reviewedRevision,
-        action,
-        ...extra,
-      });
-  };
+    dirty,
+    onDone,
+  });
   return (
     <section aria-label="Présentation et accord">
       <p>État : {planStatus[plan.status]}</p>
       {plan.evidence && (
         <p>
-          Accord consigné : {plan.evidence.acceptedBy} ·{' '}
-          {new Date(plan.evidence.acceptedAt).toLocaleString('fr')} ·{' '}
+          Accord consigné : {plan.evidence.acceptedBy} ·{" "}
+          {new Date(plan.evidence.acceptedAt).toLocaleString("fr")} ·{" "}
           {plan.evidence.method} · saisi par {plan.evidence.recordedByName} ·
           proposition version {plan.evidence.proposalRevision}
         </p>
       )}
       {plan.acceptance && (
         <p>
-          Acceptation confirmée par {plan.acceptance.confirmedByName} ·{' '}
-          {new Date(plan.acceptance.confirmedAt).toLocaleString('fr')}
+          Acceptation confirmée par {plan.acceptance.confirmedByName} ·{" "}
+          {new Date(plan.acceptance.confirmedAt).toLocaleString("fr")}
         </p>
       )}
       {plan.cancellation && (
         <p>
-          Annulation : {plan.cancellation.reason} ·{' '}
+          Annulation : {plan.cancellation.reason} ·{" "}
           {plan.cancellation.actorName}
         </p>
       )}
-      {plan.status === 'draft' &&
-        plan.events.some((v) => v.status === 'accepted') && <p>{t.renewal}</p>}
+      {plan.status === "draft" &&
+        plan.events.some((v) => v.status === "accepted") && <p>{t.renewal}</p>}
       {dirty && (
         <p>Enregistrez et relisez la proposition avant de poursuivre.</p>
       )}
@@ -93,8 +91,7 @@ export function PlanLifecycle({
             type="button"
             disabled={command.busy}
             onClick={() => {
-              setReviewedRevision(plan.revision);
-              setReviewing(true);
+              review();
             }}
           >
             Relire la proposition pour l’accord
@@ -110,63 +107,62 @@ export function PlanLifecycle({
         }
       >
         <legend>Actions sur la version {plan.revision}</legend>
-        {plan.status === 'draft' &&
-          identity.kind === 'doctor' && identity.permissions.includes('plans.finalize') && (
-            <button type="button" onClick={() => send('present')}>
-              {t.present}
-            </button>
-          )}
-        {plan.status === 'presented' &&
-          identity.permissions.includes('acceptance.draft') && (
-            <form
-              onSubmit={f.handleSubmit((v) =>
-                send('evidence', {
-                  acceptedBy: v.acceptedBy,
-                  method: v.method,
-                  acceptedAt: new Date(v.acceptedAt).toISOString(),
-                }),
-              )}
-            >
-              <label>
-                {t.acceptedBy}
-                <input required maxLength={200} {...f.register('acceptedBy')} />
-              </label>
-              <label>
-                {t.acceptedAt}
-                <input
-                  required
-                  type="datetime-local"
-                  {...f.register('acceptedAt')}
-                />
-              </label>
-              <label>
-                {t.method}
-                <input required maxLength={1000} {...f.register('method')} />
-              </label>
-              <button>{t.evidence}</button>
-            </form>
-          )}
-        {plan.status === 'presented' &&
-          plan.evidence &&
-          identity.kind === 'doctor' && identity.permissions.includes('plans.accept') && (
-            <button type="button" onClick={() => send('accept')}>
-              {t.accept}
-            </button>
-          )}
-        {['draft', 'presented', 'accepted'].includes(plan.status) &&
-          identity.kind === 'doctor' && identity.permissions.includes('plans.finalize') && (
-            <form
-              onSubmit={f.handleSubmit((v) =>
-                send('cancel', { reason: v.reason }),
-              )}
-            >
-              <label>
-                Motif d’annulation
-                <input required maxLength={1000} {...f.register('reason')} />
-              </label>
-              <button>{t.cancel}</button>
-            </form>
-          )}
+        {canPresent && (
+          <button
+            type="button"
+            onClick={() => send("present", {}, confirm(t.confirm))}
+          >
+            {t.present}
+          </button>
+        )}
+        {canRecordEvidence && (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (confirm(t.confirm)) void evidence(true)(event);
+            }}
+          >
+            <label>
+              {t.acceptedBy}
+              <input required maxLength={200} {...f.register("acceptedBy")} />
+            </label>
+            <label>
+              {t.acceptedAt}
+              <input
+                required
+                type="datetime-local"
+                {...f.register("acceptedAt")}
+              />
+            </label>
+            <label>
+              {t.method}
+              <input required maxLength={1000} {...f.register("method")} />
+            </label>
+            <button>{t.evidence}</button>
+          </form>
+        )}
+        {canAccept && (
+          <button
+            type="button"
+            onClick={() => send("accept", {}, confirm(t.confirm))}
+          >
+            {t.accept}
+          </button>
+        )}
+        {canCancel && (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (confirm(t.confirm)) void cancel(true)(event);
+            }}
+          >
+            <label>
+              Motif d’annulation
+              <input required maxLength={1000} {...f.register("reason")} />
+            </label>
+            <button>{t.cancel}</button>
+          </form>
+        )}
       </fieldset>
       <CommandState state={command} />
       {command.error && !command.uncertain && (
@@ -175,7 +171,7 @@ export function PlanLifecycle({
           de réessayer.
         </p>
       )}
-      {identity.permissions.includes('clinical.print') && (
+      {canPrint && (
         <>
           <label>
             Version à imprimer
@@ -196,20 +192,21 @@ export function PlanLifecycle({
           <button
             type="button"
             onClick={() => {
-              setPrintError('');
-              void treatmentGet<PrintablePlan>(
-                `treatment/${patientId}/plans/${plan.id}/versions/${printRevision || plan.revision}/print`,
-              )
-                .then(setPrint)
-                .catch((e: Error) => setPrintError(e.message));
+              preview();
             }}
           >
             {t.print}
           </button>
         </>
       )}
-      {printError && <p role="alert">{printError}</p>}
-      {print && <PlanPrint plan={print} close={() => setPrint(undefined)} />}
+      {printState.error && <p role="alert">{printState.error}</p>}
+      {printState.data && (
+        <PlanPrint
+          cacheKey={cacheKey}
+          plan={printState.data}
+          close={printState.clear}
+        />
+      )}
     </section>
   );
 }

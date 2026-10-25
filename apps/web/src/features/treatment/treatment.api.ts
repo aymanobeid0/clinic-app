@@ -1,4 +1,4 @@
-import type { Catalog, TreatmentPlan } from '@clinic/contracts';
+import type { Catalog, TreatmentPlan, TreatmentVersion } from '@clinic/contracts';
 import { HttpError, post } from '../identity/identity.api.js';
 export async function treatmentGet<T>(
   path: string,
@@ -23,3 +23,9 @@ export function formatMinor(value: string, precision: number) {
   const s = value.padStart(precision + 1, '0');
   return precision ? `${s.slice(0, -precision)}.${s.slice(-precision)}` : s;
 }
+
+export type PrintablePlan = TreatmentVersion & {
+  clinicName: string;
+  patientName: string;
+  patientNumber: number;
+};

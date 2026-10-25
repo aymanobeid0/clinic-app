@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { HttpError, post } from '../identity/identity.api.js';
-import { treatmentMessages as t } from './treatment.messages.js';
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { HttpError } from "../identity/identity.api.js";
+import { useWorkflowLifetime } from "../../hooks/useWorkflowLifetime.js";
+import {
+  createTreatmentCommand,
+  treatmentDenied,
+} from "./treatment.workflow.js";
+import { treatmentMessages as t } from "./treatment.messages.js";
 export function useTreatmentCommand<T>(
   cacheKey: readonly string[],
   onSuccess?: (v: T) => void,
@@ -9,51 +14,84 @@ export function useTreatmentCommand<T>(
   successMessage: string = t.saved,
 ) {
   const cache = useQueryClient();
-  const pending = useRef<{ path: string; data: object } | null>(null);
-  const [busy, setBusy] = useState(false),
-    [uncertain, setUncertain] = useState(false),
-    [error, setError] = useState(''),
-    [notice, setNotice] = useState('');
+  const scope = JSON.stringify(cacheKey);
+  const workflow = useMemo(
+    () => createTreatmentCommand<T>(cache, JSON.parse(scope) as string[]),
+    [cache, scope],
+  );
+  const current = useWorkflowLifetime(workflow);
+  const [feedback, setFeedback] = useState({
+    owner: workflow,
+    busy: false,
+    uncertain: false,
+    error: "",
+    notice: "",
+    denied: false,
+    conflict: false,
+  });
+  const state =
+    feedback.owner === workflow
+      ? feedback
+      : {
+          busy: false,
+          uncertain: false,
+          error: "",
+          notice: "",
+          denied: false,
+          conflict: false,
+        };
   useEffect(() => {
-    onLock?.('treatment', busy || uncertain);
-    return () => onLock?.('treatment', false);
-  }, [onLock, busy, uncertain]);
-  async function save(path: string, data: object) {
-    if (busy) return;
-    pending.current ??= {
-      path,
-      data: { ...data, commandId: crypto.randomUUID() },
-    };
-    setBusy(true);
-    setError('');
-    setNotice('');
+    onLock?.("treatment", state.busy || state.uncertain);
+    return () => onLock?.("treatment", false);
+  }, [onLock, state.busy, state.uncertain]);
+  async function run(action: () => Promise<T | undefined>) {
+    if (workflow.busy || current.current !== workflow) return;
+    setFeedback({
+      owner: workflow,
+      busy: true,
+      uncertain: false,
+      error: "",
+      notice: "",
+      denied: false,
+      conflict: false,
+    });
     try {
-      const p = pending.current;
-      const result = await post<T>(p.path, p.data);
-      pending.current = null;
-      setUncertain(false);
-      setNotice(successMessage);
+      const result = await action();
+      if (current.current !== workflow || result === undefined) return;
+      setFeedback({
+        owner: workflow,
+        busy: false,
+        uncertain: false,
+        error: "",
+        notice: successMessage,
+        denied: false,
+        conflict: false,
+      });
       onSuccess?.(result);
       await cache.invalidateQueries({ queryKey: cacheKey });
       return result;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Service indisponible.');
-      if (e instanceof HttpError && e.status < 500) {
-        pending.current = null;
-        setUncertain(false);
-      } else setUncertain(true);
-    } finally {
-      setBusy(false);
+    } catch (error) {
+      if (current.current === workflow)
+        setFeedback({
+          owner: workflow,
+          busy: false,
+          uncertain: workflow.uncertain,
+          error:
+            error instanceof Error ? error.message : "Service indisponible.",
+          notice: "",
+          denied: treatmentDenied(error),
+          conflict: error instanceof HttpError && error.status === 409,
+        });
     }
   }
   return {
-    save,
+    ...state,
+    save: (path: string, data: object) =>
+      workflow.uncertain
+        ? Promise.resolve(undefined)
+        : run(() => workflow.save(path, data)),
     retry: () =>
-      pending.current && save(pending.current.path, pending.current.data),
-    busy,
-    uncertain,
-    error,
-    notice,
+      workflow.uncertain ? run(workflow.retry) : Promise.resolve(undefined),
   };
 }
 export type TreatmentCommandState = {

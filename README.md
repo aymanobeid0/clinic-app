@@ -15,6 +15,8 @@ Use Node 24, npm and Docker Desktop. Existing databases are not used. The dedica
 
 The browser test provisions fictional data and injects a fake mail adapter in-process. It never sends email or exposes a fake verification endpoint. API tests also use a real isolated PostgreSQL database. The infrastructure isolation test deliberately omits application filters to prove RLS through the actual runtime Prisma pool.
 
+When the default test project/port belongs to another local workflow, leave it untouched. Set `CLINIC_TEST_PORT` to a verified free loopback port (for example `55438`) for Compose, preparation and all test commands, and use an explicit disposable project: `docker compose -p clinic-issue55-test -f infra/compose.test.yml up -d --wait`. Verify that project's container exclusively owns the selected port before database writes. Cleanup uses the same explicit project and port. The default remains55437; the internal fictional database name remains `clinic_issue7` regardless of project. Ports3000/4173 must also be free for browser tests.
+
 ## Runtime and provisioning
 
 The complete import-ready API reference is [OpenAPI](docs/api/openapi.json). See the [Apidog guide](docs/api/apidog.md) for import/re-import, local environments, cookie/CSRF authentication and binary/document/stream behavior. Regenerate with `npm run docs:api:generate`; validate freshness, route coverage and examples with `npm run docs:api:check` (portable checks do not need PostgreSQL). Actual account import is a separate, user-selected Apidog step.

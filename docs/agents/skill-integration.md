@@ -11,6 +11,7 @@ Recommend the next ticket, then wait for the owner's explicit implementation aut
 3. One separate reviewer examines the pinned comparison diff against both repository standards and the specification/acceptance criteria. Apply Matt code-review's substantive checks in a single review; the owner's instruction replaces its two parallel reviewer requirement. Record findings, verification and limitations in one report. Obtain the comparison ref from the user if none was supplied.
 4. The builder fixes findings; the same reviewer reviews the updated diff. Preserve independence: the reviewer reports findings rather than implementing fixes.
 5. Complete the handoff checkpoint below before opening a reviewable pull request with behavior, validation and material limitations. The owner reviews and merges manually; PR publication does not authorize another ticket.
+6. After each implementation, give the owner a brief update: delivered behavior, checks and results, remaining limitations, PR/status and next step. Distinguish completed frontend logic from deferred product UI.
 
 Owner standing publication authorization (2026-10-25): after authorized work completes this workflow, push the completed codex/ branch and open or update its pull request without asking again for publication permission. This supersedes ticket-specific publication gates in earlier handoff entries. Human merge approval and authorization to start another ticket remain separate.
 

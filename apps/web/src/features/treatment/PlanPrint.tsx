@@ -1,43 +1,30 @@
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import type { TreatmentVersion } from '@clinic/contracts';
-import { PlanVersionDetails } from './PlanVersionDetails.js';
-import { treatmentGet } from './treatment.api.js';
-export type PrintablePlan = TreatmentVersion & {
-  clinicName: string;
-  patientName: string;
-  patientNumber: number;
-};
+import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import type { PrintablePlan } from "./treatment.api.js";
+import { usePlanPrint } from "./usePlanPrint.js";
+import { PlanVersionDetails } from "./PlanVersionDetails.js";
 export function PlanPrint({
   plan,
   close,
+  cacheKey,
 }: {
+  cacheKey: string[];
   plan: PrintablePlan;
   close: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef(document.activeElement as HTMLElement | null);
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const state = usePlanPrint(plan, cacheKey);
   useEffect(() => {
     dialog.current?.showModal();
     const previous = trigger.current;
     return () => previous?.focus();
   }, []);
   async function print() {
-    setBusy(true);
-    setError('');
-    try {
-      await treatmentGet(
-        `treatment/${plan.patientId}/plans/${plan.id}/versions/${plan.revision}/print`,
-      );
-      window.print();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Impression indisponible.');
-    } finally {
-      setBusy(false);
-    }
+    const authorized = await state.authorize();
+    if (authorized) window.print();
   }
+
   return createPortal(
     <dialog
       ref={dialog}
@@ -51,22 +38,26 @@ export function PlanPrint({
         </button>
         <button
           type="button"
-          disabled={busy}
+          disabled={state.busy}
           onClick={() => {
             void print();
           }}
         >
           Imprimer cette version
         </button>
-        {error && <p role="alert">{error}</p>}
+        {state.error && <p role="alert">{state.error}</p>}
       </div>
-      <h1>Proposition de traitement</h1>
-      <p>{plan.clinicName}</p>
-      <p>
-        Patient : {plan.patientName} · n°{plan.patientNumber}
-      </p>
-      <PlanVersionDetails version={plan} />
-      <p>Les soins proposés non démarrés ne constituent pas une dette.</p>
+      {!state.denied && (
+        <>
+          <h1>Proposition de traitement</h1>
+          <p>{plan.clinicName}</p>
+          <p>
+            Patient : {plan.patientName} · n°{plan.patientNumber}
+          </p>
+          <PlanVersionDetails version={plan} />
+          <p>Les soins proposés non démarrés ne constituent pas une dette.</p>
+        </>
+      )}
     </dialog>,
     document.body,
   );

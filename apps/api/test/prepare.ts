@@ -5,7 +5,7 @@ import { openDatabase } from '../src/database.js';
 
 const url =
   process.env.TEST_DATABASE_URL ??
-  'postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7';
+  `postgresql://clinic_test:fictional-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`;
 const parsed = new URL(url);
 if (!['localhost', '127.0.0.1'].includes(parsed.hostname) || parsed.pathname !== '/clinic_issue7') {
   throw new Error('Dedicated local fictional test database required.');

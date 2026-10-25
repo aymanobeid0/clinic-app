@@ -6,9 +6,9 @@ import { provisionClinic } from '../src/modules/identity/index.js';
 import { createApplication } from '../src/application.js';
 
 it('authenticates a primary manager by normalized email, limits activation, and rejects username bypass', async () => {
-  const db = openDatabase('postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7');
+  const db = openDatabase(`postgresql://clinic_test:fictional-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`);
   const runtime = openDatabase(
-    'postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:55437/clinic_issue7',
+    `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
   );
   const code = `email-${randomUUID()}`.slice(0, 32);
   const email = `${randomUUID()}@example.invalid`;
@@ -66,9 +66,9 @@ it('authenticates a primary manager by normalized email, limits activation, and 
   }
 });
 it('keeps employee login when a doctor receives manager authority and enforces manager setup', async () => {
-  const db = openDatabase('postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7');
+  const db = openDatabase(`postgresql://clinic_test:fictional-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`);
   const runtime = openDatabase(
-    'postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:55437/clinic_issue7',
+    `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
   );
   const email = `${randomUUID()}@example.invalid`;
   const code = `doctor-${randomUUID()}`.slice(0, 32);
@@ -151,9 +151,9 @@ it('keeps employee login when a doctor receives manager authority and enforces m
 });
 
 it('reserves primary manager emails globally and exposes only exact email matches before authentication', async () => {
-  const db = openDatabase('postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7');
+  const db = openDatabase(`postgresql://clinic_test:fictional-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`);
   const runtime = openDatabase(
-    'postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:55437/clinic_issue7',
+    `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
   );
   const email = `${randomUUID()}@example.invalid`;
   const record = (suffix: string) => ({
@@ -190,9 +190,9 @@ it('reserves primary manager emails globally and exposes only exact email matche
   }
 });
 it('retains primary email login after manager authority is removed without bypassing email verification', async () => {
-  const db = openDatabase('postgresql://clinic_test:fictional-only@127.0.0.1:55437/clinic_issue7');
+  const db = openDatabase(`postgresql://clinic_test:fictional-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`);
   const runtime = openDatabase(
-    'postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:55437/clinic_issue7',
+    `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${process.env.CLINIC_TEST_PORT ?? "55437"}/clinic_issue7`,
   );
   const email = `${randomUUID()}@example.invalid`;
   const code = `demote-${randomUUID()}`.slice(0, 32);
