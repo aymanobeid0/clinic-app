@@ -53,7 +53,7 @@ Approved seams reused: actual French authenticated application with real isolate
 
 One reviewer `/root/reviewer56` formally reviewed `c62917b...c3061aa`: Standards0 / Spec2, bothP2. Builder read the actual [review report](issue-56-review.md), not just the worker message. Reviewer directly inspected code, ran diffcheck and a public QueryClient/QueryObserver probe demonstrating lost shared invalidation. Builder reproduced both findings at the rendered seam and fixed them in `8fb859a`. Same-reviewer complete-source recheck: **Standards0 / Spec0 residual**, both initial findings resolved; no reviewer implementation edits.
 
-Reviewer independently inspected the retained final full-suite source/start/end/EXIT0/result log and confirmed unchanged application/test source, then directly reran typecheck and pinned diffcheck PASS. That is independent output/source inspection, not a full-suite/browser rerun. Final evidence/handoff/mirror readback follows the evidence commit. No PR/push yet; standing publication authorization applies after that checkpoint.
+Reviewer independently inspected the retained final full-suite source/start/end/EXIT0/result log and confirmed unchanged application/test source, then directly reran typecheck and pinned diffcheck PASS. That is independent output/source inspection, not a full-suite/browser rerun. Same-reviewer final evidence/handoff/mirror checkpoint accepted exact `1c43b7ce691fbeda7ec84dc77d31256b8ffda417` against owner base `c62917b`, Standards0 / Spec0 residual. Direct mirror hashes matched `EE42C31CF07E7AE537AEA8FE93CEAD3939BE9CEFA273969538C5BE27B48CB4B5`. Builder received that final readback; no further source fixes/tests requested.
 
 ## Final builder verification — fixed source 8fb859a
 
@@ -68,3 +68,8 @@ All execution below was directly observed by builder with application/tests unch
 Unrun: Linux verification wrapper/npm-ci, full unrelated browser suites, physical quota/restore/load/security/pilot/provider/legal gates. Existing lockfile/dependencies/contracts/backend were unchanged. Meaningful affected browser and complete Vitest/static/build checks above cover this frontend scope; no final UI or production acceptance is inferred. Read skill-integration/handoff/installed PR skill again before publication preparation; compact tracked handoff and actual OS-temp mirror must be hash-equal before opening PR.
 
 Limitations: no final product UI, new backend behavior, schema/migration changes, deployment/live migration, real patient data, live mail/provider, backup restore, legal/clinical validation or pilot acceptance. Preserve unrelated untracked planned-only API plan unchanged/excluded (SHA256 `82E186AF080DB25098E44EEA1B9B097122245C0447967E1D4827528162E64A6A`).
+
+
+## Publication — 2026-10-25 15:24 UTC
+
+Builder pushed reviewer-accepted `1c43b7ce691fbeda7ec84dc77d31256b8ffda417` and directly verified remote branch equality with `ls-remote`. Created [PR98](https://github.com/aymanobeid0/clinic-app/pull/98) at15:24:35Z using the GitHub connector, then attached it to this chat. Direct CLI readback: OPEN, non-draft, MERGEABLE/CLEAN, base `c62917bb179e92fe9e3d9d65a8eac25106144ff2`, exact accepted head `1c43b7c`. `statusCheckRollup` was empty: no remote CI pass is claimed. This metadata update changes documentation only; application/test source stays exactly `8fb859a`. Refresh actual mirror and same-reviewer publication-metadata readback before pushing the final documentation commit. Next action is owner review/manual merge; #56 remains open until that approval, and #57 is not authorized.
