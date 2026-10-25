@@ -258,3 +258,28 @@ test("whole packs and reasons validate before writes; uncertain retry keeps the 
   expect(sent[1]).toEqual(sent[0]);
   await expect(page.getByTestId("stock")).toContainText("4");
 });
+test("review: uncertain retry conflict refreshes stock", async ({ page }) => {
+  let posts = 0;
+  await page.route("**/api/**", async (route) => {
+    if (route.request().method() === "POST") {
+      posts++;
+      if (posts === 1) await route.abort();
+      else
+        await route.fulfill({
+          status: 409,
+          json: { error: "Stock insuffisant" },
+        });
+    } else if (route.request().url().endsWith("/events"))
+      await route.fulfill({ status: 204 });
+    else await route.fulfill({ json: { availablePacks: posts >= 2 ? 0 : 5 } });
+  });
+  await page.goto("/test/inventory-workflows.harness.html");
+  await expect(page.getByTestId("stock")).toContainText('"availablePacks":5');
+  await page.getByRole("button", { name: "Confirmer", exact: true }).click();
+  await expect(page.getByTestId("uncertain")).toHaveText("true");
+  await page.getByRole("button", { name: "Réessayer", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveText("Stock insuffisant");
+  await expect(page.getByTestId("stock")).toContainText('"availablePacks":0', {
+    timeout: 1000,
+  });
+});

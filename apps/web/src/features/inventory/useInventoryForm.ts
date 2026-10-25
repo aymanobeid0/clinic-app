@@ -92,6 +92,12 @@ export function useInventoryForm<K extends InventoryAction>(
     notice: command.notice,
     error:
       command.error || (validation.scope === scope ? validation.error : ""),
-    retry: () => (denied ? Promise.resolve(undefined) : command.retry()),
+    retry: async () => {
+      if (denied) return;
+      const result = await command.retry();
+      if (result === undefined)
+        void cache.invalidateQueries({ queryKey: inventoryKey(account) });
+      return result;
+    },
   };
 }
