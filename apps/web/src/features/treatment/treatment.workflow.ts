@@ -10,6 +10,7 @@ export async function treatmentRead<T>(
   key: readonly string[],
   read: () => Promise<T>,
   signal?: AbortSignal,
+  activeKey?: readonly string[],
 ) {
   try {
     const value = await read();
@@ -17,6 +18,13 @@ export async function treatmentRead<T>(
     return value;
   } catch (error) {
     if (!signal?.aborted && treatmentDenied(error)) {
+      if (activeKey) {
+        const active = JSON.stringify(activeKey);
+        await cache.cancelQueries({
+          queryKey: key,
+          predicate: (query) => JSON.stringify(query.queryKey) !== active,
+        });
+      }
       for (const query of cache.getQueryCache().findAll({ queryKey: key }))
         query.setState({ data: undefined });
       await createIdentityWorkflow(cache).reconcileDenied(error);

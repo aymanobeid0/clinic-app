@@ -12,6 +12,7 @@ export function useCareQuery<T>(
   path: string,
   events?: string,
   enabled = true,
+  denialScope?: readonly string[],
 ) {
   const cache = useQueryClient();
   const scope = JSON.stringify(key);
@@ -21,7 +22,13 @@ export function useCareQuery<T>(
     retry: false,
     enabled,
     queryFn: ({ signal }) =>
-      treatmentRead(cache, key, () => treatmentGet<T>(path, signal), signal),
+      treatmentRead(
+        cache,
+        denialScope ?? key,
+        () => treatmentGet<T>(path, signal),
+        signal,
+        denialScope ? key : undefined,
+      ),
   });
   useEffect(() => {
     const queryKey = JSON.parse(scope) as string[];
