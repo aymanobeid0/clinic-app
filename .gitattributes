@@ -1,5 +1,6 @@
 *.sh text eol=lf
 *.py text eol=lf
 *.md text eol=lf
+HANDOFF.history-2026-10-25.md -text
 scripts/runtime/python3 text eol=lf
 scripts/git-hooks/pre-push text eol=lf
