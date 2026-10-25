@@ -12,6 +12,8 @@ Recommend the next ticket, then wait for the owner's explicit implementation aut
 4. The builder fixes findings; the same reviewer reviews the updated diff. Preserve independence: the reviewer reports findings rather than implementing fixes.
 5. Complete the handoff checkpoint below before opening a reviewable pull request with behavior, validation and material limitations. The owner reviews and merges manually; PR publication does not authorize another ticket.
 
+Owner standing publication authorization (2026-10-25): after authorized work completes this workflow, push the completed codex/ branch and open or update its pull request without asking again for publication permission. This supersedes ticket-specific publication gates in earlier handoff entries. Human merge approval and authorization to start another ticket remain separate.
+
 Use at most one worker per required role; do not fan a role out into additional agents. When a separate QA role is necessary, use one QA worker. Ordinary tests remain part of the builder's work and verification part of the review. Run roles only when the task needs them; no automatic board draining, collectors or background workers.
 
 If an independent reviewer cannot be run, preserve the branch and request a separate review session rather than claiming the builder's self-check is independent review. No special board scripts, vendor templates or machine markers are required. Production deployment, live migrations and real patient data require separate authorization.
