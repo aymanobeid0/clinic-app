@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCareQuery } from "./useCareQuery.js";
 import type { Identity, Prescription } from "@clinic/contracts";
-import { treatmentGet } from "../treatment/treatment.api.js";
 import { HttpError } from "../identity/identity.api.js";
 import { PrescriptionEditor } from "./PrescriptionEditor.js";
 import { PrescriptionPrint, PrescriptionVersion } from "./PrescriptionPrint.js";
@@ -22,22 +21,20 @@ function PrescriptionList({
     patientId,
   ];
   const [selected, setSelected] = useState(""),
-    [newRecord, setNewRecord] = useState<Prescription | null>(null);
-  const query = useQuery({
-    queryKey: key,
-    queryFn: ({ signal }) =>
-      treatmentGet<Prescription[]>(
-        `clinical/${patientId}/prescriptions`,
-        signal,
-      ),
-    retry: false,
-    gcTime: 0,
-  });
+    [newId, setNewId] = useState("");
+  const query = useCareQuery<Prescription[]>(
+    key,
+    `clinical/${patientId}/prescriptions`,
+  );
 
   const forbidden =
     query.error instanceof HttpError &&
     [401, 403, 404].includes(query.error.status);
-  const record = query.data?.find((r) => r.id === selected) ?? newRecord;
+  const record =
+    query.data?.find((r) => r.id === selected) ??
+    (newId
+      ? { id: newId, revision: 0, current: null, draft: null, events: [] }
+      : null);
   return (
     <section aria-label={t.title}>
       <h5>{t.title}</h5>
@@ -58,7 +55,7 @@ function PrescriptionList({
                       )
                     ) {
                       setSelected(r.id);
-                      setNewRecord(null);
+                      setNewId("");
                     }
                   }}
                 >
@@ -77,13 +74,7 @@ function PrescriptionList({
                   )
                 ) {
                   const id = crypto.randomUUID();
-                  setNewRecord({
-                    id,
-                    revision: 0,
-                    current: null,
-                    draft: null,
-                    events: [],
-                  });
+                  setNewId(id);
                   setSelected(id);
                 }
               }}
@@ -101,6 +92,7 @@ function PrescriptionList({
                 record={record}
                 identity={identity}
                 onLock={onLock}
+                cacheKey={key}
               />
               {identity.permissions.includes("clinical.history") && (
                 <details>
@@ -118,6 +110,7 @@ function PrescriptionList({
                         identity.permissions.includes("clinical.print") && (
                           <PrescriptionPrint
                             patientId={patientId}
+                            cacheKey={key}
                             id={record.id}
                             revision={v.revision}
                           />
@@ -130,6 +123,7 @@ function PrescriptionList({
                 identity.permissions.includes("clinical.print") && (
                   <PrescriptionPrint
                     patientId={patientId}
+                    cacheKey={key}
                     id={record.id}
                     revision={record.current.revision}
                   />
@@ -142,7 +136,18 @@ function PrescriptionList({
   );
 }
 
-export function PrescriptionsPanel(props:Parameters<typeof PrescriptionList>[0]){
- const [initialized,setInitialized]=useState(false);
- return <details onToggle={e=>{if(e.currentTarget.open)setInitialized(true);}}><summary>{t.title}</summary>{initialized&&<PrescriptionList {...props}/>}</details>;
+export function PrescriptionsPanel(
+  props: Parameters<typeof PrescriptionList>[0],
+) {
+  const [initialized, setInitialized] = useState(false);
+  return (
+    <details
+      onToggle={(e) => {
+        if (e.currentTarget.open) setInitialized(true);
+      }}
+    >
+      <summary>{t.title}</summary>
+      {initialized && <PrescriptionList {...props} />}
+    </details>
+  );
 }

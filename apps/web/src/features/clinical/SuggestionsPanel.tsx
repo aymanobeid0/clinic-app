@@ -1,17 +1,9 @@
 import { suggestionMessages as t } from "./reference.messages.js";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useQuery } from "@tanstack/react-query";
-import type {
-  ChartSuggestion,
-  Identity,
-  ClinicalWorkspace,
-} from "@clinic/contracts";
-import { treatmentGet } from "../treatment/treatment.api.js";
-import {
-  useTreatmentCommand,
-  CommandState,
-} from "../treatment/useTreatmentCommand.js";
+import { useCareQuery } from "./useCareQuery.js";
+import { useChartSuggestion } from "./useChartSuggestion.js";
+import type { ChartSuggestion, Identity } from "@clinic/contracts";
+import { CommandState } from "../treatment/useTreatmentCommand.js";
 const labels = {
   extraction: "Extraction / absence",
   restoration: "Restauration",
@@ -28,18 +20,10 @@ function SuggestionList({
   identity: Identity;
   chartRevision: number;
 }) {
-  const q = useQuery({
-    queryKey: [
-      "chart-suggestions",
-      identity.clinicId,
-      identity.accountId,
-      patientId,
-    ],
-    queryFn: () =>
-      treatmentGet<ChartSuggestion[]>(`clinical/${patientId}/suggestions`),
-    gcTime: 0,
-    retry: false,
-  });
+  const q = useCareQuery<ChartSuggestion[]>(
+    ["chart-suggestions", identity.clinicId, identity.accountId, patientId],
+    `clinical/${patientId}/suggestions`,
+  );
   return (
     <section aria-label={t.title}>
       <h5>{t.heading}</h5>
@@ -50,6 +34,7 @@ function SuggestionList({
         <Suggestion
           key={s.id}
           value={s}
+          identity={identity}
           patientId={patientId}
           revision={chartRevision}
           allowed={
@@ -66,41 +51,20 @@ function Suggestion({
   patientId,
   revision,
   allowed,
+  identity,
 }: {
   value: ChartSuggestion;
   patientId: string;
   revision: number;
   allowed: boolean;
+  identity: Identity;
 }) {
-  const f = useForm({
-      defaultValues: { teeth: s.teeth.join(", "), surfaces: "" },
-    }),
-    [current, setCurrent] = useState(revision),
-    [error, setError] = useState("");
-  const command = useTreatmentCommand(["chart-suggestions"]);
-  async function submit(action: "confirm" | "dismiss") {
-    const v = f.getValues();
-    const teeth = v.teeth.split(/[, ]+/).filter(Boolean),
-      surfaces = v.surfaces.split(/[, ]+/).filter(Boolean);
-    if (confirm(action === "confirm" ? t.confirmQuestion : t.dismissQuestion))
-      await command.save(`clinical/${patientId}/suggestions/${s.id}`, {
-        chartRevision: Math.max(current, revision),
-        action,
-        targets:
-          action === "dismiss"
-            ? []
-            : teeth.map((tooth) => ({
-                tooth,
-                presence: "unknown",
-                extractionHistory: false,
-                conditions:
-                  s.category === "restoration"
-                    ? [{ finding: "restoration", surfaces }]
-                    : [],
-                treatments: [],
-              })),
-      });
-  }
+  const { f, command, submit, reload, error } = useChartSuggestion(
+    s,
+    patientId,
+    revision,
+    identity,
+  );
   return (
     <div>
       <p>
@@ -112,7 +76,11 @@ function Suggestion({
             : "Ignorée"}
       </p>
       {s.status === "pending" && allowed && (
-        <form onSubmit={f.handleSubmit(() => void submit("confirm"))}>
+        <form
+          onSubmit={f.handleSubmit(() => {
+            if (confirm(t.confirmQuestion)) void submit("confirm");
+          })}
+        >
           <fieldset disabled={command.busy || command.uncertain}>
             <legend>{t.targets}</legend>
             <label>
@@ -126,29 +94,18 @@ function Suggestion({
               </label>
             )}
             <button>{t.confirm}</button>
-            <button type="button" onClick={() => void submit("dismiss")}>
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm(t.dismissQuestion)) void submit("dismiss");
+              }}
+            >
               {t.dismiss}
             </button>
           </fieldset>
           <CommandState state={command} />
           {command.error && !command.uncertain && (
-            <button
-              type="button"
-              onClick={() => {
-                void treatmentGet<ClinicalWorkspace>(`clinical/${patientId}`)
-                  .then((v) => {
-                    setCurrent(v.chart.revision);
-                    setError("");
-                  })
-                  .catch((e) =>
-                    setError(
-                      e instanceof Error
-                        ? e.message
-                        : "Relecture indisponible.",
-                    ),
-                  );
-              }}
-            >
+            <button type="button" onClick={() => void reload()}>
               {t.reload}
             </button>
           )}
@@ -159,7 +116,16 @@ function Suggestion({
   );
 }
 
-export function SuggestionsPanel(props:Parameters<typeof SuggestionList>[0]){
- const [initialized,setInitialized]=useState(false);
- return <details onToggle={e=>{if(e.currentTarget.open)setInitialized(true);}}><summary>{t.title}</summary>{initialized&&<SuggestionList {...props}/>}</details>;
+export function SuggestionsPanel(props: Parameters<typeof SuggestionList>[0]) {
+  const [initialized, setInitialized] = useState(false);
+  return (
+    <details
+      onToggle={(e) => {
+        if (e.currentTarget.open) setInitialized(true);
+      }}
+    >
+      <summary>{t.title}</summary>
+      {initialized && <SuggestionList {...props} />}
+    </details>
+  );
 }

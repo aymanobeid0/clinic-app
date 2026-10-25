@@ -1,7 +1,6 @@
-import { flushSync } from "react-dom";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { usePrescriptionPrint } from "./usePrescriptionPrint.js";
 import type { ClinicalVersion, PrescriptionContent } from "@clinic/contracts";
-import { treatmentGet } from "../treatment/treatment.api.js";
 import { prescriptionMessages as t } from "./prescription.messages.js";
 export function PrescriptionVersion({
   version,
@@ -67,49 +66,34 @@ export function PrescriptionPrint({
   patientId,
   id,
   revision,
+  cacheKey,
 }: {
   patientId: string;
   id: string;
   revision: number;
+  cacheKey: readonly string[];
 }) {
-  const [error, setError] = useState(""),
-    [value, setValue] = useState<{
-      version: ClinicalVersion<PrescriptionContent>;
-      superseded: boolean;
-    } | null>(null);
-  async function prepare() {
-    try {
-      const result = await treatmentGet<{
-        version: ClinicalVersion<PrescriptionContent>;
-        superseded: boolean;
-      }>(`clinical/${patientId}/prescriptions/${id}/print/${revision}`);
-      setValue(result);
-      setError("");
-    } catch (e) {
-      setValue(null);
-      setError(e instanceof Error ? e.message : "Impression indisponible.");
-    }
+  const reader = usePrescriptionPrint(patientId, id, revision, cacheKey);
+  const { data: value, error, prepare } = reader;
+  const target = useRef<HTMLDivElement>(null);
+  const [printRequested, setPrintRequested] = useState(false);
+  async function print() {
+    const result = await reader.authorize();
+    if (result) setPrintRequested(true);
   }
-  async function print(target: HTMLElement) {
+  useLayoutEffect(() => {
+    if (!printRequested || !value || !target.current) return;
+    const element = target.current;
+    element.classList.add("printing");
+    document.body.classList.add("printing-prescription");
     try {
-      const result = await treatmentGet<{
-        version: ClinicalVersion<PrescriptionContent>;
-        superseded: boolean;
-      }>(`clinical/${patientId}/prescriptions/${id}/print/${revision}`);
-      flushSync(() => setValue(result));
-      target.classList.add("printing");
-      document.body.classList.add("printing-prescription");
-      try {
-        window.print();
-      } finally {
-        target.classList.remove("printing");
-        document.body.classList.remove("printing-prescription");
-      }
-    } catch (e) {
-      setValue(null);
-      setError(e instanceof Error ? e.message : "Impression indisponible.");
+      window.print();
+    } finally {
+      element.classList.remove("printing");
+      document.body.classList.remove("printing-prescription");
+      setPrintRequested(false);
     }
-  }
+  }, [printRequested, value]);
   return (
     <>
       <button type="button" onClick={() => void prepare()}>
@@ -117,12 +101,12 @@ export function PrescriptionPrint({
       </button>
       {error && <p role="alert">{error}</p>}
       {value && (
-        <div className="prescription-print">
+        <div ref={target} className="prescription-print">
           <PrescriptionVersion {...value} />
           <button
             type="button"
             className="no-print"
-            onClick={(e) => void print(e.currentTarget.parentElement!)}
+            onClick={() => void print()}
           >
             Imprimer l’ordonnance affichée
           </button>

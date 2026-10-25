@@ -7,6 +7,11 @@ import {
   type PrescriptionContent,
 } from "@clinic/contracts";
 import { post, HttpError } from "../identity/identity.api.js";
+import { useClinicalDraftScope } from "./useClinicalDraftScope.js";
+import {
+  treatmentDenied,
+  treatmentRead,
+} from "../treatment/treatment.workflow.js";
 import { treatmentGet } from "../treatment/treatment.api.js";
 export const emptyMedicine = {
   name: "",
@@ -37,9 +42,12 @@ export function usePrescriptionEditor(
   patientId: string,
   record: Prescription,
   onLock: (kind: string, value: boolean) => void,
+  cacheKey: string[] = ["prescriptions", patientId],
 ) {
   const cache = useQueryClient(),
     path = `clinical/${patientId}/prescriptions/${record.id}`;
+  const { owner, active, compared, setCompared } =
+    useClinicalDraftScope<Prescription>([...cacheKey, record.id]);
   const initial = values(record),
     form = useForm<Values>({ defaultValues: initial });
   const value = form.watch(),
@@ -50,13 +58,27 @@ export function usePrescriptionEditor(
     [error, setError] = useState(""),
     [uncertain, setUncertain] = useState(false),
     [conflict, setConflict] = useState(false),
-    [compared, setCompared] = useState<Prescription | null>(null);
+    [denied, setDenied] = useState(false);
   const pending = useRef<{
       action: "draft" | "finalize";
       data: object;
       serialized?: string;
     } | null>(null),
     flight = useRef(false);
+  useEffect(() => {
+    const v = values(record);
+    form.reset(v);
+    setSaved(JSON.stringify(v));
+    setRevision(record.revision);
+    setBusy(false);
+    setError("");
+    setUncertain(false);
+    setConflict(false);
+    setDenied(false);
+    setCompared(null);
+    pending.current = null;
+    flight.current = false;
+  }, [owner]);
   const dirty = serialized !== saved,
     locked = dirty || busy || uncertain || conflict;
   useEffect(() => {
@@ -69,9 +91,10 @@ export function usePrescriptionEditor(
     };
   }, [record.id, onLock, locked]);
   async function save(action: "draft" | "finalize" = "draft") {
-    if (flight.current || conflict) return;
+    if (!active() || denied || flight.current || conflict) return;
     const v = form.getValues();
     if (
+      !pending.current &&
       action === "draft" &&
       !prescriptionDraftSchema.safeParse({
         commandId: crypto.randomUUID(),
@@ -84,12 +107,14 @@ export function usePrescriptionEditor(
       );
       return;
     }
+    if (!pending.current && action === "finalize" && (dirty || !record.draft))
+      return;
     pending.current ??= {
       action,
       data: {
         commandId: crypto.randomUUID(),
         revision,
-        ...(action === "draft" ? v : {}),
+        ...(action === "draft" ? structuredClone(v) : {}),
       },
       ...(action === "draft" ? { serialized: JSON.stringify(v) } : {}),
     };
@@ -102,12 +127,37 @@ export function usePrescriptionEditor(
         `${path}/${request.action}`,
         request.data,
       );
+      if (!active()) return;
       pending.current = null;
       setUncertain(false);
       setRevision(result.revision);
       if (request.serialized) setSaved(request.serialized);
-      await cache.invalidateQueries({ queryKey: ["prescriptions"] });
+      cache.setQueryData<Prescription[]>(cacheKey, (rows) =>
+        rows
+          ? rows.some((r) => r.id === result.id)
+            ? rows.map((r) =>
+                r.id === result.id && r.revision <= result.revision
+                  ? result
+                  : r,
+              )
+            : [...rows, result]
+          : [result],
+      );
+      await cache.invalidateQueries({ queryKey: cacheKey });
     } catch (e) {
+      if (!active()) return;
+      if (treatmentDenied(e)) {
+        setDenied(true);
+        form.reset({
+          content: { medicines: [{ ...emptyMedicine }], instructions: "" },
+          reason: "",
+        });
+        setCompared(null);
+        await treatmentRead(cache, cacheKey, () => Promise.reject(e)).catch(
+          () => {},
+        );
+        if (!active()) return;
+      }
       setError(e instanceof Error ? e.message : "Service indisponible.");
       if (e instanceof HttpError && e.status < 500) {
         pending.current = null;
@@ -115,12 +165,15 @@ export function usePrescriptionEditor(
         setConflict(e.status === 409);
       } else setUncertain(true);
     } finally {
-      flight.current = false;
-      setBusy(false);
+      if (active()) {
+        flight.current = false;
+        setBusy(false);
+      }
     }
   }
   useEffect(() => {
     if (
+      !denied &&
       !dirty &&
       !busy &&
       !uncertain &&
@@ -149,15 +202,39 @@ export function usePrescriptionEditor(
     return () => clearTimeout(timer);
   });
   async function compare() {
+    if (!active() || denied || flight.current || uncertain) return;
+    flight.current = true;
+    setBusy(true);
     try {
-      setCompared(await treatmentGet<Prescription>(path));
+      const result = await treatmentRead(
+        cache,
+        cacheKey,
+        () => treatmentGet<Prescription>(path, owner.controller.signal),
+        owner.controller.signal,
+      );
+      if (!active()) return;
+      setCompared(result);
       setConflict(true);
     } catch (e) {
+      if (!active()) return;
+      if (treatmentDenied(e)) {
+        setDenied(true);
+        form.reset({
+          content: { medicines: [{ ...emptyMedicine }], instructions: "" },
+          reason: "",
+        });
+        setCompared(null);
+      }
       setError(e instanceof Error ? e.message : "Relecture indisponible.");
+    } finally {
+      if (active()) {
+        flight.current = false;
+        setBusy(false);
+      }
     }
   }
   function resolve(keep: boolean) {
-    if (!compared) return;
+    if (!active() || denied || !compared) return;
     const v = values(compared);
     setRevision(compared.revision);
     setSaved(JSON.stringify(v));
@@ -165,7 +242,7 @@ export function usePrescriptionEditor(
     setCompared(null);
     setConflict(false);
     setError("");
-    void cache.invalidateQueries({ queryKey: ["prescriptions"] });
+    void cache.invalidateQueries({ queryKey: cacheKey });
   }
   return {
     form,
@@ -176,6 +253,7 @@ export function usePrescriptionEditor(
     uncertain,
     conflict,
     compared,
+    denied,
     save,
     compare,
     resolve,
