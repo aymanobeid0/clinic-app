@@ -85,11 +85,11 @@ Starting a procedure creates the full amount due in a billing workspace. Payment
 
 ## Implementation Decisions
 
-### Current state and architectural boundaries
+### Initial workspace snapshot and architectural boundaries
 
-The workspace has product discovery, a domain glossary, design references, and prototype documentation. No production backend, persistence, authentication, test suite, stack, or deployment is established. Prototype sample data and in-memory behavior are not production contracts.
+At the original 2026-10-10 discovery snapshot, the workspace had planning and prototypes without an implemented backend or test suite. This paragraph records that starting point. Current progress is in [delivery status](delivery-status.md); the approved architecture and dependency decisions are in the linked contracts below. Prototype sample data and in-memory behavior are not production contracts.
 
-Organize the future application around identity/access, patient records, scheduling, clinical care/plans, billing, inventory, attachments/documents, and reporting. These are responsibility boundaries, not a decision to deploy separate services. The user selected React with TypeScript for the frontend, Node.js and Express with TypeScript for the backend, PostgreSQL with Prisma ORM, and Docker with Nginx for deployment. Supporting libraries, versions, service layout, and persistence details require review. Prefer one application-facing behavior boundary for automated testing. Maintenance will primarily use AI coding tools.
+Organize the future application around identity/access, patient records, scheduling, clinical care/plans, billing, inventory, attachments/documents, and reporting. These are responsibility boundaries, not a decision to deploy separate services. The user selected React with TypeScript for the frontend, Node.js and Express with TypeScript for the backend, PostgreSQL with Prisma ORM, and Docker with Nginx for deployment. Approved supporting dependencies and service/persistence layout are recorded in [the dependency proposal](dependency-proposal.md) and [application architecture](../architecture/application-architecture.md); repository manifests and the lockfile supply implemented versions. Prefer one application-facing behavior boundary for automated testing. Maintenance will primarily use AI coding tools.
 
 All authoritative access checks must apply at the server boundary, including reads, writes, history, file access, printing, and exports. Hiding interface controls alone is insufficient. Permission settings must not allow a non-doctor manager to acquire clinical access contrary to the confirmed rule. The reviewed matrix in identity-access-decisions.md governs account/action/patient scope; financial/mixed attachment action permissions and content scopes are defined in file-data-decisions.md.
 
@@ -205,7 +205,7 @@ Pilot acceptance requires the four dentists and reception staff to complete the 
 - Arabic/RTL and English delivery in this first French pilot; USA rollout.
 - Patient portal, digital-signature requirement, alternative-plan comparisons.
 - Visit-linked inventory use, automated procedure consumption, BI dashboard, purchase orders, supplier accounts, or full accounting.
-- Online payment processing, insurance claims, multicurrency within a clinic, and automatic cancellation fees.
+- Online payment processing, insurance claims, currency conversion/cross-currency allocation, and automatic cancellation fees. Multiple enabled currencies with separate balances are in scope under [the approved financial amendment](financial-decisions.md).
 - Bulk migration, legacy integration, DICOM, MFA, and configurable idle locking in this MVP.
 - Deploying to or changing the VPS, or claiming legal/clinical compliance from this specification alone. The selected stack is recorded above; production deployment requires its own operational verification.
 

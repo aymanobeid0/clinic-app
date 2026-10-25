@@ -1,8 +1,10 @@
 # Clinic app
 
-Online dental clinic MVP. Product decisions live in docs/planning/mvp-scope.md; implementation contract in docs/planning/spec-001-clinic-mvp.md; terminology in CONTEXT.md.
+Online dental clinic MVP. Scope overview: docs/planning/mvp-scope.md. Behavior contract: docs/planning/spec-001-clinic-mvp.md with its linked approved amendments. Terminology: CONTEXT.md.
 
 ## Before implementation
+
+- When resuming work, read HANDOFF.md for current context. Follow its evidence/history links only when relevant; dated archives are historical snapshots.
 
 - Read the assigned GitHub issue, its acceptance criteria and open blockers. For tracker/readiness rules, read docs/agents/issue-tracker.md.
 - For dependencies or architecture, read docs/planning/dependency-proposal.md and docs/architecture/application-architecture.md. Preserve the approved stack and Zustand/TanStack Query state boundaries.

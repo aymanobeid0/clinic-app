@@ -2,6 +2,8 @@
 
 Date: 2026-10-18 (Africa/Bamako). Owner authorization: “ok so let us settle that now”, following approval of recovery #49 and tickets #50–#76. This scope reconciles planning/tracker instructions only; it does not authorize application implementation.
 
+This document owns the approved delivery sequence and requirement mapping. Read [delivery status](delivery-status.md) for a dated progress snapshot and GitHub for current issue states/blockers. The evidence sections below record the original reconciliation run.
+
 ## Authority and execution
 
 1. Direct current owner instructions govern scope and authorization.
@@ -18,7 +20,7 @@ No product UI coding is authorized during backend or logic stages. No deletion, 
 
 The source issue retains its product requirements; the columns assign backend, logic and designed-UI responsibility. Each original checklist item is retained in its source archive and must be covered by the applicable assigned owner. Source ownership is also added to each recovery ticket, so a worker need not infer lineage from this table alone.
 
-| Source | Backend/status | Frontend business logic | Designed UI / final integration |
+| Source | Backend/API ownership | Frontend business logic | Designed UI / final integration |
 |---|---|---|---|
 | #7 | Historical implementation; not final UI acceptance | #52 | #60 |
 | #8 | Historical implementation; not final UI acceptance | #52 | #60, #74 |
@@ -31,27 +33,27 @@ The source issue retains its product requirements; the columns assign backend, l
 | #15 | Historical implementation; not final UI acceptance | #56 | #66 |
 | #16 | Historical implementation; not final UI acceptance | #56, #59 | #66, #73 |
 | #17 | Historical implementation; not final UI acceptance | #56 | #67, #74 |
-| #18 | Active backend/API owner; not yet accepted | #54, #57 | #75 |
-| #19 | Active backend/API owner; not yet accepted | #54 | #68, #64 |
-| #20 | Active backend/API owner; not yet accepted | #57 | #69 |
-| #21 | Active backend/API owner; not yet accepted | #57 | #69 |
-| #22 | Active backend/API owner; not yet accepted | #57 | #70 |
-| #23 | Active backend/API owner; not yet accepted | #57 | #70 |
-| #24 | Active backend/API owner; not yet accepted | #58 | #71 |
-| #25 | Active backend/API owner; not yet accepted | #58 | #72 |
-| #26 | Active backend/API owner; not yet accepted | #59 | #60, #73 |
-| #27 | Active backend/API owner; not yet accepted | #59 | #73 |
+| #18 | Backend/API source; acceptance evidence under #51 | #54, #57 | #75 |
+| #19 | Backend/API source; acceptance evidence under #51 | #54 | #68, #64 |
+| #20 | Backend/API source; acceptance evidence under #51 | #57 | #69 |
+| #21 | Backend/API source; acceptance evidence under #51 | #57 | #69 |
+| #22 | Backend/API source; acceptance evidence under #51 | #57 | #70 |
+| #23 | Backend/API source; acceptance evidence under #51 | #57 | #70 |
+| #24 | Backend/API source; acceptance evidence under #51 | #58 | #71 |
+| #25 | Backend/API source; acceptance evidence under #51 | #58 | #72 |
+| #26 | Backend/API source; acceptance evidence under #51 | #59 | #60, #73 |
+| #27 | Backend/API source; acceptance evidence under #51 | #59 | #73 |
 | #28 | Operational rehearsal; separate authorization | — | — |
 | #29 | Final pilot gate | — | #76 |
 
 Shared login/onboarding/recovery, sidebar/header/dashboard and route behavior: #60. Catalog administration: #74; patient prescription lookup/issuance: #67. Catalog duration suggestions remain covered by #53/#55 and appointment page #65. Signed acceptance evidence spans #64/#68. Pending-note tasks span #56/#59 and #66/#73. Historical clinical and own-work financial views span #54/#57 and #75. #76 verifies that every original requirement has a real replacement and retires scaffold presentation only after coverage is demonstrated.
 
-## Current states and stage gates
+## Stage gates
 
 - #7–#17 stay closed as historical implementation records, retaining linked PR/test evidence. Their closed state does not certify final Dentara UI or presentation-independent logic. This task does not newly rerun or certify those backend tests.
-- #18–#27 remain open and own only their remaining backend/API work under the reconciled contract. They may close after reviewed backend acceptance plus explicit transfer links; unfinished UI remains tracked by the later owners. There is no duplicate new backend implementation ticket.
-- #50 is the reconciliation gate. It remains open for independent review/human acceptance; work does not automatically advance.
-- #51 remains blocked by #50 and requires actual backend evidence for every #18–#27 capability, not issue state alone. It has no dependency on later UI. No current task declares the backend complete.
+- #18–#27 own backend/API behavior under the reconciled contracts. Their reviewed acceptance evidence belongs to #51; unfinished logic/UI remains assigned to the later owners. Current issue state is read from GitHub, not inferred from this ownership map.
+- #50 is the reviewed reconciliation gate. Its recorded acceptance preserves source ownership; implementation still needs the owner authorization required by the workflow.
+- #51 is the backend evidence gate after #50. Acceptance requires actual evidence for every #18–#27 capability, not issue state alone, and has no dependency on later UI. Its bounded acceptance and omissions are recorded in [the evidence map](issue-51-backend-acceptance.md); it is not production or final UI acceptance.
 - #52–#59 are frontend-business-logic tickets, after #51. No designed product components, pages, app routing or main-app UI implementation is authorized there.
 - #60–#75 are deferred product UI tickets. Their upstream behavior gate and separate owner authorization are required before UI coding. Each page requires approved-design comparison, meaningful French user journey, permissions/failure states, responsive/keyboard checks and a local owner preview.
 - #76 requires all replacement UI tickets and verifies the connected application, requirement coverage and scaffold removal conditions.
@@ -68,7 +70,9 @@ Shared login/onboarding/recovery, sidebar/header/dashboard and route behavior: #
 - UI owners are references, never blockers of their backend source issue. This prevents a backend → UI → backend cycle.
 - The old “complete all layers in each feature ticket” instruction is superseded by #49. API document content/data/templates and authorized delivery remain backend obligations; final French product screens and browser print journeys stay with the UI owners.
 
-## Evidence and review
+## Historical reconciliation evidence and review
+
+The following paragraphs are the 2026-10-18–19 publication record. Their issue states and authorization statements are historical, not current tracker data.
 
 Pre-edit live issue bodies/states and recent comment context were captured in the ignored reconciliation workspace before mutations. All original bodies #7–#29 are retained in the proposed issue archives. Writes compare each current issue body with the captured version first and abort on concurrent edits; no blind overwrite is allowed.
 

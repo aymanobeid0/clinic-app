@@ -1,19 +1,26 @@
-# Current delivery status
+# Delivery status
 
-## Recovery correction — 2026-10-18
+Last verified: 2026-10-25 UTC during documentation cleanup. This is a dated navigation summary, not a live tracker or new implementation authorization. Read the linked GitHub issues for current criteria, comments and native dependencies. The previous status text is retained in [the dated archive](delivery-status.history-2026-10-25.md).
 
-Publication completed 2026-10-19: 50 live issue bodies verified, original archives and all issue states preserved, parents #1/#49 unchanged; actual dependency graph 55 nodes/112 edges with zero cycles or verification failures. PR #77 already merged the planning documents; final evidence review is recorded in recovery-reconciliation-review.md. #50 remains open for human acceptance; no application implementation is started.
+| Scope | Directly verified status | Evidence |
+| --- | --- | --- |
+| Recovery reconciliation [#50](https://github.com/aymanobeid0/clinic-app/issues/50) | Closed/completed | [Reconciliation](recovery-reconciliation.md), [review](recovery-reconciliation-review.md) |
+| Backend/API evidence gate [#51](https://github.com/aymanobeid0/clinic-app/issues/51) | Closed/completed | [Acceptance map and actual checks](issue-51-backend-acceptance.md), [review](issue-51-review.md) |
+| Identity logic [#52](https://github.com/aymanobeid0/clinic-app/issues/52) | Issue open; [PR93](https://github.com/aymanobeid0/clinic-app/pull/93) merged | [Implementation](issue-52-implementation.md), [review](issue-52-review.md) |
+| Patient/access/scheduling logic [#53](https://github.com/aymanobeid0/clinic-app/issues/53) | Issue open; [PR94](https://github.com/aymanobeid0/clinic-app/pull/94) merged | [Implementation](issue-53-implementation.md), [review](issue-53-review.md) |
+| Clinical/attachment logic [#54](https://github.com/aymanobeid0/clinic-app/issues/54) | Closed/completed; [PR95](https://github.com/aymanobeid0/clinic-app/pull/95) merged | [Implementation](issue-54-implementation.md), [review](issue-54-review.md) |
+| Treatment/catalog logic [#55](https://github.com/aymanobeid0/clinic-app/issues/55) | Issue open; [PR96](https://github.com/aymanobeid0/clinic-app/pull/96) merged | [Implementation](issue-55-implementation.md), [review](issue-55-review.md) |
 
-Existing feature evidence below establishes implemented behavior and historical checks, not the approved final Dentara UI or a completed backend. The owner authorized tracker reconciliation under #50, following Spec #49. Current order: remaining backend/API (#18–#27) → backend evidence gate (#51) → separate frontend business logic (#52–#59) → separately authorized components/pages/routing/main app (#60–#75) → connected verification/scaffold retirement (#76). See [the requirement ownership map](recovery-reconciliation.md). The current scaffold is an internal development consumer. No application/UI implementation, deletion, deployment, pilot start or automatic progression is authorized by this reconciliation. #50 remains open for human acceptance; operational and real-data gates remain separate.
+PR96 merge: `695fcb1f7f0f407e14dfedb3b66ad140662b1c2c`, 2026-10-25 12:33:23 UTC. Open source issues above were not closed by this documentation task; merged evidence and issue state are distinct facts.
 
-As of 2026-10-18 (Africa/Bamako). Planning #2–#6 owner-approved/closed. PR46 is merged in main cd678de; earlier evidence remains in the per-ticket reports.
+## Remaining delivery ownership
 
-Owner-authorized #17 is implemented on codex/issue-17-prescriptions. Application8b4ebdf adds independent French prescription drafts, doctor issuance, retained corrections and authorized selected-version printing; clinic medication reference lookup/explicit management remains independent of saved prescriptions. Supported completed procedures suggest chart changes requiring explicit dentist confirmation.
+The approved sequence remains backend/API → separate frontend logic → components → pages → routing → main-app composition. See [reconciled source ownership](recovery-reconciliation.md) and the [published recovery index](recovery-ticket-index.md). Local ticket copies are publication snapshots; GitHub is authoritative for later edits and blockers.
 
-Separate root Standards/Spec review: zero residual material findings. Root recreated the disposable PostgreSQL database, applied26 migrations from scratch and independently passed28/28 prescription/clinical HTTP tests (70.91s), plus pinned whitespace/strictUTF8 checks and direct print-image inspection. Builder fullAPI113/113 preceded later fixes; final coherent Chromium35/35 passed at1541948, then focused3/3 after the isolated new-draft status fix. Final typecheck/lint/build passed. Exact provenance and actual failures: [implementation](issue-17-implementation.md) and [independent review](issue-17-review.md).
-
-Review/handoff complete. [PR47](https://github.com/aymanobeid0/clinic-app/pull/47) is merged at921b3fa; local main is synchronized. Owner review/manual merge completed for #17. No later clinical ticket authorized. Current-tab input cannot survive closing the tab. Bundle-size warning, large-record/list/load limits, physical printer/accessibility certification and clinical/legal/production/restore gates remain explicit. No deployment/live migration/real patient data/email authorized; unrelated root edits preserved.
+- #56–#59 own the remaining frontend business-logic scopes; each needs explicit implementation authorization and current prerequisite verification.
+- #60–#75 own designed components/pages/workflows; #76 owns connected coverage and scaffold retirement. The scaffold remains an internal verification consumer. Merged logic does not establish completed Dentara UI.
+- #28/#29 retain separate operational/pilot gates. Bounded backend acceptance does not establish production readiness, live mail delivery, qualified clinical/legal approval, restore performance, physical capacity or real-patient authorization. See the specific limitations in the #51 evidence and approved topic contracts.
 
 ## Local development workspace
 
-Removed at the owner’s request on 2026-10-19 because the setup did not let them test the app locally. The launcher, demo seed/mail helpers, dedicated clinic-local-dev database/volume and setup instructions are removed. Existing automated-test infrastructure remains.
+The owner-requested demo launcher/database/helpers were removed on 2026-10-19; [removal review](local-demo-removal-review.md) retains that history. Existing automated-test infrastructure remains; [README](../../README.md) documents its disposable database/port setup. Inspect actual resources before writes. This status page does not authorize recreating a manual demo, deployment or migrations.

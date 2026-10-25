@@ -1,5 +1,7 @@
 ## Parent
 
+> Planning snapshot published 2026-10-18. Current contract: [GitHub #62](https://github.com/aymanobeid0/clinic-app/issues/62); current status: [delivery summary](delivery-status.md).
+
 https://github.com/aymanobeid0/clinic-app/issues/49
 
 ## What to build
