@@ -31,4 +31,19 @@ New files under `apps/web/src/features/billing`: schema/action map, `useBillingF
 
 Integration limitation: backend has no billing-specific SSE endpoint. Workspace uses existing clinic invalidations only when manager/patients.read permits `patients/events`; other financial readers have normal Query focus/reconnect refresh and successful-command invalidation. No backend access expansion. Server authorization, financial concurrency/currency/precision/eligibility/history rules are reused, not reimplemented. Physical print/download UI and final French product pages remain deferred. No production/legal/pilot/restore acceptance claimed.
 
-Independent review, final checked pins/results, cleanup and publication: pending in this in-progress record.
+## Review fixes and final verification
+
+Initial source `d08639c52a8f4e4925870166178076ac9f0113d5`; fixed application/test source `bc0d8ecd0d26e272bf412567084b078da49b5118`. Builder read the actual [independent report](issue-57-review.md). Reviewer found Standards1/P3 (message interface), Spec2/P2 (older sibling response restores cleared confidential data; disabled imperative summary retains stale totals after invalidation). Builder reproduced both substantive findings through public rendered consumers, red then green, and moved French strings to `billing.messages.ts`. Initial race-regression attempts had StrictMode fixture ordering and a wrong Playwright Request method; only the corrected failing confidential-data assertion is claimed as the race red.
+
+Small opt-in additions to existing `treatmentRead`/`useCareQuery`/`useTreatmentRead` cancel sibling billing queries before clearing the denied patient prefix, preserving the rejecting query. Existing callers retain defaults. Billing document readers retire invalidated snapshots and pending reads so the next preview/output requires a fresh authorized request. No copied workflow engine or backend changes. Regressions cover both document403→pending workspace and workspace404→pending document, plus refreshed summary after credit adjustment.
+
+At unchanged `bc0d8ec` builder directly observed `CLINIC_TEST_PORT=55438 npx playwright test test/billing-workflows.spec.ts test/billing-live.spec.ts test/care-workflows.spec.ts test/treatment-workflows.spec.ts` from `apps/web`: **17/17 PASS15.0s** (8 billing checks,9 existing shared-consumer regressions). Typecheck/lint PASS after these fixes. Same-reviewer complete corrected-source recheck: **Standards0 / Spec0 residual**; reviewer independently reran billing7/7 PASS5.8s and pinned diffcheck, no reviewer implementation edits.
+
+Final builder checks, all with application/tests unchanged from `bc0d8ecd0d26e272bf412567084b078da49b5118`:
+
+- `CLINIC_TEST_PORT=55438 npm test`: **259/259 PASS,26files,499.56s,EXIT0**, start2026-10-25T19:44:07.3698243Z/end19:52:29.1146126Z. Direct source/start/end/result log `.local-dev/issue-57-full-tests.log`. Controlled failure/rollback scenario logs are not failed test results. Single complete final suite, no interrupted superseded run.
+- After suite, `npm run build`, `git diff --check` and empty application/test diff from fixed pin: PASS. Final bundle542.62kB/157.64kB gzip exceeds500kB advisory; no bundle optimization in this scope. Typecheck/lint already passed at the same fixed source; no redundant rerun.
+- Direct post-check Docker inspect again proved issue57 project/loopback55438/no mounts and owner issue7 exited on55437. Removed only `clinic-issue57-test` container/network. Direct remaining-container read confirms owner issue7 unchanged/stopped. No disposable resource or service blocker remains.
+- Fresh main re-fetch still exact `b50448fe5a6bb815438ebf25b9cd75eafa370930`. Live #57 OPEN/no comments/unchanged criteria timestamp; Project Building. API plan hash unchanged/excluded. No tracker criteria/dependency changes.
+
+Unrun/out of scope: full unrelated browser suite, Linux wrapper/npm-ci, physical print/download UI, legal/provider/restore/load/pilot gates. No final UI or production acceptance is inferred. Final independent evidence/handoff checkpoint and publication pending.
