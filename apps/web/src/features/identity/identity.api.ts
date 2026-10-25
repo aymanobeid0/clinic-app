@@ -32,8 +32,8 @@ export async function post<T = undefined>(
 ): Promise<T> {
   const response = await fetch(`/api/${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
-    body: JSON.stringify(body),
+    headers: { "Content-Type": body instanceof Blob ? body.type : "application/json", "x-csrf-token": csrfToken },
+    body: body instanceof Blob ? body : JSON.stringify(body),
     cache: "no-store",
   });
   const data =

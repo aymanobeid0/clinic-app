@@ -1,54 +1,27 @@
-import {SuggestionsPanel} from './SuggestionsPanel.js';
-import {PrescriptionsPanel} from './PrescriptionsPanel.js';
-import {TreatmentPanel} from '../treatment/TreatmentPanel.js';
-import { useCallback, useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { SuggestionsPanel } from './SuggestionsPanel.js';
+import { PrescriptionsPanel } from './PrescriptionsPanel.js';
+import { TreatmentPanel } from '../treatment/TreatmentPanel.js';
 import type { Identity } from '@clinic/contracts';
 import { HttpError } from '../identity/identity.api.js';
-import { clinicalApi } from './clinical.api.js';
 import { clinicalMessages as t } from './clinical.messages.js';
 import { HistoryForm } from './HistoryForm.js';
 import { ChartForm } from './ChartForm.js';
 import { ClinicalVersionView } from './ClinicalVersionView.js';
+import { useClinicalPatients } from './useClinicalPatients.js';
+import { useClinicalRecord } from './useClinicalRecord.js';
 export function ClinicalPanel({ identity }: { identity: Identity }) {
-  const cache = useQueryClient();
-  const [locks, setLocks] = useState<Record<string, boolean>>({});
-  const onLock = useCallback(
-    (kind: string, locked: boolean) =>
-      setLocks((old) =>
-        old[kind] === locked ? old : { ...old, [kind]: locked },
-      ),
-    [],
-  );
-  const [selected, setSelected] = useState('');
-  const [search, setSearch] = useState('');
-  const key = `${identity.clinicId}:${identity.accountId}`;
-  const allowed =
-    (identity.kind === 'doctor' ||
-      (identity.kind === 'staff' && !identity.isManager)) &&
-    identity.permissions.includes('clinical.read');
-  const patients = useQuery({
-    queryKey: ['clinical-patients', key],
-    queryFn: ({ signal }) => clinicalApi.patients(signal),
-    enabled: allowed,
-    gcTime: 0,
-  });
-  useEffect(() => {
-    if (!allowed) return;
-    const stream = new EventSource('/api/clinical-events');
-    const refresh = () => {
-      void cache.invalidateQueries({ queryKey: ['clinical-patients', key] });
-      void cache.invalidateQueries({ queryKey: ['identity'] });
-    };
-    stream.addEventListener('invalidate', refresh);
-    // Each connection receives an authorized initial invalidate.
-    stream.onerror = refresh;
-    return () => {
-      stream.close();
-      void cache.cancelQueries({ queryKey: ['clinical-patients', key] });
-      cache.removeQueries({ queryKey: ['clinical-patients', key] });
-    };
-  }, [allowed, key, cache]);
+  const {
+    locks,
+    onLock,
+    selected,
+    setSelected,
+    search,
+    setSearch,
+    key,
+    allowed,
+    patients,
+    visiblePatients,
+  } = useClinicalPatients(identity);
   if (!allowed) return null;
   return (
     <section aria-label={t.title} className="clinical">
@@ -65,24 +38,18 @@ export function ClinicalPanel({ identity }: { identity: Identity }) {
       {patients.error && <p role="alert">{patients.error.message}</p>}
       {patients.data?.length === 0 && <p>{t.empty}</p>}
       <ul>
-        {patients.data
-          ?.filter((p) =>
-            `${p.patientNumber} ${p.name}`
-              .toLocaleLowerCase('fr')
-              .includes(search.toLocaleLowerCase('fr')),
-          )
-          .map((p) => (
-            <li key={p.id}>
-              <button
-                disabled={Object.values(locks).some(Boolean)}
-                onClick={() => {
-                  if (!selected || confirm(t.switchPatient)) setSelected(p.id);
-                }}
-              >
-                {t.openPatient(p.patientNumber, p.name)}
-              </button>
-            </li>
-          ))}
+        {visiblePatients?.map((p) => (
+          <li key={p.id}>
+            <button
+              disabled={Object.values(locks).some(Boolean)}
+              onClick={() => {
+                if (!selected || confirm(t.switchPatient)) setSelected(p.id);
+              }}
+            >
+              {t.openPatient(p.patientNumber, p.name)}
+            </button>
+          </li>
+        ))}
       </ul>
       {selected && (
         <ClinicalRecord
@@ -110,43 +77,7 @@ function ClinicalRecord({
   patientLabel?: { patientNumber: number; name: string };
   onLock: (kind: string, locked: boolean) => void;
 }) {
-  const cache = useQueryClient();
-  const key = ['clinical', accountKey, id];
-  const [connected, setConnected] = useState(true);
-  const query = useQuery({
-    queryKey: key,
-    queryFn: ({ signal }) => clinicalApi.get(id, signal),
-    gcTime: 0,
-    retry: false,
-  });
-  useEffect(() => {
-    const stream = new EventSource(`/api/clinical/${id}/events`);
-    const refresh = () => {
-      setConnected(true);
-      void cache.invalidateQueries({ queryKey: ['clinical', accountKey, id] });
-      void cache.invalidateQueries({
-        queryKey: ['clinical-patients', accountKey],
-      });
-    };
-    stream.addEventListener('invalidate', (event) => {
-      const scope=(JSON.parse((event as MessageEvent<string>).data) as {scope?:string}).scope;
-      if(scope==='prescriptions')void cache.invalidateQueries({queryKey:['prescriptions']});
-      else if(scope==='medications')void cache.invalidateQueries({queryKey:['medications']});
-      else if(scope==='suggestions')void cache.invalidateQueries({queryKey:['chart-suggestions']});
-      else if(scope==='chart')void cache.invalidateQueries({queryKey:['clinical',accountKey,id]});
-      else refresh();
-    });
-    stream.onopen = () => {setConnected(true);void cache.invalidateQueries({queryKey:['prescriptions']});void cache.invalidateQueries({queryKey:['chart-suggestions']});void cache.invalidateQueries({queryKey:['medications']});};
-    stream.onerror = () => {
-      setConnected(false);
-      void cache.invalidateQueries({ queryKey: ['clinical', accountKey, id] });
-    };
-    return () => {
-      stream.close();
-      void cache.cancelQueries({ queryKey: ['clinical', accountKey, id] });
-      cache.removeQueries({ queryKey: ['clinical', accountKey, id] });
-    };
-  }, [id, accountKey, cache]);
+  const { key, connected, query } = useClinicalRecord(id, accountKey);
   if (
     query.error instanceof HttpError &&
     [401, 403, 404].includes(query.error.status)
@@ -208,9 +139,13 @@ function ClinicalRecord({
           </section>
         );
       })}
-      <SuggestionsPanel patientId={id} identity={identity} chartRevision={query.data.chart.revision}/>
-      <PrescriptionsPanel patientId={id} identity={identity} onLock={onLock}/>
-      <TreatmentPanel id={id} identity={identity} onLock={onLock}/>
+      <SuggestionsPanel
+        patientId={id}
+        identity={identity}
+        chartRevision={query.data.chart.revision}
+      />
+      <PrescriptionsPanel patientId={id} identity={identity} onLock={onLock} />
+      <TreatmentPanel id={id} identity={identity} onLock={onLock} />
       <p>{t.noBilling}</p>
     </div>
   );

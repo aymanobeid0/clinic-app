@@ -433,6 +433,9 @@ test('finalize-only doctor retries a lost confirmation response without draft au
     'clinical.history',
     'history.finalize',
   ]);
+  // Permission changes remount the workspace. Start this finalize-only
+  // journey from the new server-authorized scope before selecting its patient.
+  await page.reload();
   await page
     .getByRole('button', {
       name: `Ouvrir le dossier n°${p.patientNumber} — ${p.name}`,
