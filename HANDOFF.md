@@ -20,10 +20,10 @@ Limits: mocked HTTP for broad hook races/failures; one real task/share/export re
 
 ## Tracker and safety
 
-Direct current #52-#58 CLOSED/COMPLETED and Project Done. #58 PR100 MERGED directly verified; native #59 blockers56/57/58 closed. #59 OPEN; Project Building until publication then Review. Criteria/dependencies unchanged. PR publication/readback metadata follows after readiness checkpoint. Await human review/merge; no automatic next stage.
+Direct current #52-#58 CLOSED/COMPLETED and Project Done. #58 PR100 MERGED directly verified; native #59 blockers56/57/58 closed. #59 OPEN, Project Review directly verified. Published/attached [PR101](https://github.com/aymanobeid0/clinic-app/pull/101) at00:22:23Z: OPEN/non-draft/MERGEABLE/CLEAN, base main4412f3f, publication head33f72fc437e7bb954ec2f2f7422a4e7e70a5a219; no remote CI checks reported. Criteria/dependencies unchanged. Await human review/merge; no automatic next stage.
 
 Only disposable `clinic-issue59-test` on verified free127.0.0.1:55438 created; project/service ownership, binding and no mounts inspected before38 existing migrations/test writes and again before removal. Only its container/network removed. Direct owner `clinic-issue7-test-database-1` remains stopped55437; ERP/Apidog/manual resources untouched. No ignored credentials read. GitHub/Git/Docker/browser sandbox restrictions resolved through supported escalation; no unresolved connection blocker.
 
 Owner notes remain planned, unimplemented: API-error plan current SHA256 `C98D5BF701F311B52EF5B9418A8F44C46F8D8FEDE1C06EFD5BC9308EEA3B8A1D`; journey note `97C2E7D93000736926605B4000F22983A05CCEE6609A8A963E5A75DFF392844E`. After #59 report/frontend-gate review, separately authorize truthful server-error review/correction, then role/task/navigation/state journey planning without visual details. Do not start these automatically.
 
-Suggested skills for review/continuation: repository Matt code-review/implement/TDD/handoff and installed PR guidance. This ticket's exact skill checkpoint and applicable overrides are in its implementation report. Established mirror: `C:/Users/ayman/AppData/Local/Temp/clinic-app-HANDOFF.md`; refresh/hash-match after publication metadata.
+Suggested skills for review/continuation: repository Matt code-review/implement/TDD/handoff and installed PR guidance. This ticket's exact skill checkpoint and applicable overrides are in its implementation report. Established mirror: `C:/Users/ayman/AppData/Local/Temp/clinic-app-HANDOFF.md`; refreshed/hash-matched after publication metadata.
