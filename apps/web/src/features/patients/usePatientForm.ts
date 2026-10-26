@@ -5,6 +5,7 @@ import { patientDetailsSchema, type PatientDetails } from '@clinic/contracts';
 import type { z } from 'zod';
 import { HttpError } from '../identity/identity.api.js';
 import { patientText as t } from './patient.messages.js';
+import { serverFieldErrors } from '../../forms/fieldErrors.js';
 export type PatientFormProps = {
   initial?: PatientDetails;
   blocked?: boolean;
@@ -46,6 +47,7 @@ export function usePatientForm({ initial, onSave, onError }: PatientFormProps) {
           : { name: '', phone: '', contactKind: 'patient', contactName: '' },
       );
     } catch (error) {
+      serverFieldErrors(form, error);
       const known = error instanceof HttpError && error.status < 500;
       if (known) pending.current = null;
       setUnresolved(!known);

@@ -57,6 +57,13 @@ describe('manager onboarding', () => {
       });
     expect(login.status).toBe(200);
     expect(login.body.stage).toBe('password');
+    const missing = await browser.post('/api/onboarding/password').set('Origin', origin)
+      .set('x-csrf-token', login.body.csrfToken).send({});
+    expect(missing.status).toBe(400);
+    expect(missing.body.fields.password).toBe('Ce champ est obligatoire.');
+    const short = await browser.post('/api/onboarding/password').set('Origin', origin)
+      .set('x-csrf-token', login.body.csrfToken).send({ password: 'short' });
+    expect(short.body.fields.password).toBe('Saisissez au moins 12 caractères.');
     expect((await browser.get('/api/clinic')).status).toBe(403);
     const recreated = createApplication(options);
     const identity = await request(recreated)

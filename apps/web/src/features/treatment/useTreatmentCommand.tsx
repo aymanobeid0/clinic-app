@@ -12,6 +12,7 @@ export function useTreatmentCommand<T>(
   onSuccess?: (v: T) => void,
   onLock?: (kind: string, locked: boolean) => void,
   successMessage: string = t.saved,
+  onError?: (error: unknown) => void,
 ) {
   const cache = useQueryClient();
   const scope = JSON.stringify(cacheKey);
@@ -71,6 +72,7 @@ export function useTreatmentCommand<T>(
       await cache.invalidateQueries({ queryKey: cacheKey });
       return result;
     } catch (error) {
+      if (current.current === workflow) onError?.(error);
       if (current.current === workflow)
         setFeedback({
           owner: workflow,

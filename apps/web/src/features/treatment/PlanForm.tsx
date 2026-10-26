@@ -1,3 +1,5 @@
+import { FormErrors } from "../../forms/FormErrors.js";
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import { PlanItems } from "./PlanItems.js";
 import type { Catalog, Identity, TreatmentPlan } from "@clinic/contracts";
 import { CommandState } from "./useTreatmentCommand.js";
@@ -48,7 +50,7 @@ export function PlanForm({
     onDirty,
   });
   return (
-    <form
+    <ValidatedForm
       onSubmit={f.handleSubmit((v) => {
         void submit(v);
       })}
@@ -114,6 +116,7 @@ export function PlanForm({
       {reloadError && <p role="alert">{reloadError}</p>}
       {reconciled && <p role="status">{reconciled}</p>}
       {remote && <PlanSummary plan={remote} />}
-    </form>
+    <FormErrors errors={f.formState.errors} />
+</ValidatedForm>
   );
 }

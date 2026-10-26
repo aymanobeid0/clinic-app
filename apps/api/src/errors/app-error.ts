@@ -3,6 +3,7 @@ export class AppError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    readonly code?: "export_scope_changed",
   ) {
     super(message);
     this.name = "AppError";

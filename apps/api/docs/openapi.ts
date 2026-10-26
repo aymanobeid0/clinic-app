@@ -136,7 +136,11 @@ export function buildOpenApi() {
     ...responseSchemas(),
     Error: {
       type: "object",
-      properties: { error: { type: "string" } },
+      properties: {
+        error: { type: "string" },
+        fields: { type: "object", maxProperties: 20, propertyNames: { maxLength: 160 }, additionalProperties: { type: "string", maxLength: 256 }, description: "Optional safe known field paths (dot notation, zero-based array indices) and French correction guidance. Never submitted values." },
+        code: { type: "string", enum: ["export_scope_changed"], description: "Only export authorization-stamp change: recreate through current server authorization; genuine denial remains blocked." },
+      },
       required: ["error"],
     },
   };
@@ -254,15 +258,14 @@ export function buildOpenApi() {
         content: {
           "application/json": {
             schema: ref("Error"),
-            example: { error: "Requête non autorisée." },
+            example: code === "400" ? { error: "Vérifiez les champs saisis.", fields: { password: "Saisissez au moins 12 caractères." } } : { error: "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel." },
           },
         },
       };
     responses[429] = {
       description:
-        "Global IP or login/recovery identity limit. Global limiter may return text/html; identity limit returns JSON.",
+        "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
       content: {
-        "text/html": { schema: { type: "string" } },
         "application/json": { schema: ref("Error") },
       },
     };

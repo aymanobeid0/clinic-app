@@ -19,7 +19,7 @@ describe('persistent identity boundary', () => {
   it('rejects clinic access without an authenticated manager session', async () => {
     const response = await request(application).get('/api/identity');
     expect(response.status).toBe(401);
-    expect(response.body).toEqual({ error: 'Connexion requise.' });
+    expect(response.body).toEqual({ error: 'Vous n’êtes pas connecté ou votre session n’est plus valide. Veuillez vous reconnecter.' });
   });
 
   it('keeps the anonymous CSRF session when the application is recreated', async () => {
@@ -41,6 +41,7 @@ describe('persistent identity boundary', () => {
     const browser = request.agent(application);
     const initial = await browser.get('/api/session');
     expect((await browser.post('/api/sign-out').set('Origin', options.origin)).status).toBe(403);
+    expect((await browser.post('/api/sign-out').set('Origin', options.origin)).body.error).toBe('La vérification de sécurité a échoué. Actualisez la page avant de réessayer.');
     expect((await browser.post('/api/sign-out').set('Origin', 'https://attacker.invalid').set('x-csrf-token', initial.body.csrfToken)).status).toBe(403);
     expect((await browser.post('/api/sign-out').set('Origin', options.origin).set('x-csrf-token', 'wrong-token')).status).toBe(403);
     expect((await browser.post('/api/sign-out').set('Origin', options.origin).set('Sec-Fetch-Site', 'cross-site').set('x-csrf-token', initial.body.csrfToken)).status).toBe(403);
@@ -64,10 +65,17 @@ describe('persistent identity boundary', () => {
     expect(malformed.status).toBe(400);
     const oversized = await request(application).post('/api/sign-out').send({ value: 'x'.repeat(20_000) });
     expect(oversized.status).toBe(413);
-    expect(oversized.body).toEqual({ error: 'Requête invalide.' });
+    expect(oversized.body).toEqual({ error: 'La requête dépasse la taille autorisée. Réduisez son contenu.' });
   });
 
   it('exposes no public clinic or manager registration endpoint', async () => {
     expect((await request(application).post('/api/register').send({ clinicCode: 'fictional' })).status).toBe(404);
+  });
+  it('returns French JSON guidance when the global request limit is reached', async () => {
+    const limited = createApplication(options);
+    let response;
+    for (let i = 0; i < 121; i++) response = await request(limited).get('/api/nonexistent');
+    expect(response!.status).toBe(429);
+    expect(response!.body.error).toBe('Trop de demandes. Patientez avant de réessayer.');
   });
 });

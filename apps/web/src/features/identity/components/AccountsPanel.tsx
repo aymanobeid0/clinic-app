@@ -1,3 +1,5 @@
+import { FormErrors } from "../../../forms/FormErrors.js";
+import { ValidatedForm } from "../../../forms/ValidatedForm.js";
 import { useState } from "react";
 import {
   permissionSchema,
@@ -26,7 +28,7 @@ export function AccountsPanel({ identity }: { identity: Identity }) {
       {notice && <p role="status">{notice}</p>}
       {identity.isManager && !identity.historicalOnly && (
         <>
-          <form onSubmit={submit}>
+          <ValidatedForm onSubmit={submit}>
             <h4>Créer un compte</h4>
             <Field label="Nom affiché">
               <input
@@ -70,7 +72,8 @@ export function AccountsPanel({ identity }: { identity: Identity }) {
               Communiquez ces identifiants en personne. Le mot de passe expire
               après 24 heures.
             </p>
-          </form>
+          <FormErrors errors={form.formState.errors} />
+</ValidatedForm>
           <button
             type="button"
             disabled={busy}
@@ -106,7 +109,7 @@ function AccountEditor({
 }) {
   const { form, operation, setOperation, submit } = useAccountEditor(a, run);
   return (
-    <form onSubmit={submit}>
+    <ValidatedForm onSubmit={submit}>
       <h4>
         {a.displayName} ({a.username})
       </h4>
@@ -195,7 +198,8 @@ function AccountEditor({
         />
       </Field>
       <button disabled={busy}>Enregistrer pour {a.username}</button>
-    </form>
+    <FormErrors errors={form.formState.errors} />
+</ValidatedForm>
   );
 }
 const nouns: Record<string, string> = {
@@ -274,7 +278,7 @@ function SelfSettings({
   const { password, email, submitPassword, submitEmail } = useSelfSettings(run);
   return (
     <>
-      <form onSubmit={submitPassword}>
+      <ValidatedForm onSubmit={submitPassword}>
         <h4>Changer mon mot de passe</h4>
         <Field label="Mot de passe actuel">
           <input
@@ -295,9 +299,10 @@ function SelfSettings({
           />
         </Field>
         <button disabled={busy}>Changer mon mot de passe</button>
-      </form>
+      <FormErrors errors={password.formState.errors} />
+</ValidatedForm>
       {isManager && (
-        <form onSubmit={submitEmail}>
+        <ValidatedForm onSubmit={submitEmail}>
           <h4>Changer mon adresse de récupération</h4>
           <Field label="Nouvelle adresse e-mail">
             <input type="email" {...email.register("email")} required />
@@ -315,7 +320,8 @@ function SelfSettings({
             L’ancienne adresse reste active jusqu’à la vérification. Ouvrez le
             lien reçu et saisissez son code dans la vérification.
           </p>
-        </form>
+        <FormErrors errors={email.formState.errors} />
+</ValidatedForm>
       )}
     </>
   );

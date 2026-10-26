@@ -1,3 +1,4 @@
+import { validationSummary } from "@clinic/contracts";
 import { useRef, useState } from "react";
 import { ZodError } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,7 +24,7 @@ export function useIdentityCommand() {
       await createIdentityWorkflow(cache).reconcileDenied(error);
       setError(
         error instanceof ZodError
-          ? "Vérifiez les champs saisis."
+          ? validationSummary(error)
           : error instanceof Error
             ? error.message
             : "Service indisponible.",

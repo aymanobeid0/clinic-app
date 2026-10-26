@@ -8,6 +8,71 @@ import {
   installErrorHandling,
 } from "../src/middleware/errors.js";
 
+it("identifies missing and invalid known fields in French without echoing secrets", async () => {
+  const { replacePasswordSchema, createAccountSchema } = await import("@clinic/contracts");
+  const app = express();
+  app.use(express.json());
+  app.post("/password", (req, res) => res.json(replacePasswordSchema.parse(req.body)));
+  app.post("/account", (req, res) => res.json(createAccountSchema.parse(req.body)));
+  app.use(createErrorHandler({ error() { throw new Error("Validation must not log input"); } }));
+  const missing = await request(app).post("/account").send({});
+  expect(missing.status).toBe(400);
+  expect(missing.body.fields).toMatchObject({
+    username: "Ce champ est obligatoire.",
+    temporaryPassword: "Ce champ est obligatoire.",
+    displayName: "Ce champ est obligatoire.",
+  });
+  const invalid = await request(app).post("/password").send({ password: "secret!" });
+  expect(invalid.body.fields.password).toBe("Saisissez au moins 12 caractères.");
+  expect(JSON.stringify(invalid.body)).not.toContain("secret!");
+});
+
+it("bounds nested field guidance and keeps unknown keys, unions and cross-field errors safe", async () => {
+  const { z } = await import("zod");
+  const app = express();
+  app.use(express.json());
+  const schema = z.object({
+    items: z.array(z.object({ name: z.string().min(1), amount: z.number().min(1) })),
+    email: z.email(),
+    method: z.union([z.literal("cash"), z.literal("card")]),
+    reason: z.string().refine(v => v === "allowed", { message: "private-rule-must-not-be-echoed" }),
+  }).strict();
+  app.post("/input", (req, res) => res.json(schema.parse(req.body)));
+  app.use(createErrorHandler({ error() { throw new Error("Unexpected log"); } }));
+  const r = await request(app).post("/input").send({
+    items: Array.from({ length: 30 }, () => ({ name: "", amount: "secret-sentinel" })),
+    email: "secret-sentinel", method: "secret-sentinel", reason: "secret-sentinel", "secret-key": "secret-sentinel",
+  });
+  expect(r.status).toBe(400);
+  expect(r.body.fields).toMatchObject({ "items.0.name": "Ce champ est obligatoire.", "items.0.amount": "Le type de valeur est incorrect. Vérifiez ce champ." });
+  expect(Object.keys(r.body.fields)).toHaveLength(20);
+  expect(JSON.stringify(r.body)).not.toMatch(/secret|private-rule/);
+  const other = await request(app).post("/input").send({ items: [], email: "invalid", method: {}, reason: "invalid" });
+  expect(other.body.fields).toEqual({
+    email: "Saisissez une adresse e-mail valide.",
+    method: "Sélectionnez une valeur autorisée.",
+    reason: "La valeur est invalide. Vérifiez le format et les champs associés.",
+  });
+});
+
+it("positive revision guidance does not recommend the rejected zero value", async () => {
+  const { updateFollowUpSchema } = await import("@clinic/contracts");
+  const app = express(); app.use(express.json());
+  app.post("/task", (req, res) => res.json(updateFollowUpSchema.parse(req.body)));
+  app.use(createErrorHandler());
+  const response = await request(app).post("/task").send({ commandId: "11111111-1111-4111-8111-111111111111", revision: 0, status: "open" });
+  expect(response.status).toBe(400);
+  expect(response.body.fields.revision).toBe("Saisissez une valeur strictement supérieure à 0.");
+});
+it("query guidance uses the validated value even when an unrelated JSON body is present", async () => {
+  const { reportDateSchema } = await import("@clinic/contracts");
+  const app = express(); app.use(express.json());
+  app.get("/report", (req, res) => res.json(reportDateSchema.parse(req.query)));
+  app.use(createErrorHandler());
+  const response = await request(app).get("/report?date=invalid").send({ date: "" });
+  expect(response.body.fields.date).toBe("La valeur est invalide. Vérifiez le format et les champs associés.");
+});
+
 it("rejected async HTTP handlers return a safe 500 and log no request or exception secrets", async () => {
   const chunks: string[] = [];
   const log = pino(
@@ -37,7 +102,7 @@ it("rejected async HTTP handlers return a safe 500 and log no request or excepti
     .send({ patient: "fictional-secret" });
   expect(response.status).toBe(500);
   expect(response.body).toEqual({
-    error: "Service temporairement indisponible.",
+    error: "Une erreur empêche de confirmer le résultat. Actualisez l’état avant de réessayer.",
   });
   expect(chunks).toHaveLength(1);
   expect(JSON.parse(chunks[0]!)).toMatchObject({
@@ -98,10 +163,10 @@ it("shared application failures keep their status and French message without bei
 });
 
 it.each([
-  ["validation", 400, "Requête invalide."],
+  ["validation", 400, "Vérifiez les champs saisis."],
   ["unique", 409, "Cette valeur est déjà utilisée."],
-  ["bad-json", 400, "Requête invalide."],
-  ["too-large", 413, "Requête invalide."],
+  ["bad-json", 400, "Le corps de la requête n’est pas un JSON valide. Corrigez son format."],
+  ["too-large", 413, "La requête dépasse la taille autorisée. Réduisez son contenu."],
 ] as const)(
   "preserves the safe %s HTTP response",
   async (kind, status, message) => {
@@ -134,7 +199,7 @@ it.each([
       ? command.send("{")
       : command.send({ value: kind === "too-large" ? "x".repeat(17000) : "" }));
     expect(response.status).toBe(status);
-    expect(response.body).toEqual({ error: message });
+    expect(response.body).toMatchObject({ error: message });
     expect(chunks).toEqual([]);
   },
 );

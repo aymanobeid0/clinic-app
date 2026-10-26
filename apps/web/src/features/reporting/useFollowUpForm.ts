@@ -1,3 +1,4 @@
+import { localFieldErrors, serverFieldErrors } from "../../forms/fieldErrors.js";
 import { reportingMessages as t } from "./reporting.messages.js";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useForm, type DefaultValues } from "react-hook-form";
@@ -50,6 +51,7 @@ export function useFollowUpForm<K extends keyof typeof schemas>(
     },
     undefined,
     t.followUpSaved,
+    (error) => serverFieldErrors(form, error),
   );
   const denied =
     !reportAllowed(identity, "tasks") || command.denied || readDenied;
@@ -68,6 +70,7 @@ export function useFollowUpForm<K extends keyof typeof schemas>(
   }, [denied, command.denied, form, cache, account]);
   async function submit(confirmed: boolean) {
     if (!confirmed || denied || command.busy || command.uncertain) return;
+    form.clearErrors();
     const parsed = schemas[action].safeParse(form.getValues());
     if (
       !parsed.success ||
@@ -75,7 +78,7 @@ export function useFollowUpForm<K extends keyof typeof schemas>(
     ) {
       setValidation({
         scope,
-        error: t.followUpInvalid,
+        error: !parsed.success ? localFieldErrors(form, parsed.error) : t.followUpInvalid,
       });
       return;
     }

@@ -14,6 +14,7 @@ import {
   type InventoryReceipt,
   type InventoryMovement,
 } from "@clinic/contracts";
+import { z } from "zod";
 // Transport validation only. Stock, expiry, revisions and permissions remain server rules.
 export const inventoryActions = {
   item: {
@@ -52,10 +53,11 @@ export const inventoryActions = {
     permission: "inventory.consume",
   },
   correction: {
-    schema: inventoryCorrectionSchema.options[0]
-      .omit({ commandId: true })
-      .or(inventoryCorrectionSchema.options[1].omit({ commandId: true }))
-      .or(inventoryCorrectionSchema.options[2].omit({ commandId: true })),
+    schema: z.discriminatedUnion("kind", [
+      inventoryCorrectionSchema.options[0].omit({ commandId: true }),
+      inventoryCorrectionSchema.options[1].omit({ commandId: true }),
+      inventoryCorrectionSchema.options[2].omit({ commandId: true }),
+    ]),
     path: "corrections",
     permission: "inventory.adjust",
   },

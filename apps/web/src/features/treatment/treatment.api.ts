@@ -1,17 +1,11 @@
 import type { Catalog, TreatmentPlan, TreatmentVersion } from '@clinic/contracts';
-import { HttpError, post } from '../identity/identity.api.js';
+import { readResponse, post } from '../identity/identity.api.js';
 export async function treatmentGet<T>(
   path: string,
   signal?: AbortSignal,
 ): Promise<T> {
   const r = await fetch(`/api/${path}`, { cache: 'no-store', signal });
-  const data = await r.json();
-  if (!r.ok)
-    throw new HttpError(
-      r.status,
-      data.error ?? 'Service indisponible. Réessayez.',
-    );
-  return data;
+  return readResponse<T>(r);
 }
 export const treatmentApi = {
   catalog: (signal?: AbortSignal) => treatmentGet<Catalog>('catalog', signal),

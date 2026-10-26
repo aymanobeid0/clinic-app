@@ -1,3 +1,4 @@
+import { localFieldErrors, serverFieldErrors } from "../../forms/fieldErrors.js";
 import { reportingMessages as t } from "./reporting.messages.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, type DefaultValues } from "react-hook-form";
@@ -8,7 +9,7 @@ import {
   type ExportReceipt,
   type Identity,
 } from "@clinic/contracts";
-import { HttpError, post } from "../identity/identity.api.js";
+import { HttpError, post, readResponse } from "../identity/identity.api.js";
 import { identityScope } from "../identity/identity.workflow.js";
 import { useTreatmentCommand } from "../treatment/useTreatmentCommand.js";
 import {
@@ -95,6 +96,7 @@ export function useExport(
     },
     undefined,
     t.exportReady,
+    (error) => serverFieldErrors(form, error),
   );
   useEffect(() => {
     mounted.current = true;
@@ -148,6 +150,7 @@ export function useExport(
       state.denied
     )
       return;
+    form.clearErrors();
     const parsed = createExportSchema.safeParse({
       ...form.getValues(),
       commandId: crypto.randomUUID(),
@@ -155,7 +158,7 @@ export function useExport(
     if (!parsed.success) {
       setLocal({
         owner,
-        error: t.exportInvalid,
+        error: localFieldErrors(form, parsed.error),
         busy: false,
         expired: false,
       });
@@ -208,11 +211,7 @@ export function useExport(
             { cache: "no-store", signal: controller.signal },
           );
           if (!response.ok) {
-            const data = await response.json();
-            throw new HttpError(
-              response.status,
-              data.error ?? t.exportUnavailable,
-            );
+            await readResponse(response);
           }
           const bytes = await response.arrayBuffer();
           const digest = new Uint8Array(
@@ -241,11 +240,12 @@ export function useExport(
       const unavailable =
         error instanceof HttpError &&
         (error.status === 404 || error.status === 410);
-      const denied = treatmentDenied(error) && !unavailable;
+      const scopeChanged = error instanceof HttpError && error.code === "export_scope_changed";
+      const denied = treatmentDenied(error) && !unavailable && !scopeChanged;
       if (active() && !controller.signal.aborted)
         setLocal({
           owner,
-          receipt: denied || unavailable ? undefined : receipt,
+          receipt: denied || unavailable || scopeChanged ? undefined : receipt,
           error: error instanceof Error ? error.message : t.exportUnavailable,
           busy: false,
           expired: unavailable,

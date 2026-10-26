@@ -1,3 +1,4 @@
+import { ValidatedForm } from "../../../forms/ValidatedForm.js";
 import { useForm } from 'react-hook-form';
 import { Field } from './Field.js';
 type Props = { busy: boolean; onSubmit: (password: string) => Promise<void> };
@@ -7,7 +8,7 @@ export function PasswordForm({ busy, onSubmit }: Props) {
     <>
       <h2>Votre mot de passe personnel</h2>
       <p className="description">Remplacez le mot de passe temporaire avant de continuer.</p>
-      <form
+      <ValidatedForm
         onSubmit={form.handleSubmit(async ({ password }) => {
           await onSubmit(password);
           form.reset();
@@ -25,7 +26,7 @@ export function PasswordForm({ busy, onSubmit }: Props) {
         </Field>
         <p className="hint">12 à 128 caractères. Choisissez un mot de passe différent.</p>
         <button disabled={busy}>Enregistrer le mot de passe</button>
-      </form>
+      </ValidatedForm>
     </>
   );
 }

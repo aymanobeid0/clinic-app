@@ -1,3 +1,4 @@
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import type {
   Identity,
   VisitNote,
@@ -45,7 +46,7 @@ export function NoteEditor({
         <button onClick={() => setCorrecting(true)}>{t.correction}</button>
       )}
       {editable ? (
-        <form
+        <ValidatedForm
           onSubmit={(e) => {
             e.preventDefault();
             void editor.save();
@@ -74,7 +75,7 @@ export function NoteEditor({
                   ? t.noDraft
                   : t.saved}
           </p>
-        </form>
+        </ValidatedForm>
       ) : record.draft ? (
         <NoteVersion version={record.draft} />
       ) : null}

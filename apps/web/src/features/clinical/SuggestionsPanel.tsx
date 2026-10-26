@@ -1,3 +1,4 @@
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import { suggestionMessages as t } from "./reference.messages.js";
 import { useState } from "react";
 import { useCareQuery } from "./useCareQuery.js";
@@ -76,7 +77,7 @@ function Suggestion({
             : "Ignorée"}
       </p>
       {s.status === "pending" && allowed && (
-        <form
+        <ValidatedForm
           onSubmit={f.handleSubmit(() => {
             if (confirm(t.confirmQuestion)) void submit("confirm");
           })}
@@ -110,7 +111,7 @@ function Suggestion({
             </button>
           )}
           {error && <p role="alert">{error}</p>}
-        </form>
+        </ValidatedForm>
       )}
     </div>
   );

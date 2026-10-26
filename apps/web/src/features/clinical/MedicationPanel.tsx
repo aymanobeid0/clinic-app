@@ -1,3 +1,5 @@
+import { FormErrors } from "../../forms/FormErrors.js";
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import {
   useMedicationReferences,
   useMedicationForm,
@@ -94,7 +96,7 @@ function MedicationForm({
     identity,
   );
   return (
-    <form onSubmit={submit}>
+    <ValidatedForm onSubmit={submit}>
       <fieldset disabled={command.busy || command.uncertain}>
         <legend>{entry ? r.edit : r.add}</legend>
         <label>
@@ -128,7 +130,8 @@ function MedicationForm({
         </p>
       )}
       {readError && <p role="alert">{readError}</p>}
-    </form>
+    <FormErrors errors={f.formState.errors} />
+</ValidatedForm>
   );
 }
 function TemplateForm({ identity }: { identity: Identity }) {
@@ -156,7 +159,7 @@ function TemplateEditor({
 }) {
   const { f, command, submit } = usePrescriptionTemplateForm(value, identity);
   return (
-    <form onSubmit={submit}>
+    <ValidatedForm onSubmit={submit}>
       <fieldset disabled={command.busy || command.uncertain}>
         <legend>{r.templateLegend}</legend>
         <p>{r.templateHelp}</p>
@@ -171,6 +174,7 @@ function TemplateEditor({
         <button>{r.saveTemplate}</button>
       </fieldset>
       <CommandState state={command} />
-    </form>
+    <FormErrors errors={f.formState.errors} />
+</ValidatedForm>
   );
 }

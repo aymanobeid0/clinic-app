@@ -45,6 +45,7 @@ export function createApplication(options: Options) {
     rateLimit({
       windowMs: 60_000,
       limit: 120,
+      message: { error: 'Trop de demandes. Patientez avant de réessayer.' },
       standardHeaders: 'draft-8',
       legacyHeaders: false,
     }),

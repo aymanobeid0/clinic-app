@@ -105,7 +105,7 @@ export class IdentityService {
       if (!account.isManager && account.loginMethod !== 'email')
         throw new AppError(403, 'Compte responsable requis.');
       if (!(await verify(account.passwordHash, currentPassword)))
-        throw new AppError(401, 'Mot de passe incorrect.');
+        throw new AppError(401, 'Le mot de passe actuel est incorrect. Vérifiez-le et réessayez.');
       if (account.verifiedEmail === email) throw new AppError(409, 'Adresse déjà vérifiée.');
       if (!this.mail?.sendNotification)
         throw new AppError(503, 'Service de notification non configuré.');
@@ -131,7 +131,7 @@ export class IdentityService {
     const passwordHash = await hash(password);
     return this.withReadyAccount(actor, async (account, tx) => {
       if (!(await verify(account.passwordHash, currentPassword)))
-        throw new AppError(401, 'Mot de passe incorrect.');
+        throw new AppError(401, 'Le mot de passe actuel est incorrect. Vérifiez-le et réessayez.');
       if (await verify(account.passwordHash, password))
         throw new AppError(400, 'Choisissez un nouveau mot de passe.');
       await tx.replacePassword(account.id, passwordHash);
@@ -259,7 +259,7 @@ export class IdentityService {
   ) {
     return this.withAuthenticatedAccount(actor, async (account, transaction) => {
       if (onboardingStage(account) !== 'ready' || account.historicalOnly)
-        throw new AppError(403, 'Accès limité.');
+        throw new AppError(403, account.historicalOnly ? 'Cette action n’est pas disponible en accès historique.' : 'Terminez la configuration de votre compte pour continuer.');
       return action(account, transaction);
     });
   }
@@ -502,7 +502,7 @@ export class IdentityService {
   ) {
     return this.withReadyAccount(actor, (account, transaction) => {
       if (!account.isManager && !account.permissions.includes(permission))
-        throw new AppError(403, "Autorisation requise.");
+        throw new AppError(403, "Vous n’êtes pas autorisé à effectuer cette action.");
       if ((clinicalPermissions as readonly string[]).includes(permission))
         throw new AppError(
           403,
@@ -529,7 +529,7 @@ export class IdentityService {
       if ((clinicalPermissions as readonly string[]).includes(permission))
         throw new AppError(403, 'Une autorisation clinique par patient est requise.');
       if (!account.permissions.includes(permission))
-        throw new AppError(403, 'Autorisation requise.');
+        throw new AppError(403, 'Vous n’êtes pas autorisé à effectuer cette action.');
       return transaction.databaseTransaction((tx) =>
         action(
           {
@@ -639,7 +639,7 @@ export class IdentityService {
         throw new AppError(409, 'Vérifiez votre adresse courriel.');
       }
       if (!(await verify(account.passwordHash, password))) {
-        throw new AppError(401, 'Mot de passe incorrect.');
+        throw new AppError(401, 'Le mot de passe actuel est incorrect. Vérifiez-le et réessayez.');
       }
       return this.issueCodes(account, transaction);
     });
@@ -672,7 +672,7 @@ export class IdentityService {
     actor: Actor | undefined,
     action: (account: ManagerAccount, transaction: IdentityTransaction) => Promise<T>,
   ) {
-    if (!actor) throw new AppError(401, 'Connexion requise.');
+    if (!actor) throw new AppError(401, 'Vous n’êtes pas connecté ou votre session n’est plus valide. Veuillez vous reconnecter.');
     return this.repository.withAccount(
       actor.clinicId,
       actor.accountId,
@@ -682,7 +682,7 @@ export class IdentityService {
           this.isUnavailable(account) ||
           account.credentialVersion !== actor.version
         ) {
-          throw new AppError(401, 'Connexion requise.');
+          throw new AppError(401, 'Vous n’êtes pas connecté ou votre session n’est plus valide. Veuillez vous reconnecter.');
         }
         return action(account, transaction);
       },

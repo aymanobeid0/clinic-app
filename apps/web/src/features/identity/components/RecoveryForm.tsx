@@ -1,3 +1,4 @@
+import { ValidatedForm } from "../../../forms/ValidatedForm.js";
 import { useRecovery } from "../useRecovery.js";
 import { Field } from "./Field.js";
 export function RecoveryForm() {
@@ -6,7 +7,7 @@ export function RecoveryForm() {
   return (
     <details>
       <summary>Récupérer mon compte responsable</summary>
-      <form onSubmit={submit}>
+      <ValidatedForm onSubmit={submit}>
         <p>
           Pour l’équipe, demandez une réinitialisation à votre responsable. Les
           codes ne réactivent pas un compte désactivé.
@@ -69,7 +70,7 @@ export function RecoveryForm() {
             ? "Envoyer le lien"
             : "Récupérer et vérifier mes coordonnées"}
         </button>
-      </form>
+      </ValidatedForm>
     </details>
   );
 }
