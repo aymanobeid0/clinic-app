@@ -89,7 +89,7 @@ Use an already activated fictional account with the relevant capabilities. Autho
 
 Consequential commands that have `commandId` use a UUID in the body (attachment uploads use the query). After an uncertain response, retry the **same ID and identical payload**; do not regenerate the ID automatically in a preprocessor on every send. A changed payload/new action needs a new ID and current revisions. There is no generic `Idempotency-Key` header. Account/password/recovery operations have their own lifecycle and are not promised generic replay semantics.
 
-For409, read current state/history and reconcile before a new command. A valid schema does not bypass permission, patient/clinic isolation, accepted-version, funds or stock checks.400 is validation,401 session/authentication,403 authority/CSRF,404 missing or invisible object,413 supported limit,429 throttling,500 sanitized unexpected failure,503 unavailable/busy dependency. Global throttling may return text/html; do not force every error through a JSON parser.
+For409, read current state/history and reconcile before a new command. A valid schema does not bypass permission, patient/clinic isolation, accepted-version, funds or stock checks.400 is validation,401 session/authentication,403 authority/CSRF,404 missing or invisible object,413 supported limit,429 throttling,500 sanitized unexpected failure,503 unavailable/busy dependency. Global and identity throttling return French JSON. Clients still handle non-JSON proxy/error responses without losing the HTTP status.
 
 ## Raw files, document data and streams
 
@@ -105,3 +105,9 @@ Change the shared contract and actual server behavior through the normal authori
 Re-import into the **same Apidog module/project** and review the method/path match preview. Choose merge/selected-field handling deliberately if preserving local descriptions/examples; avoid Keep Both unless duplicates are intentional. Review server/environment/auth mapping and remove obsolete operations deliberately. Do not automatically publish a docs site or add provider/API credentials for synchronization. Local file import works without exposing a remote specification URL.
 
 Large histories are not universally paginated: inventory/report/history projections and bounded synchronous exports retain their actual limits. Load/production/native compatibility, live mail, provider/legal/retention, restore and pilot acceptance remain separate gates. See [backend acceptance](../planning/issue-51-backend-acceptance.md) and the existing per-feature API notes.
+
+## French field guidance — #102
+
+The implemented [error contract](errors.md) adds optional bounded `fields` for missing/invalid known inputs while retaining `error` and HTTP statuses. Correct the named fields; do not echo submitted values in examples or logs. A401 may mean an incorrect current-password confirmation rather than an expired session; a403 may mean a security check rather than missing business permission. Follow the actual returned cause and recovery instruction.
+
+Export403 with `code:export_scope_changed` retires the old artifact and permits a new server-authorized generation; genuine permission refusal remains blocked. Unknown/5xx consequential outcomes retain exact-command retry semantics. Re-import the regenerated OpenAPI after owner-reviewed merge. This implemented section supersedes earlier planned wording for #102 only; other journey/UI work and the Apidog account remain unchanged.
