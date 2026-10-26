@@ -1,3 +1,5 @@
+import { FormErrors } from "../../forms/FormErrors.js";
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import { clinicalMessages as t } from './clinical.messages.js';
 import type { ClinicalRecord, ClinicalContent } from '@clinic/contracts';
 import type { Identity } from '@clinic/contracts';
@@ -24,7 +26,7 @@ export function HistoryForm({
     onLock,
   });
   return (
-    <form aria-label={t.history} onSubmit={submit}>
+    <ValidatedForm aria-label={t.history} onSubmit={submit}>
       <fieldset disabled={!canDraft || state.busy || state.uncertain}>
         <label>
           {t.observedDate}
@@ -55,6 +57,7 @@ export function HistoryForm({
         draftRevision={record.draft?.revision}
         dirty={form.formState.isDirty}
       />
-    </form>
+    <FormErrors errors={form.formState.errors} />
+</ValidatedForm>
   );
 }

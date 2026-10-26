@@ -146,7 +146,7 @@ export class IdentityController {
       !req.session.csrfToken ||
       req.get('x-csrf-token') !== req.session.csrfToken
     ) {
-      res.status(403).json({ error: 'Requête non autorisée.' });
+      res.status(403).json({ error: 'La vérification de sécurité a échoué. Actualisez la page avant de réessayer.' });
       return;
     }
     await new Promise<void>((resolve, reject) => {

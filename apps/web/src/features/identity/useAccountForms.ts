@@ -119,7 +119,7 @@ export function useCreateAccount(
       if (await run(() => accountsApi.create(data)))
         form.reset({ kind: "staff" });
     },
-    () => setError("Vérifiez les champs du nouveau compte."),
+    () => setError(""),
   );
   return { form, submit };
 }

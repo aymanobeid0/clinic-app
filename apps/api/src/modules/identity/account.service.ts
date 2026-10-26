@@ -18,9 +18,9 @@ export class AccountService {
     action: (account: ManagerAccount, tx: AccountTransaction) => Promise<T>,
   ) {
     const result = await this.identity.withReadyAccount(actor, async (account, transaction) => {
-      if (!account.isManager) throw new AppError(403, 'Autorité responsable requise.');
+      if (!account.isManager) throw new AppError(403, 'Vous n’êtes pas autorisé à effectuer cette action. Une autorité de responsable est requise.');
       if (password !== undefined && !(await verify(account.passwordHash, password)))
-        throw new AppError(401, 'Mot de passe incorrect.');
+        throw new AppError(401, 'Le mot de passe actuel est incorrect. Vérifiez-le et réessayez.');
       return action(account, transaction.accounts(account.clinicId));
     });
     if (password !== undefined) this.updates.publish(actor!.clinicId);

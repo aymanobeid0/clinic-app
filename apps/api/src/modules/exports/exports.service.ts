@@ -182,9 +182,9 @@ export class ExportsService {
   }
   private available(v: { stamp: string; expiresAt: Date }, stamp: string) {
     if (v.expiresAt.getTime() <= this.now())
-      throw new AppError(410, "Export expiré.");
+      throw new AppError(410, "Cet export a expiré. Créez un nouvel export.");
     if (v.stamp !== stamp)
-      throw new AppError(403, "Périmètre modifié. Créez un nouvel export.");
+      throw new AppError(403, "Les accès ont changé. Créez un nouvel export avec vos autorisations actuelles.", "export_scope_changed");
   }
   async content(actor: Actor | undefined, id: string) {
     const value = await this.identity.withExportAccount(actor, async (c, tx) =>

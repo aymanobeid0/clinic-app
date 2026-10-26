@@ -156,7 +156,7 @@ export class BillingService {
     const charge = state.charges.find((ch) => ch.id === data.chargeId);
     if (!charge) throw new AppError(404, "Charge introuvable.");
     if (charge.revision !== data.revision)
-      throw new AppError(409, "Relisez la charge.");
+      throw new AppError(409, "Cette charge a changé. Actualisez-la et vérifiez votre saisie avant de confirmer à nouveau.");
     const plans = treatmentBilling(tx, c.clinicId);
     const currency = await plans.currency(charge.currency);
     const target = exactMinor(data.finalCharge, currency!.precision);

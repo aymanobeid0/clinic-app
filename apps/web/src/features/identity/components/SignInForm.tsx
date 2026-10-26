@@ -1,3 +1,5 @@
+import { FormErrors } from "../../../forms/FormErrors.js";
+import { ValidatedForm } from "../../../forms/ValidatedForm.js";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signInSchema, type SignIn } from '@clinic/contracts';
@@ -31,13 +33,13 @@ export function SignInForm({ busy, unavailable, onSubmit, onInvalid }: Props) {
           <option value="clinic_username">Équipe / médecin responsable — identifiant</option>
         </select>
       </label>
-      <form
+      <ValidatedForm
         onSubmit={form.handleSubmit(
           async (input) => {
             await onSubmit(input);
-            form.reset();
+            form.reset({ ...form.getValues(), password: '' });
           },
-          () => onInvalid('Vérifiez le code clinique, l’identifiant et le mot de passe.'),
+          () => onInvalid(''),
         )}
       >
         {method === 'email' ? (
@@ -71,7 +73,8 @@ export function SignInForm({ busy, unavailable, onSubmit, onInvalid }: Props) {
           Se connecter <span aria-hidden="true">→</span>
         </button>
         <p className="hint">Votre responsable vous communique vos premiers identifiants.</p>
-      </form>
+      <FormErrors errors={form.formState.errors} />
+</ValidatedForm>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { ValidatedForm } from "../../../forms/ValidatedForm.js";
 import { useForm } from 'react-hook-form';
 import type { RecoveryCodes } from '@clinic/contracts';
 import { Field } from './Field.js';
@@ -31,7 +32,7 @@ export function RecoveryCodesForm({ busy, codes, onRegenerate, onConfirm }: Prop
     return (
       <>
         {heading}
-        <form
+        <ValidatedForm
           onSubmit={passwordForm.handleSubmit(async ({ password }) => {
             await onRegenerate(password);
             passwordForm.reset();
@@ -50,7 +51,7 @@ export function RecoveryCodesForm({ busy, codes, onRegenerate, onConfirm }: Prop
             />
           </Field>
           <button disabled={busy}>Remplacer mes codes</button>
-        </form>
+        </ValidatedForm>
       </>
     );
   return (
@@ -64,13 +65,13 @@ export function RecoveryCodesForm({ busy, codes, onRegenerate, onConfirm }: Prop
       <button className="secondary" onClick={() => downloadCodes(codes.codes)}>
         Enregistrer les codes
       </button>
-      <form onSubmit={savedForm.handleSubmit(onConfirm)}>
+      <ValidatedForm onSubmit={savedForm.handleSubmit(onConfirm)}>
         <label className="checkbox">
           <input type="checkbox" {...savedForm.register('saved')} required />
           J’ai conservé ces codes dans un endroit sûr.
         </label>
         <button disabled={busy}>Terminer la configuration</button>
-      </form>
+      </ValidatedForm>
     </>
   );
 }

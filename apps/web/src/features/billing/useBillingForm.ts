@@ -1,3 +1,4 @@
+import { localFieldErrors, serverFieldErrors } from "../../forms/fieldErrors.js";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useForm, type DefaultValues } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
@@ -48,6 +49,7 @@ export function useBillingForm<K extends BillingAction>(
     },
     undefined,
     t.saved,
+    (error) => serverFieldErrors(form, error),
   );
   useEffect(() => {
     form.reset(initial.current);
@@ -70,11 +72,12 @@ export function useBillingForm<K extends BillingAction>(
       readDenied
     )
       return;
+    form.clearErrors();
     const parsed = billingActions[action].schema.safeParse(form.getValues());
     if (!parsed.success) {
       setValidation({
         scope,
-        error: t.invalid,
+        error: !parsed.success ? localFieldErrors(form, parsed.error) : t.invalid,
       });
       return;
     }

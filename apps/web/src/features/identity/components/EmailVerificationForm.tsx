@@ -1,3 +1,4 @@
+import { ValidatedForm } from "../../../forms/ValidatedForm.js";
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Field } from './Field.js';
@@ -24,7 +25,7 @@ export function EmailVerificationForm({ busy, token, loginEmail, onSend, onVerif
         Utilisez une adresse e-mail réelle à laquelle vous avez accès. Elle sera nécessaire pour
         récupérer votre compte responsable.
       </p>
-      <form onSubmit={emailForm.handleSubmit(({ email }) => onSend(email))}>
+      <ValidatedForm onSubmit={emailForm.handleSubmit(({ email }) => onSend(email))}>
         <Field label="Adresse e-mail de récupération">
           <input
             type="email"
@@ -35,8 +36,8 @@ export function EmailVerificationForm({ busy, token, loginEmail, onSend, onVerif
           />
         </Field>
         <button disabled={busy}>Envoyer le lien de vérification</button>
-      </form>
-      <form
+      </ValidatedForm>
+      <ValidatedForm
         className="verification"
         onSubmit={tokenForm.handleSubmit(({ token }) => onVerify(token))}
       >
@@ -46,7 +47,7 @@ export function EmailVerificationForm({ busy, token, loginEmail, onSend, onVerif
         <button className="secondary" disabled={busy}>
           Vérifier mon adresse
         </button>
-      </form>
+      </ValidatedForm>
     </>
   );
 }

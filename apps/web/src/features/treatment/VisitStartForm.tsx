@@ -1,3 +1,4 @@
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import { useVisitStartForm } from "./useVisitStartForm.js";
 import type {
   TreatmentPlan,
@@ -24,7 +25,7 @@ export function VisitStartForm({
     submit,
   );
   return (
-    <form onSubmit={onSubmit}>
+    <ValidatedForm onSubmit={onSubmit}>
       <p>{t.select}</p>
       {(changed || invalid) && (
         <>
@@ -71,6 +72,6 @@ export function VisitStartForm({
         )}
         <button>{t.start}</button>
       </fieldset>
-    </form>
+    </ValidatedForm>
   );
 }

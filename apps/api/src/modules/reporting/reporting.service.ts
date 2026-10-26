@@ -105,7 +105,7 @@ export class ReportingService {
         if (replay.receipt)
           return { clinicId: c.clinicId, value: replay.receipt };
         if (current && "revision" in data && current.revision !== data.revision)
-          throw new AppError(409, "Relisez la tâche.");
+          throw new AppError(409, "Cette tâche a changé. Actualisez-la et vérifiez votre saisie avant de confirmer à nouveau.");
         const value: FollowUp = {
           id: current?.id ?? data.commandId,
           patientId,

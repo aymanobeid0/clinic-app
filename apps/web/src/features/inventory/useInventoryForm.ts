@@ -1,3 +1,4 @@
+import { localFieldErrors, serverFieldErrors } from "../../forms/fieldErrors.js";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useForm, type DefaultValues } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,6 +47,7 @@ export function useInventoryForm<K extends InventoryAction>(
     },
     undefined,
     "Mouvement ou réglage de stock enregistré.",
+    (error) => serverFieldErrors(form, error),
   );
   const denied =
     !inventoryAllowed(identity, inventoryActions[action].permission) ||
@@ -66,12 +68,13 @@ export function useInventoryForm<K extends InventoryAction>(
   }, [denied, command.denied, form, cache, account]);
   async function submit(confirmed: boolean) {
     if (!confirmed || denied || command.busy || command.uncertain) return;
+    form.clearErrors();
     const parsed = inventoryActions[action].schema.safeParse(form.getValues());
     const update = action === "updateItem" || action === "updateSupplier";
     if (!parsed.success || (update && !z.uuid().safeParse(targetId).success)) {
       setValidation({
         scope,
-        error: "Vérifiez les champs, les paquets entiers et le motif requis.",
+        error: !parsed.success ? localFieldErrors(form, parsed.error) : "Vérifiez les champs, les paquets entiers et le motif requis.",
       });
       return;
     }

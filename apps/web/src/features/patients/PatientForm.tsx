@@ -1,3 +1,5 @@
+import { FormErrors } from "../../forms/FormErrors.js";
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import { usePatientForm, type PatientFormProps } from './usePatientForm.js';
 import { Field } from '../identity/components/Field.js';
 import { patientText as t } from './patient.messages.js';
@@ -14,10 +16,10 @@ export function PatientForm({
     onError,
   });
   return (
-    <form
+    <ValidatedForm
       aria-label={initial ? t.contactForm : t.register}
       onSubmit={form.handleSubmit(save, () =>
-        onError('Vérifiez le nom, le téléphone et le contact.'),
+        onError(''),
       )}
     >
       <h4>{initial ? t.contactForm : t.register}</h4>
@@ -69,6 +71,7 @@ export function PatientForm({
       >
         {busy ? t.saving : unresolved ? t.retry : initial ? t.save : t.create}
       </button>
-    </form>
+    <FormErrors errors={form.formState.errors} />
+</ValidatedForm>
   );
 }

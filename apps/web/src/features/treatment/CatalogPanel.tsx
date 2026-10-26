@@ -1,3 +1,5 @@
+import { FormErrors } from "../../forms/FormErrors.js";
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import { useCatalog } from "./useTreatmentQueries.js";
 import { useCurrencyForm } from "./useCurrencyForm.js";
 import { useCatalogForm } from "./useCatalogForm.js";
@@ -31,7 +33,7 @@ export function CatalogPanel({ identity }: { identity: Identity }) {
 function CurrencyForm({ identity }: { identity: Identity }) {
   const { f, query, command, submit } = useCurrencyForm(identity);
   return (
-    <form onSubmit={submit}>
+    <ValidatedForm onSubmit={submit}>
       <fieldset disabled={command.busy || command.uncertain}>
         <legend>Devises de la clinique</legend>
         <p>{t.currencyHelp}</p>
@@ -55,7 +57,8 @@ function CurrencyForm({ identity }: { identity: Identity }) {
         <button>{t.enable}</button>
       </fieldset>
       <CommandState state={command} />
-    </form>
+    <FormErrors errors={f.formState.errors} />
+</ValidatedForm>
   );
 }
 function CatalogEditor({ identity }: { identity: Identity }) {
@@ -128,7 +131,7 @@ function CatalogForm({
     cacheKey,
   });
   return (
-    <form onSubmit={submit}>
+    <ValidatedForm onSubmit={submit}>
       <fieldset disabled={command.busy || command.uncertain}>
         <legend>{entry ? `Modifier ${entry.name}` : t.newEntry}</legend>
         <label>
@@ -194,6 +197,7 @@ function CatalogForm({
           Relire le catalogue puis vérifier votre saisie
         </button>
       )}
-    </form>
+    <FormErrors errors={f.formState.errors} />
+</ValidatedForm>
   );
 }

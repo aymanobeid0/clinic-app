@@ -9,6 +9,53 @@ const receipt = () => ({
   size: 2,
   sha256: createHash("sha256").update("{}").digest("hex"),
 });
+test("changed export scope allows authorized regeneration while genuine denial stays locked", async ({ page }) => {
+  let generations = 0;
+  let denied = false;
+  await page.route("**/api/**", r => {
+    const url = r.request().url();
+    if (url.includes("events")) return r.abort();
+    if (url.endsWith("/exports")) { generations++; return r.fulfill({ status: 201, json: receipt() }); }
+    if (url.endsWith("/content")) return r.fulfill({ status: 403, json: denied
+      ? { error: "Vous n’êtes pas autorisé à effectuer cette action." }
+      : { error: "Les accès ont changé. Créez un nouvel export avec vos autorisations actuelles.", code: "export_scope_changed" } });
+    return r.fulfill({ json: {} });
+  });
+  await page.goto("/test/reporting-workflows.harness.html");
+  await page.getByRole("button", { name: "Exporter", exact: true }).click();
+  await expect(page.getByTestId("export-status")).toHaveText("ready");
+  await page.getByRole("button", { name: "Télécharger", exact: true }).click();
+  await expect(page.getByTestId("export-denied")).toHaveText("false");
+  await expect(page.getByRole("alert")).toContainText("Les accès ont changé");
+  await page.getByRole("button", { name: "Exporter", exact: true }).click();
+  await expect(page.getByTestId("export-status")).toHaveText("ready");
+  expect(generations).toBe(2);
+  denied = true;
+  await page.getByRole("button", { name: "Télécharger", exact: true }).click();
+  await expect(page.getByTestId("export-denied")).toHaveText("true");
+  await page.getByRole("button", { name: "Exporter", exact: true }).click();
+  expect(generations).toBe(2);
+});
+test("missing form fields and server field errors name the field without discarding input", async ({ page }) => {
+  let writes = 0;
+  await page.route("**/api/**", async (r) => {
+    if (r.request().url().includes("/events")) return r.abort();
+    if (r.request().method() === "POST") {
+      writes++;
+      return r.fulfill({ status: 400, json: { error: "Vérifiez les champs saisis.", fields: { dueOn: "Saisissez une date valide." } } });
+    }
+    return r.fulfill({ json: { tasks: [], pendingNotes: [] } });
+  });
+  await page.goto("/test/reporting-workflows.harness.html?view=tasks");
+  await page.getByLabel("Échéance").fill("");
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Échéance : Ce champ est obligatoire.");
+  expect(writes).toBe(0);
+  await page.getByLabel("Échéance").fill("2026-10-29");
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Échéance : Saisissez une date valide.");
+  await expect(page.getByLabel("Échéance")).toHaveValue("2026-10-29");
+});
 test("financial projections preserve reconciled currency strings and never fabricate zero data on failure", async ({
   page,
 }) => {

@@ -1,3 +1,5 @@
+import { FormErrors } from "../../forms/FormErrors.js";
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import { useAppointmentForm } from './useAppointmentForm.js';
 import { useSchedulingSettingsForm } from './useSchedulingSettingsForm.js';
 import type {
@@ -44,7 +46,7 @@ export function AppointmentForm({
     onDirty,
   });
   return (
-    <form onSubmit={submit}>
+    <ValidatedForm onSubmit={submit}>
       <fieldset disabled={busy}>
         <legend>
           {appointment ? 'Déplacer le rendez-vous' : 'Nouveau rendez-vous'}
@@ -175,7 +177,8 @@ export function AppointmentForm({
             : 'Enregistrer le rendez-vous'}
         </button>
       </fieldset>
-    </form>
+    <FormErrors errors={form.formState.errors} />
+</ValidatedForm>
   );
 }
 export function SchedulingSettingsForm({
@@ -191,7 +194,7 @@ export function SchedulingSettingsForm({
   return (
     <details>
       <summary>Paramètres de l’agenda</summary>
-      <form onSubmit={submit}>
+      <ValidatedForm onSubmit={submit}>
         <fieldset disabled={busy}>
           <legend>Paramètres de la clinique</legend>
           <label>
@@ -210,7 +213,8 @@ export function SchedulingSettingsForm({
           </label>
           <button>Enregistrer les paramètres</button>
         </fieldset>
-      </form>
+      <FormErrors errors={f.formState.errors} />
+</ValidatedForm>
     </details>
   );
 }

@@ -2,6 +2,7 @@ import { AppError } from "../errors/app-error.js";
 import type { ErrorRequestHandler, Express, Request } from "express";
 import type { Logger } from "pino";
 import { ZodError } from "zod";
+import { validationFields } from "@clinic/contracts";
 
 import { logger } from "../logger.js";
 
@@ -56,11 +57,12 @@ export function createErrorHandler(
       return;
     }
     if (error instanceof AppError) {
-      res.status(error.status).json({ error: error.message });
+      res.status(error.status).json({ error: error.message, ...(error.code ? { code: error.code } : {}) });
       return;
     }
     if (error instanceof ZodError) {
-      res.status(400).json({ error: "Requête invalide." });
+      const fields = validationFields(error);
+      res.status(400).json({ error: "Vérifiez les champs saisis.", ...(Object.keys(fields).length ? { fields } : {}) });
       return;
     }
     if (
@@ -77,8 +79,10 @@ export function createErrorHandler(
     if (status === 500) report(error, req);
     const message =
       status === 500
-        ? "Service temporairement indisponible."
-        : "Requête invalide.";
+        ? "Une erreur empêche de confirmer le résultat. Actualisez l’état avant de réessayer."
+        : status === 413
+          ? "La requête dépasse la taille autorisée. Réduisez son contenu."
+          : "Le corps de la requête n’est pas un JSON valide. Corrigez son format.";
     res.status(status).json({ error: message });
   };
 }

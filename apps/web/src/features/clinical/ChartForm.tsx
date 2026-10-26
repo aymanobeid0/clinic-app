@@ -1,3 +1,5 @@
+import { FormErrors } from "../../forms/FormErrors.js";
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import type { UseFormReturn } from 'react-hook-form';
 import type {
   ClinicalContent,
@@ -37,7 +39,7 @@ export function ChartForm({
     removeTooth,
   } = useChartForm({ id, record, identity, cacheKey, onLock });
   return (
-    <form aria-label={t.chart} onSubmit={submit}>
+    <ValidatedForm aria-label={t.chart} onSubmit={submit}>
       <fieldset disabled={!canDraft || state.busy || state.uncertain}>
         <label>
           {t.chartDate}
@@ -99,7 +101,8 @@ export function ChartForm({
         draftRevision={record.draft?.revision}
         dirty={form.formState.isDirty}
       />
-    </form>
+    <FormErrors errors={form.formState.errors} />
+</ValidatedForm>
   );
 }
 function ToothEditor({

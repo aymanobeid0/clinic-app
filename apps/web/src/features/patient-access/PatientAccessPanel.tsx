@@ -1,3 +1,5 @@
+import { FormErrors } from "../../forms/FormErrors.js";
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import { useAssignmentEditor } from './useAssignmentEditor.js';
 import { usePatientAssignments } from './usePatientAssignments.js';
 import type {
@@ -130,7 +132,7 @@ function AccessEditor({
       {record.error && <p role="alert">{record.error.message}</p>}
       {message && <p role="status">{message}</p>}
       {uncertain && <p role="alert">{t.pending}</p>}
-      <form onSubmit={submit}>
+      <ValidatedForm onSubmit={submit}>
         <fieldset disabled={busy || uncertain}>
           <label>
             {t.account}
@@ -157,7 +159,8 @@ function AccessEditor({
         <button disabled={busy || uncertain} type="submit">
           {t.share}
         </button>
-      </form>
+      <FormErrors errors={form.formState.errors} />
+</ValidatedForm>
       {uncertain && (
         <button disabled={busy} onClick={retry}>
           {t.retry}

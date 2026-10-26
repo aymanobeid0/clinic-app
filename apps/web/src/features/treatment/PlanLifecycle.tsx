@@ -1,3 +1,4 @@
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import { usePlanLifecycle } from "./usePlanLifecycle.js";
 import type { Identity, TreatmentPlan } from "@clinic/contracts";
 import { CommandState } from "./useTreatmentCommand.js";
@@ -116,7 +117,7 @@ export function PlanLifecycle({
           </button>
         )}
         {canRecordEvidence && (
-          <form
+          <ValidatedForm
             onSubmit={(event) => {
               event.preventDefault();
               if (confirm(t.confirm)) void evidence(true)(event);
@@ -139,7 +140,7 @@ export function PlanLifecycle({
               <input required maxLength={1000} {...f.register("method")} />
             </label>
             <button>{t.evidence}</button>
-          </form>
+          </ValidatedForm>
         )}
         {canAccept && (
           <button
@@ -150,7 +151,7 @@ export function PlanLifecycle({
           </button>
         )}
         {canCancel && (
-          <form
+          <ValidatedForm
             onSubmit={(event) => {
               event.preventDefault();
               if (confirm(t.confirm)) void cancel(true)(event);
@@ -161,7 +162,7 @@ export function PlanLifecycle({
               <input required maxLength={1000} {...f.register("reason")} />
             </label>
             <button>{t.cancel}</button>
-          </form>
+          </ValidatedForm>
         )}
       </fieldset>
       <CommandState state={command} />

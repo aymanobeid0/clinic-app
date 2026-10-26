@@ -279,7 +279,7 @@ test('French manager creates a staff account, changes its permissions and disabl
     .fill('Fictional-reception-temp');
   await creation.getByLabel('Votre mot de passe actuel').fill('wrong');
   await creation.getByRole('button', { name: 'Créer le compte' }).click();
-  await expect(page.getByRole('alert')).toContainText('Mot de passe incorrect');
+  await expect(page.getByRole('alert')).toContainText('Le mot de passe actuel est incorrect');
   await creation.getByLabel('Nom affiché').fill('Accueil fictif');
   await creation.getByLabel('Nouvel identifiant').fill('reception.browser');
   await creation

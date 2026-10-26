@@ -11,7 +11,7 @@ import {
   type AccountSummary,
 } from "@clinic/contracts";
 import type { z } from "zod";
-import { HttpError, post } from "./identity.api.js";
+import { readResponse, post } from "./identity.api.js";
 
 const accountChanges = {
   permissions: permissionsSchema,
@@ -34,9 +34,7 @@ export const accountsApi = {
       cache: "no-store",
       signal,
     });
-    if (!response.ok)
-      throw new HttpError(response.status, "Comptes indisponibles.");
-    return response.json();
+    return readResponse<AccountSummary[]>(response);
   },
   create(input: z.input<typeof createAccountSchema>) {
     return post("accounts", createAccountSchema.parse(input));

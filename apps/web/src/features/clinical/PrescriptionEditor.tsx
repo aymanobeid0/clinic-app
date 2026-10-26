@@ -1,3 +1,4 @@
+import { ValidatedForm } from "../../forms/ValidatedForm.js";
 import { useFieldArray } from "react-hook-form";
 import type { Identity, Prescription } from "@clinic/contracts";
 import {
@@ -30,7 +31,7 @@ export function PrescriptionEditor({
       identity.kind === "doctor" &&
       identity.permissions.includes("prescriptions.sign");
   return (
-    <form
+    <ValidatedForm
       onSubmit={e.form.handleSubmit(() => {
         void e.save();
       })}
@@ -127,6 +128,6 @@ export function PrescriptionEditor({
           {t.finalize}
         </button>
       )}
-    </form>
+    </ValidatedForm>
   );
 }
