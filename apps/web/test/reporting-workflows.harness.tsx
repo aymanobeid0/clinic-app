@@ -10,6 +10,7 @@ import { useIdentitySession } from "../src/features/identity/useIdentitySession.
 const patientId = "11111111-1111-4111-8111-111111111111";
 function Consumer({ session }: { session?: Identity }) {
   const [account, setAccount] = useState("first");
+  const [selectedPatient, setSelectedPatient] = useState(patientId);
   const params = new URLSearchParams(location.search);
   const identity: Identity = session ?? {
     clinicId: "clinic",
@@ -45,7 +46,10 @@ function Consumer({ session }: { session?: Identity }) {
     identity,
     params.has("update")
       ? { revision: 1, status: "completed", dueOn: "2026-10-27" }
-      : { patientId: params.get("patient") ?? patientId, dueOn: "2026-10-27" },
+      : {
+          patientId: params.get("patient") ?? selectedPatient,
+          dueOn: "2026-10-27",
+        },
     params.get("task") ?? patientId,
   );
   const output = useExport(identity, {
@@ -67,6 +71,13 @@ function Consumer({ session }: { session?: Identity }) {
         Changer de compte
       </button>
       <button onClick={() => void read.refetch()}>Actualiser</button>
+      <button
+        onClick={() =>
+          setSelectedPatient("33333333-3333-4333-8333-333333333333")
+        }
+      >
+        Changer de patient
+      </button>
       <input aria-label="Échéance" {...action.form.register("dueOn")} />
       <button onClick={() => void action.submit(true)}>Enregistrer</button>
       <button onClick={() => void action.retry()}>Réessayer</button>

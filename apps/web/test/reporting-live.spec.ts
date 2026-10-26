@@ -119,6 +119,7 @@ test("authenticated report hooks create a follow-up, prepare manual sharing and 
     await expect(page.getByTestId("export-denied")).toHaveText("true");
     await expect(page.getByTestId("downloaded")).toBeEmpty();
   } finally {
+    await page.goto("about:blank");
     server.closeAllConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await runtime.close();

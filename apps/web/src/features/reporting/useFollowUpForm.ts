@@ -1,3 +1,4 @@
+import { reportingMessages as t } from "./reporting.messages.js";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useForm, type DefaultValues } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,7 +27,9 @@ export function useFollowUpForm<K extends keyof typeof schemas>(
   const cache = useQueryClient();
   const account = identityScope(identity);
   const root = reportingKey(account);
-  const selectedPatient = "patientId" in defaults ? defaults.patientId : "";
+  const selectedPatient = String(
+    "patientId" in defaults ? (defaults.patientId ?? "") : "",
+  );
   const scope = JSON.stringify([...root, action, taskId, selectedPatient]);
   const form = useForm<Fields<K>>({ defaultValues: defaults });
   const initial = useRef(defaults);
@@ -41,12 +44,12 @@ export function useFollowUpForm<K extends keyof typeof schemas>(
         .some((q) => treatmentDenied(q.state.error)),
   );
   const command = useTreatmentCommand<FollowUp>(
-    [...root, action, taskId],
+    [...root, action, taskId, selectedPatient],
     () => {
       void cache.invalidateQueries({ queryKey: root });
     },
     undefined,
-    "Suivi enregistré.",
+    t.followUpSaved,
   );
   const denied =
     !reportAllowed(identity, "tasks") || command.denied || readDenied;
@@ -72,7 +75,7 @@ export function useFollowUpForm<K extends keyof typeof schemas>(
     ) {
       setValidation({
         scope,
-        error: "Vérifiez le patient, la date et la révision du suivi.",
+        error: t.followUpInvalid,
       });
       return;
     }

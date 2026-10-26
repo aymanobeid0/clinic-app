@@ -51,14 +51,14 @@ test("financial projections preserve reconciled currency strings and never fabri
   await expect(page.getByRole("alert")).toHaveText("Rapport indisponible");
   await expect(page.getByTestId("data")).toBeEmpty();
 });
-test("export lifecycle creates a private receipt, verifies downloaded bytes and clears after cleanup", async ({
+test("export lifecycle verifies private bytes and preserves a valid receipt when cleaning expired artifacts", async ({
   page,
 }) => {
   await page.route("**/api/**", async (route) => {
     const url = route.request().url();
     if (url.includes("/events")) return route.abort();
     if (url.endsWith("/exports/cleanup"))
-      return route.fulfill({ json: { deleted: 1 } });
+      return route.fulfill({ json: { deleted: 0 } });
     if (url.endsWith("/exports"))
       return route.fulfill({ status: 201, json: receipt() });
     if (url.endsWith("/content"))
@@ -71,7 +71,7 @@ test("export lifecycle creates a private receipt, verifies downloaded bytes and 
   await page.getByRole("button", { name: "Télécharger", exact: true }).click();
   await expect(page.getByTestId("downloaded")).toHaveText("2");
   await page.getByRole("button", { name: "Nettoyer", exact: true }).click();
-  await expect(page.getByTestId("export-status")).toHaveText("idle");
+  await expect(page.getByTestId("export-status")).toHaveText("ready");
 });
 test("follow-up uncertain retry retains the exact command despite edited input", async ({
   page,
@@ -337,4 +337,79 @@ test("export lost response retries the identical request without a second genera
   await expect(page.getByTestId("export-status")).toHaveText("ready");
   expect(writes).toHaveLength(2);
   expect(writes[1]).toEqual(writes[0]);
+});
+test("changing the follow-up patient retires an uncertain command before retry", async ({
+  page,
+}) => {
+  let writes = 0;
+  await page.route("**/api/**", async (r) => {
+    if (r.request().url().includes("/events")) return r.abort();
+    if (r.request().method() === "POST") {
+      writes++;
+      return r.abort();
+    }
+    return r.fulfill({ json: {} });
+  });
+  await page.goto("/test/reporting-workflows.harness.html");
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(page.getByTestId("uncertain")).toHaveText("true");
+  await page
+    .getByRole("button", { name: "Changer de patient", exact: true })
+    .click();
+  await expect(page.getByTestId("uncertain")).toHaveText("false");
+  await page.getByRole("button", { name: "Réessayer", exact: true }).click();
+  expect(writes).toBe(1);
+});
+test("returning to a prior account does not resurrect its prepared export", async ({
+  page,
+}) => {
+  await page.route("**/api/**", async (r) => {
+    if (r.request().url().includes("/events")) return r.abort();
+    return r.fulfill({
+      json: r.request().method() === "POST" ? receipt() : {},
+    });
+  });
+  await page.goto("/test/reporting-workflows.harness.html");
+  await page.getByRole("button", { name: "Exporter", exact: true }).click();
+  await expect(page.getByTestId("export-status")).toHaveText("ready");
+  await page
+    .getByRole("button", { name: "Changer de compte", exact: true })
+    .click();
+  await expect(page.getByTestId("export-status")).toHaveText("idle");
+  await page
+    .getByRole("button", { name: "Changer de compte", exact: true })
+    .click();
+  await expect(page.getByTestId("export-status")).toHaveText("idle");
+});
+test("independent review: cleaned artifact404 permits fresh export generation", async ({
+  page,
+}) => {
+  let creates = 0;
+  await page.route("**/api/**", async (r) => {
+    const path = new URL(r.request().url()).pathname;
+    if (path.includes("/events")) return r.abort();
+    if (path === "/api/exports") {
+      creates++;
+      return r.fulfill({
+        json: {
+          id: "22222222-2222-4222-8222-222222222222",
+          status: "ready",
+          expiresAt: new Date(Date.now() + 900000).toISOString(),
+          mediaType: "application/json",
+          size: 2,
+          sha256: createHash("sha256").update("{}").digest("hex"),
+        },
+      });
+    }
+    if (path.endsWith("/content"))
+      return r.fulfill({ status: 404, json: { error: "Export introuvable." } });
+    return r.fulfill({ json: {} });
+  });
+  await page.goto("/test/reporting-workflows.harness.html");
+  await page.getByRole("button", { name: "Exporter", exact: true }).click();
+  await expect(page.getByTestId("export-status")).toHaveText("ready");
+  await page.getByRole("button", { name: "Télécharger", exact: true }).click();
+  await expect(page.getByRole("alert")).toHaveText("Export introuvable.");
+  await page.getByRole("button", { name: "Exporter", exact: true }).click();
+  await expect.poll(() => creates).toBe(2);
 });

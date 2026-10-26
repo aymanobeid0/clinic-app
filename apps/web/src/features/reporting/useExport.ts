@@ -1,3 +1,4 @@
+import { reportingMessages as t } from "./reporting.messages.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm, type DefaultValues } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
@@ -68,18 +69,18 @@ export function useExport(
   initial.current = defaults;
   const form = useForm<ExportFields>({ defaultValues: defaults });
   const [local, setLocal] = useState<{
-    scope: string;
+    owner: typeof owner;
     receipt?: ExportReceipt;
     error: string;
     busy: boolean;
     expired: boolean;
     denied?: boolean;
-  }>({ scope, error: "", busy: false, expired: false });
+  }>({ owner, error: "", busy: false, expired: false });
   const state =
-    local.scope === scope
+    local.owner === owner
       ? local
       : {
-          scope,
+          owner,
           error: "",
           busy: false,
           expired: false,
@@ -90,10 +91,10 @@ export function useExport(
   const command = useTreatmentCommand<ExportReceipt>(
     ["exports", account, scope],
     (receipt) => {
-      setLocal({ scope, receipt, error: "", busy: false, expired: false });
+      setLocal({ owner, receipt, error: "", busy: false, expired: false });
     },
     undefined,
-    "Export préparé. Aucune donnée n’a été envoyée à un tiers.",
+    t.exportReady,
   );
   useEffect(() => {
     mounted.current = true;
@@ -109,7 +110,7 @@ export function useExport(
       form.reset(initial.current);
       downloadRequest.current?.abort();
       if (!state.denied)
-        setLocal({ scope, error: "", busy: false, expired: false });
+        setLocal({ owner, error: "", busy: false, expired: false });
     }
   }, [
     command.denied,
@@ -127,8 +128,8 @@ export function useExport(
       () => {
         downloadRequest.current?.abort();
         setLocal({
-          scope,
-          error: "Export expiré. Préparez un nouvel export.",
+          owner,
+          error: t.exportExpired,
           busy: false,
           expired: true,
         });
@@ -153,8 +154,8 @@ export function useExport(
     });
     if (!parsed.success) {
       setLocal({
-        scope,
-        error: "Vérifiez la catégorie, le format et les éléments sélectionnés.",
+        owner,
+        error: t.exportInvalid,
         busy: false,
         expired: false,
       });
@@ -162,14 +163,14 @@ export function useExport(
     }
     if (!allowed(identity, parsed.data)) {
       setLocal({
-        scope,
-        error: "Vous n’êtes pas autorisé à effectuer cet export.",
+        owner,
+        error: t.exportDenied,
         busy: false,
         expired: false,
       });
       return;
     }
-    setLocal({ scope, error: "", busy: false, expired: false });
+    setLocal({ owner, error: "", busy: false, expired: false });
     const { commandId: _commandId, ...payload } = parsed.data;
     void _commandId;
     return command.save("exports", payload);
@@ -187,8 +188,8 @@ export function useExport(
       return;
     if (Date.parse(receipt.expiresAt) <= Date.now()) {
       setLocal({
-        scope,
-        error: "Export expiré. Préparez un nouvel export.",
+        owner,
+        error: t.exportExpired,
         busy: false,
         expired: true,
       });
@@ -210,7 +211,7 @@ export function useExport(
             const data = await response.json();
             throw new HttpError(
               response.status,
-              data.error ?? "Export indisponible.",
+              data.error ?? t.exportUnavailable,
             );
           }
           const bytes = await response.arrayBuffer();
@@ -221,9 +222,7 @@ export function useExport(
             b.toString(16).padStart(2, "0"),
           ).join("");
           if (bytes.byteLength !== receipt.size || hash !== receipt.sha256)
-            throw new Error(
-              "Le fichier reçu ne correspond pas à l’export. Réessayez.",
-            );
+            throw new Error(t.exportMismatch);
           return new Blob([bytes], { type: receipt.mediaType });
         },
         controller.signal,
@@ -239,19 +238,18 @@ export function useExport(
       // Caller explicitly saves this verified Blob. No public URL or retained browser object URL.
       return { blob, filename: `export-${receipt.id}.${extension}` };
     } catch (error) {
+      const unavailable =
+        error instanceof HttpError &&
+        (error.status === 404 || error.status === 410);
+      const denied = treatmentDenied(error) && !unavailable;
       if (active() && !controller.signal.aborted)
         setLocal({
-          scope,
-          receipt:
-            treatmentDenied(error) ||
-            (error instanceof HttpError && error.status === 410)
-              ? undefined
-              : receipt,
-          error:
-            error instanceof Error ? error.message : "Export indisponible.",
+          owner,
+          receipt: denied || unavailable ? undefined : receipt,
+          error: error instanceof Error ? error.message : t.exportUnavailable,
           busy: false,
-          expired: error instanceof HttpError && error.status === 410,
-          denied: treatmentDenied(error),
+          expired: unavailable,
+          denied,
         });
     } finally {
       if (downloadRequest.current === controller)
@@ -273,15 +271,24 @@ export function useExport(
       const result = await treatmentRead(cache, ["exports", account], () =>
         post<{ deleted: number }>("exports/cleanup", {}),
       );
-      if (active()) setLocal({ scope, error: "", busy: false, expired: false });
+      if (active())
+        setLocal({
+          owner,
+          receipt:
+            state.receipt && Date.parse(state.receipt.expiresAt) > Date.now()
+              ? state.receipt
+              : undefined,
+          error: "",
+          busy: false,
+          expired: state.expired,
+        });
       return active() ? result : undefined;
     } catch (error) {
       if (active())
         setLocal({
           ...state,
           receipt: treatmentDenied(error) ? undefined : state.receipt,
-          error:
-            error instanceof Error ? error.message : "Nettoyage indisponible.",
+          error: error instanceof Error ? error.message : t.cleanupUnavailable,
           busy: false,
           denied: treatmentDenied(error),
         });
