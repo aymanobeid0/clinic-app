@@ -6,6 +6,7 @@ import type {
   Settlement,
   FinancialCorrection,
   TreatmentItem,
+  ConsultationCharge,
 } from "@clinic/contracts";
 import type { ClinicTransaction } from "../../database.js";
 import { treatmentBilling } from "../treatment/index.js";
@@ -49,6 +50,50 @@ export async function projectBilling(
         e.kind === "charge" && (!c.ownWork || e.performedBy === c.accountId),
     )
     .map((e) => {
+      const consultation = e.snapshot as unknown as ConsultationCharge;
+      if (consultation.sourceKind === "consultation") {
+        const adjustments = entries
+          .filter((a) => a.kind === "adjustment")
+          .map((a) => a.snapshot as unknown as BillingAdjustment)
+          .filter((a) => a.chargeId === e.id)
+          .sort((a, b) => a.revision - b.revision);
+        const due =
+          BigInt(e.amountMinor.toFixed(0)) +
+          adjustments.reduce((n, a) => n + BigInt(a.amountMinor), 0n);
+        const allocations = funds.allocations
+          .filter((a) => a.chargeId === e.id)
+          .map(({ settlementId, at, newMoneyMinor, creditMinor }) => ({
+            settlementId,
+            at,
+            newMoneyMinor,
+            creditMinor,
+          }));
+        const paid = allocations.reduce(
+          (n, a) => n + BigInt(a.newMoneyMinor) + BigInt(a.creditMinor),
+          0n,
+        );
+        return {
+          id: e.id,
+          sourceKind: "consultation" as const,
+          consultationId: consultation.consultationId,
+          planId: null,
+          itemId: null,
+          currency: e.currency,
+          performedBy: consultation.performedBy,
+          completedAt: null,
+          originalMinor: e.amountMinor.toFixed(0),
+          dueMinor: (due - paid).toString(),
+          chargedMinor: due.toString(),
+          paidMinor: paid.toString(),
+          allocations,
+          acceptedMinor: consultation.agreedMinor,
+          revision: adjustments.length,
+          reconciliationRequired: false,
+          adjustments,
+          at: consultation.at,
+          ...(c.clinical ? { name: "Consultation" } : {}),
+        };
+      }
       const start = e.snapshot as unknown as ProcedureStart;
       const adjustments = entries
         .filter((a) => a.kind === "adjustment")

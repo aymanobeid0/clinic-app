@@ -31,6 +31,84 @@ const group = (tag: string, description: string, rows: Row[]): Operation[] =>
 
 export const operations = [
   ...group(
+    "Consultations",
+    "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+    [
+      [
+        "get",
+        "/consultation-settings/price",
+        "Read default consultation price",
+        "ConsultationPrice",
+      ],
+      [
+        "post",
+        "/consultation-settings/price",
+        "Configure default consultation price",
+        "ConsultationPrice",
+        "consultationPriceSchema",
+      ],
+      [
+        "post",
+        "/consultation-settings/remuneration",
+        "Configure doctor remuneration",
+        "Remuneration",
+        "remunerationSchema",
+      ],
+      [
+        "get",
+        "/consultation-settings/remuneration/{doctorId}",
+        "Read retained remuneration settings",
+        "RemunerationHistory",
+      ],
+      [
+        "get",
+        "/consultations",
+        "List consultations for a date within current scope",
+        "Consultations",
+      ],
+      [
+        "get",
+        "/consultations/{patientId}",
+        "List patient consultations within current scope",
+        "Consultations",
+      ],
+      [
+        "post",
+        "/consultations/{patientId}",
+        "Arrange standalone consultation without debt",
+        "Consultation",
+        "bookConsultationSchema",
+      ],
+      [
+        "post",
+        "/consultations/{patientId}/entry",
+        "Explicitly record room entry and one charge",
+        "Consultation",
+        "enterConsultationSchema",
+      ],
+      [
+        "post",
+        "/consultations/{patientId}/complete",
+        "Complete consultation independently of encounter",
+        "Consultation",
+        "completeConsultationSchema",
+      ],
+      [
+        "get",
+        "/consultations/{patientId}/{consultationId}/remuneration",
+        "Read protected frozen remuneration snapshot",
+        "ConsultationRemuneration",
+      ],
+      [
+        "post",
+        "/treatment/{id}/visits/procedures",
+        "Start accepted procedures in the existing encounter",
+        "Visit",
+        "addVisitProceduresSchema",
+      ],
+    ],
+  ),
+  ...group(
     "Identity",
     "Cookie session, never bearer authentication. Manager authority is independent of login method. Restricted setup/recovery sessions do not authorize clinic data. Password changes revoke sessions; use a new session/CSRF handshake afterwards.",
     [

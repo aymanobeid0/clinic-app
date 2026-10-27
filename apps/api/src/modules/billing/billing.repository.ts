@@ -12,6 +12,23 @@ import type {
 import type { ClinicTransaction } from "../../database.js";
 
 export class BillingRepository {
+  async consultationCharge(
+    event: import("@clinic/contracts").ConsultationCharge,
+  ) {
+    await this.tx.billingEntry.create({
+      data: {
+        id: event.id,
+        clinicId: this.clinicId,
+        patientId: event.patientId,
+        kind: "charge",
+        sourceId: event.consultationId,
+        performedBy: event.performedBy,
+        currency: event.currency,
+        amountMinor: event.agreedMinor,
+        snapshot: event,
+      },
+    });
+  }
   constructor(
     readonly tx: ClinicTransaction,
     readonly clinicId: string,

@@ -4,6 +4,25 @@ generator client {
   importFileExtension = "js"
 }
 
+model ConsultationRevision {
+  clinicId String @db.Uuid
+  id String @db.Uuid
+  patientId String @db.Uuid
+  doctorId String @db.Uuid
+  revision Int
+  snapshot Json
+  @@id([clinicId,id,revision])
+  @@index([clinicId,patientId])
+}
+
+model ConsultationSetting {
+  clinicId String @db.Uuid
+  key String
+  revision Int
+  snapshot Json
+  @@id([clinicId,key,revision])
+}
+
 datasource db {
   provider = "postgresql"
 }

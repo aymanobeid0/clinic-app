@@ -6,6 +6,8 @@ Date: 2026-10-10
 Status: first specification; product baseline and testing seams confirmed. Published as https://github.com/aymanobeid0/clinic-app/issues/1 with label ready-for-agent.
 Scope: French-language online pilot for a single-location clinic in Mauritania.
 
+Approved planning amendment, 2026-10-27: [standalone consultation and doctor-share integration](consultation-integration.md#approved-integration), with [ADR0002](../adr/0002-standalone-consultations-shared-care-and-billing.md). This adds the owner-confirmed independent consultation, dedicated payment, room-entry debt trigger and consultation remuneration timing; its explicit rules supersede conflicting earlier consultation assumptions. Existing treatment rules remain as scoped there. Approval records intended behavior and integration direction, not implemented APIs/UI or authorization to start implementation.
+
 ## Problem Statement
 
 The pilot clinic has four dentists, including its manager, two receptionists, three assistants, and one sterilization staff member. It operates four chairs and five PCs. Its legacy software handles billing and prescriptions, while most care remains on paper. Staff cannot reliably follow a patient from booking through clinical history, treatment, payment, and follow-up in one place.
