@@ -6,7 +6,7 @@ Updated2026-10-27 UTC. [Earlier history](HANDOFF.history-2026-10-25.md); previou
 
 Owner authorized consultation backend/contracts A then presentation-independent frontend logic B, approved the four-ticket breakdown and explicitly started A1. Product contract is settled: [Approved integration](docs/planning/consultation-integration.md#approved-integration), [ADR0002](docs/adr/0002-standalone-consultations-shared-care-and-billing.md), [scope](docs/planning/consultation-implementation-scope.md). No new grilling, UI, payroll, production/live migration or real data.
 
-Published [#104 A1](https://github.com/aymanobeid0/clinic-app/issues/104), [#105 A2](https://github.com/aymanobeid0/clinic-app/issues/105), [#106 A3](https://github.com/aymanobeid0/clinic-app/issues/106), [#107 B](https://github.com/aymanobeid0/clinic-app/issues/107). Current native edges/verified UI additions and skill selection are in [tracker evidence](docs/planning/consultation-tickets/README.md). #104 Building; #105-#107 Blocked. #51 prerequisite merge82ba552 is in base. #59 stale project Review was reconciled to Done using owner-confirmed earlier merge; no redundant PR101/103 merge audit.
+Published [#104 A1](https://github.com/aymanobeid0/clinic-app/issues/104), [#105 A2](https://github.com/aymanobeid0/clinic-app/issues/105), [#106 A3](https://github.com/aymanobeid0/clinic-app/issues/106), [#107 B](https://github.com/aymanobeid0/clinic-app/issues/107). Current native edges/verified UI additions and skill selection are in [tracker evidence](docs/planning/consultation-tickets/README.md). #104 Review; #105-#107 Blocked. #51 prerequisite merge82ba552 is in base. #59 stale project Review was reconciled to Done using owner-confirmed earlier merge; no redundant PR101/103 merge audit.
 
 ## A1 implementation and evidence
 
@@ -18,7 +18,7 @@ Builder checks: focused shared62/62, post-fix consultation/OpenAPI13/13, final u
 
 ## Next gate and preservation
 
-Next: publish branch/PR under standing owner authorization; verification and independent review are complete. PR not opened yet. Every merge remains human-approved; do not implement dependent #105 before #104 merge. A-to-B authorization continues after prerequisite merges; UI #60-#76 stays separate, completed #52-#59 remain closed.
+Published [PR108](https://github.com/aymanobeid0/clinic-app/pull/108), open for human review/merge. Verification and independent review complete; #104 Project Review. Next: owner reviews/merges A1. Every merge remains human-approved; do not implement dependent #105 before #104 merge. A-to-B authorization continues after prerequisite merges; UI #60-#76 stays separate, completed #52-#59 remain closed.
 
 Fictional task-owned Compose project `clinic-issue104-test`, container `clinic-issue104-test-database-1`, DB port55444; ownership/binding inspected, migration applied only there. Task-only DB/network removed after verification with ownership rechecked. Owner DB55437 stays stopped; ERP/Apidog/manual resources and4173/4175 servers untouched. Initial sandbox GitHub/DB denials succeeded on supported elevated retry; no unresolved connection blocker.
 
