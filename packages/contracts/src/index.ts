@@ -759,6 +759,16 @@ export type Remuneration = {
   at: string;
   actorId: string;
 };
+export type TreatmentRemuneration = {
+  startId: string;
+  currency: string;
+  status: 'configured' | 'missing_configuration' | 'legacy_unsnapshotted';
+  remuneration: Remuneration | null;
+  recognizedBaseMinor: string;
+  shareNumerator: string | null;
+  shareDenominator: string | null;
+  allocations: { settlementId: string; newMoneyMinor: string; creditMinor: string; sources: { settlementId: string; amountMinor: string }[]; at: string }[];
+};
 export type ConsultationPrice = {
   revision: number;
   currency: keyof typeof verifiedCurrencies;

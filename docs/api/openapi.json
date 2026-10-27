@@ -13,6 +13,9 @@
   ],
   "tags": [
     {
+      "name": "Treatment remuneration"
+    },
+    {
       "name": "Consultations"
     },
     {
@@ -70,6 +73,173 @@
     }
   ],
   "paths": {
+    "/treatment/{id}/starts/{startId}/remuneration": {
+      "get": {
+        "operationId": "get_treatment_id_starts_startId_remuneration",
+        "tags": [
+          "Treatment remuneration"
+        ],
+        "summary": "Read protected settled treatment share",
+        "description": "Manager or concerned active doctor with billing.read and patient scope only. Rate freezes once at procedure start; missing configuration and legacy unsnapshotted work remain explicit with null share, never today's rate. Salary mode reports no percentage share or payroll. Only actual allocations to this performer's provided care count; free deposits and unpaid debt do not. Exact numerator/denominator in minor units, currencies separate. Retained source allocations include releases/reversals at the frozen rate; release then refund does not subtract twice. No remuneration in general billing, clinical, export or cutoff snapshots.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "startId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreatmentRemuneration"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/consultation-settings/price": {
       "get": {
         "operationId": "get_consultation_settings_price",
@@ -26987,6 +27157,121 @@
           "actorId"
         ]
       },
+      "TreatmentRemuneration": {
+        "type": "object",
+        "properties": {
+          "startId": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "configured"
+              },
+              {
+                "type": "string",
+                "const": "missing_configuration"
+              },
+              {
+                "type": "string",
+                "const": "legacy_unsnapshotted"
+              }
+            ]
+          },
+          "remuneration": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Remuneration"
+              }
+            ]
+          },
+          "recognizedBaseMinor": {
+            "type": "string"
+          },
+          "shareNumerator": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "shareDenominator": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "allocations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "settlementId": {
+                  "type": "string"
+                },
+                "newMoneyMinor": {
+                  "type": "string"
+                },
+                "creditMinor": {
+                  "type": "string"
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "settlementId": {
+                        "type": "string"
+                      },
+                      "amountMinor": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "settlementId",
+                      "amountMinor"
+                    ]
+                  }
+                },
+                "at": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "settlementId",
+                "newMoneyMinor",
+                "creditMinor",
+                "sources",
+                "at"
+              ]
+            }
+          }
+        },
+        "required": [
+          "startId",
+          "currency",
+          "status",
+          "remuneration",
+          "recognizedBaseMinor",
+          "shareNumerator",
+          "shareDenominator",
+          "allocations"
+        ]
+      },
       "RemunerationHistory": {
         "type": "object",
         "properties": {
@@ -26994,6 +27279,9 @@
             "type": "array",
             "items": {
               "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Remuneration"
+                },
                 {
                   "type": "object",
                   "properties": {
@@ -27041,9 +27329,6 @@
                     "at",
                     "actorId"
                   ]
-                },
-                {
-                  "$ref": "#/components/schemas/Remuneration"
                 }
               ]
             }

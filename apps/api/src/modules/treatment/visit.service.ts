@@ -18,12 +18,49 @@ import type { Actor, IdentityAccess } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
 import { TreatmentRepository } from './treatment.repository.js';
 import { VisitRepository } from './visit.repository.js';
+import { treatmentFunds } from '../billing/index.js';
+import type { TreatmentRemuneration } from '@clinic/contracts';
 export class VisitService {
   constructor(
     readonly identity: IdentityAccess,
     readonly updates: ClinicUpdates,
     readonly now: () => number,
   ) {}
+  remuneration(actor: Actor | undefined, patientId: string, startId: string) {
+    return this.identity.withFinancialPermission(
+      actor,
+      patientId,
+      'billing.read',
+      async (c, tx): Promise<TreatmentRemuneration> => {
+        await new TreatmentRepository(tx, c.clinicId).lock();
+        const start = await new VisitRepository(
+          tx,
+          c.clinicId,
+        ).remunerationStart(patientId, startId);
+        if (!start) throw new AppError(404, 'Acte commencé introuvable.');
+        if (!c.canApprove || (c.ownWork && start.performedBy !== c.accountId))
+          throw new AppError(403, 'Rémunération non autorisée.');
+        return {
+          startId: start.id,
+          currency: start.currency,
+          status:
+            start.remuneration === undefined
+              ? 'legacy_unsnapshotted'
+              : start.remuneration === null
+                ? 'missing_configuration'
+                : 'configured',
+          remuneration: start.remuneration ?? null,
+          ...(await treatmentFunds(
+            tx,
+            c.clinicId,
+            patientId,
+            start.id,
+            start.remuneration?.rate,
+          )),
+        };
+      },
+    );
+  }
   state(actor: Actor | undefined, patientId: string) {
     return this.identity.withClinicalPermission(
       actor,

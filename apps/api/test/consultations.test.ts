@@ -255,20 +255,23 @@ async function scenario() {
   return { m, patient, create };
 }
 
-async function treatmentScenario() {
+async function treatmentScenario(currency = "MRU") {
   const { m, patient, create } = await scenario();
   const own = (await m.browser.get("/api/identity")).body.accountId;
   await m.post(`/accounts/${own}/permissions`, {
     currentPassword: "Fictional-manager-pass-2",
     permissions: ["patients.create", "catalog.manage"],
   });
-  await m.post("/catalog/currencies", { commandId: randomUUID(), code: "MRU" });
+  await m.post("/catalog/currencies", {
+    commandId: randomUUID(),
+    code: currency,
+  });
   const procedureId = randomUUID();
   const catalog = {
     id: procedureId,
     revision: 0,
     name: "Acte fictif",
-    currency: "MRU",
+    currency,
     price: "100",
     durationMinutes: 40,
     active: true,
@@ -292,7 +295,7 @@ async function treatmentScenario() {
     id: randomUUID(),
     revision: 0,
     title: "Proposition fictive",
-    currency: "MRU",
+    currency,
     items: [
       {
         id: randomUUID(),
@@ -317,8 +320,8 @@ async function treatmentScenario() {
   };
 }
 
-async function visitScenario() {
-  const s = await treatmentScenario();
+async function visitScenario(currency = "MRU") {
+  const s = await treatmentScenario(currency);
   await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
     currentPassword: "Fictional-manager-pass-2",
     permissions: [
@@ -366,6 +369,431 @@ async function visitScenario() {
   };
   return { ...s, path, selections, start };
 }
+it("recognizes provided treatment installments once at its first-start rate", async () => {
+  const s = await visitScenario();
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "clinical.read",
+      "procedures.start",
+      "billing.read",
+      "billing.edit",
+    ],
+  });
+  const setting = {
+    commandId: randomUUID(),
+    doctorId: s.doctor.id,
+    revision: 0,
+    mode: "percentage",
+    rate: "40",
+  };
+  expect(
+    (await s.m.post("/consultation-settings/remuneration", setting)).status,
+  ).toBe(200);
+  expect((await s.doctor.post(s.path, s.start)).status).toBe(200);
+  const state = (await s.doctor.browser.get(`/api${s.path}`)).body;
+  const start = state.starts[0];
+  const sharePath = `/api/treatment/${s.patient.id}/starts/${start.id}/remuneration`;
+  const initial = await s.doctor.browser.get(sharePath);
+  expect(initial.status).toBe(200);
+  expect(initial.body).toMatchObject({
+    status: "configured",
+    remuneration: { rate: "40" },
+    recognizedBaseMinor: "0",
+    shareNumerator: "0",
+    shareDenominator: "100",
+  });
+  await s.m.post("/consultation-settings/remuneration", {
+    ...setting,
+    commandId: randomUUID(),
+    revision: 1,
+    rate: "50",
+  });
+  const methodId = randomUUID();
+  await s.m.post("/billing/payment-methods", {
+    commandId: randomUUID(),
+    id: methodId,
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  });
+  const billing = `/billing/${s.patient.id}`;
+  const deposit = await s.m.post(`${billing}/settlements`, {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId,
+    newMoney: "30",
+    deposit: "30",
+    allocations: [],
+  });
+  expect(deposit.status).toBe(200);
+  expect((await s.m.browser.get(sharePath)).body.recognizedBaseMinor).toBe("0");
+  const paid = await s.m.post(`${billing}/settlements`, {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId,
+    newMoney: "50",
+    deposit: "0",
+    allocations: [{ chargeId: start.id, newMoney: "50", credit: "30" }],
+  });
+  expect(paid.status).toBe(200);
+  expect((await s.doctor.browser.get(sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "8000",
+    shareNumerator: "320000",
+    shareDenominator: "100",
+    remuneration: { rate: "40" },
+  });
+  expect(JSON.stringify(state)).not.toContain("remuneration");
+  expect(
+    JSON.stringify((await s.m.browser.get(`/api${billing}`)).body),
+  ).not.toContain("remuneration");
+  expect((await s.doctor.browser.get(sharePath)).body.allocations).toEqual([
+    expect.objectContaining({
+      settlementId: paid.body.id,
+      newMoneyMinor: "5000",
+      creditMinor: "3000",
+      sources: [{ settlementId: deposit.body.id, amountMinor: "3000" }],
+    }),
+  ]);
+  expect(
+    (
+      await s.doctor.post(`${s.path}/actions`, {
+        commandId: randomUUID(),
+        id: s.start.id,
+        revision: 1,
+        action: "end",
+      })
+    ).status,
+  ).toBe(200);
+  const next = {
+    ...s.start,
+    commandId: randomUUID(),
+    id: randomUUID(),
+    procedures: s.selections.map((p) => ({ ...p, planRevision: 5 })),
+  };
+  expect((await s.doctor.post(s.path, next)).status).toBe(200);
+  expect((await s.doctor.post(s.path, next)).status).toBe(200);
+  expect(
+    (await s.doctor.browser.get(`/api${s.path}`)).body.starts,
+  ).toHaveLength(2);
+  const final = await s.doctor.post(`${billing}/settlements`, {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId,
+    newMoney: "20",
+    deposit: "0",
+    allocations: [{ chargeId: start.id, newMoney: "20", credit: "0" }],
+  });
+  expect(final.status).toBe(200);
+  expect((await s.doctor.browser.get(sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "10000",
+    shareNumerator: "400000",
+    remuneration: { revision: 1, rate: "40" },
+  });
+});
+
+async function treatmentShareScenario(
+  rate = "40",
+  currency = "MRU",
+  mode = "percentage",
+) {
+  const s = await visitScenario(currency);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "clinical.read",
+      "procedures.start",
+      "billing.read",
+      "billing.edit",
+      "refunds",
+      "reversals",
+    ],
+  });
+  expect(
+    (
+      await s.m.post("/consultation-settings/remuneration", {
+        commandId: randomUUID(),
+        doctorId: s.doctor.id,
+        revision: 0,
+        mode,
+        rate: mode === "salary" ? null : rate,
+      })
+    ).status,
+  ).toBe(200);
+  expect((await s.doctor.post(s.path, s.start)).status).toBe(200);
+  const starts = (await s.doctor.browser.get(`/api${s.path}`)).body.starts;
+  const start = starts[0];
+  const billing = `/billing/${s.patient.id}`;
+  const sharePath = `/api/treatment/${s.patient.id}/starts/${start.id}/remuneration`;
+  const methodId = randomUUID();
+  expect(
+    (
+      await s.m.post("/billing/payment-methods", {
+        commandId: randomUUID(),
+        id: methodId,
+        revision: 0,
+        name: "Espèces",
+        active: true,
+      })
+    ).status,
+  ).toBe(200);
+  const settle = (amount: string) =>
+    s.doctor.post(`${billing}/settlements`, {
+      commandId: randomUUID(),
+      currency,
+      methodId,
+      newMoney: amount,
+      deposit: "0",
+      allocations: [{ chargeId: start.id, newMoney: amount, credit: "0" }],
+    });
+  return { ...s, starts, start, billing, sharePath, methodId, settle };
+}
+it("keeps treatment currency precision exact and salary work outside percentage share", async () => {
+  const s = await treatmentShareScenario("12.5", "KWD");
+  expect((await s.settle("0.001")).status).toBe(200);
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    currency: "KWD",
+    recognizedBaseMinor: "1",
+    shareNumerator: "125",
+    shareDenominator: "1000",
+  });
+  await s.m.post("/catalog/currencies", {
+    commandId: randomUUID(),
+    code: "MRU",
+  });
+  const wrong = await s.m.post(`${s.billing}/settlements`, {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: s.methodId,
+    newMoney: "1",
+    deposit: "0",
+    allocations: [{ chargeId: s.start.id, newMoney: "1", credit: "0" }],
+  });
+  expect(wrong.status).toBe(400);
+  const salary = await treatmentShareScenario("40", "MRU", "salary");
+  expect((await salary.settle("10")).status).toBe(200);
+  expect((await salary.m.browser.get(salary.sharePath)).body).toMatchObject({
+    status: "configured",
+    remuneration: { mode: "salary", rate: null },
+    recognizedBaseMinor: "1000",
+    shareNumerator: null,
+    shareDenominator: null,
+  });
+});
+it("retains treatment correction sources at the frozen rate through release refund reallocation and reversal", async () => {
+  const s = await treatmentShareScenario("12.345678");
+  const paid = await s.settle("100");
+  expect(paid.status).toBe(200);
+  await s.m.post("/consultation-settings/remuneration", {
+    commandId: randomUUID(),
+    doctorId: s.doctor.id,
+    revision: 1,
+    mode: "percentage",
+    rate: "50",
+  });
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    shareNumerator: "123456780000",
+    shareDenominator: "100000000",
+  });
+  const release = {
+    commandId: randomUUID(),
+    chargeId: s.start.id,
+    settlementId: paid.body.id,
+    amount: "40",
+    reason: "Libération fictive",
+  };
+  expect(
+    (await s.doctor.post(`${s.billing}/allocation-releases`, release)).status,
+  ).toBe(200);
+  expect(
+    (await s.doctor.post(`${s.billing}/allocation-releases`, release)).status,
+  ).toBe(200);
+  const credit = (await s.doctor.browser.get(`/api${s.billing}`)).body
+    .creditSources[0];
+  const req = await s.doctor.post(`${s.billing}/refund-requests`, {
+    commandId: randomUUID(),
+    sourceId: credit.id,
+    amount: "20",
+    reason: "Retour fictif",
+  });
+  expect(req.status).toBe(200);
+  const approve = {
+    commandId: randomUUID(),
+    requestId: req.body.id,
+    reason: "Approuvé",
+  };
+  expect(
+    (await s.doctor.post(`${s.billing}/refund-approvals`, approve)).status,
+  ).toBe(200);
+  expect(
+    (
+      await s.doctor.post(`${s.billing}/refunds`, {
+        ...approve,
+        commandId: randomUUID(),
+      })
+    ).status,
+  ).toBe(200);
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "6000",
+    shareNumerator: "74074068000",
+  });
+  const reapply = await s.doctor.post(`${s.billing}/settlements`, {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: null,
+    newMoney: "0",
+    deposit: "0",
+    allocations: [{ chargeId: s.start.id, newMoney: "0", credit: "20" }],
+  });
+  expect(reapply.status).toBe(200);
+  expect(reapply.body.receiptNumber).toBeNull();
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "8000",
+    shareNumerator: "98765424000",
+  });
+  const installment = await s.settle("20");
+  expect(installment.status).toBe(200);
+  const reversal = {
+    commandId: randomUUID(),
+    settlementId: installment.body.id,
+    reason: "Saisie erronée fictive",
+  };
+  expect((await s.doctor.post(`${s.billing}/reversals`, reversal)).status).toBe(
+    200,
+  );
+  expect((await s.doctor.post(`${s.billing}/reversals`, reversal)).status).toBe(
+    200,
+  );
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "8000",
+    remuneration: { rate: "12.345678" },
+  });
+  const adjustment = {
+    commandId: randomUUID(),
+    chargeId: s.start.id,
+    revision: 0,
+    finalCharge: "60",
+    reason: "Réduction approuvée fictive",
+  };
+  expect((await s.m.post(`${s.billing}/credits`, adjustment)).status).toBe(200);
+  expect((await s.m.post(`${s.billing}/credits`, adjustment)).status).toBe(200);
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "6000",
+    shareNumerator: "74074068000",
+  });
+});
+
+it("protects treatment shares from other doctors staff exports and retained cutoff snapshots", async () => {
+  const s = await treatmentShareScenario();
+  expect((await s.settle("50")).status).toBe(200);
+  const other = await s.create("other", "doctor", [
+    "clinical.read",
+    "procedures.start",
+    "billing.read",
+  ]);
+  await s.m.post(`/patient-access/${s.patient.id}/share`, {
+    commandId: randomUUID(),
+    revision: 0,
+    accountId: other.id,
+    kind: "shared",
+  });
+  expect((await other.browser.get(s.sharePath)).status).toBe(403);
+  const staff = await s.create("staff", "staff", ["billing.read"]);
+  expect((await staff.browser.get(s.sharePath)).status).toBe(403);
+  const foreign = await manager();
+  expect((await foreign.browser.get(s.sharePath)).status).toBe(404);
+  const exported = await s.m.post("/exports", {
+    commandId: randomUUID(),
+    category: "financial",
+    patientId: s.patient.id,
+    format: "json",
+  });
+  expect(exported.status).toBe(201);
+  expect(
+    JSON.stringify(
+      (await s.m.browser.get(`/api/exports/${exported.body.id}/content`)).body,
+    ),
+  ).not.toContain("remuneration");
+  const base = `/patient-access/${s.patient.id}`;
+  expect(
+    (
+      await s.m.post(`${base}/remove`, {
+        commandId: randomUUID(),
+        revision: 1,
+        accountId: s.doctor.id,
+      })
+    ).status,
+  ).toBe(200);
+  const removalId = (await s.m.browser.get(`/api${base}/history`)).body.at(
+    -1,
+  ).id;
+  expect(
+    (
+      await s.m.post(`${base}/historical`, {
+        commandId: randomUUID(),
+        revision: 2,
+        accountId: s.doctor.id,
+        removalId,
+      })
+    ).status,
+  ).toBe(200);
+  expect((await s.doctor.browser.get(s.sharePath)).status).toBe(403);
+  expect((await s.settle("20")).status).toBe(403);
+  const history = await s.doctor.browser.get(`/api/historical/${s.patient.id}`);
+  expect(history.status).toBe(200);
+  expect(
+    history.body.financial.charges.find(
+      (c: { id: string }) => c.id === s.start.id,
+    ).paidMinor,
+  ).toBe("5000");
+  expect(JSON.stringify(history.body)).not.toContain("remuneration");
+  const correction = await s.m.post(`${s.billing}/reversals`, {
+    commandId: randomUUID(),
+    settlementId: (await s.m.browser.get(`/api${s.billing}`)).body
+      .settlements[0].id,
+    reason: "Après retrait",
+  });
+  expect(correction.status).toBe(200);
+  expect(
+    (await s.doctor.browser.get(`/api/historical/${s.patient.id}`)).body,
+  ).toEqual(history.body);
+  expect((await s.m.browser.get(s.sharePath)).body.recognizedBaseMinor).toBe(
+    "0",
+  );
+});
+
+it("keeps missing and legacy treatment configuration explicit without applying a later rate", async () => {
+  const s = await visitScenario();
+  expect((await s.doctor.post(s.path, s.start)).status).toBe(200);
+  const start = (await s.doctor.browser.get(`/api${s.path}`)).body.starts[0];
+  const path = `/api/treatment/${s.patient.id}/starts/${start.id}/remuneration`;
+  expect((await s.m.browser.get(path)).body).toMatchObject({
+    status: "missing_configuration",
+    remuneration: null,
+    shareNumerator: null,
+    shareDenominator: null,
+  });
+  await s.m.post("/consultation-settings/remuneration", {
+    commandId: randomUUID(),
+    doctorId: s.doctor.id,
+    revision: 0,
+    mode: "percentage",
+    rate: "40",
+  });
+  expect((await s.m.browser.get(path)).body.status).toBe(
+    "missing_configuration",
+  );
+  // Fixture represents a pre-A3 immutable start with no snapshot property.
+  await owner.pool.query(
+    `UPDATE "ProcedureStart" SET snapshot = snapshot - 'remuneration' WHERE id = $1`,
+    [start.id],
+  );
+  expect((await s.m.browser.get(path)).body).toMatchObject({
+    status: "legacy_unsnapshotted",
+    remuneration: null,
+    shareNumerator: null,
+  });
+});
 it("books without debt then explicitly enters once with a frozen rate and no treatment plan", async () => {
   const s = await treatmentScenario();
   await s.m.post(`/accounts/${s.doctor.id}/permissions`, {

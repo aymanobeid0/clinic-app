@@ -41,6 +41,21 @@ export class TreatmentController {
       ),
     );
   };
+  remuneration: RequestHandler = async (req, res) => {
+    res.json(
+      await this.visits.remuneration(
+        req.session.actor,
+        z
+          .uuid()
+          .transform((v) => v.toLowerCase())
+          .parse(req.params.id),
+        z
+          .uuid()
+          .transform((v) => v.toLowerCase())
+          .parse(req.params.startId),
+      ),
+    );
+  };
   visitState: RequestHandler = async (req, res) => {
     res.json(
       await this.visits.state(req.session.actor, z.uuid().parse(req.params.id)),
