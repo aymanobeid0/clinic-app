@@ -2,6 +2,18 @@ import type * as C from "@clinic/contracts";
 
 // HTTP envelopes not already named by the shared contracts. No database models.
 export type DocumentationResponses = {
+  Consultation: C.Consultation;
+  Consultations: C.Consultation[];
+  ConsultationPrice: C.ConsultationPrice | null;
+  Remuneration: C.Remuneration;
+  RemunerationHistory: { history: (C.ConsultationPrice | C.Remuneration)[] };
+  ConsultationRemuneration:
+    | (C.Remuneration & {
+        recognizedBaseMinor: string;
+        shareNumerator: string;
+        shareDenominator: string;
+      })
+    | null;
   Session: { csrfToken: string };
   SignIn: { stage: C.Identity["stage"]; csrfToken: string };
   Identity: C.Identity;

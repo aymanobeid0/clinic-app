@@ -333,6 +333,18 @@ export class IdentityService {
       }),
     );
   }
+  withConsultationScope<T>(actor:Actor|undefined, patientId:string|null, action:(context:{clinicId:string;accountId:string;isManager:boolean;ownDoctor:boolean;patientIds:string[];permissions:readonly string[]},tx:import('../../database.js').ClinicTransaction)=>Promise<T>) {
+    return this.withReadyAccount(actor,(account,transaction)=>transaction.databaseTransaction(async tx=>{
+      const ownDoctor=account.kind==='doctor' && !account.isManager;
+      if(!account.isManager && !account.permissions.includes('appointments.manage') && !(account.kind==='doctor' && clinicalEligible(account,'procedures.start')))
+        throw new AppError(403,'Accès aux consultations non autorisé.');
+      const patients=new PatientAccessRepository(tx,account.clinicId);
+      const patientIds=await patients.activePatientIds(account.id);
+      if(patientId && ownDoctor && !patientIds.includes(patientId)) throw new AppError(403,'Accès patient requis.');
+      if(patientId && !await patients.exists(patientId)) throw new AppError(404,'Patient introuvable.');
+      return action({clinicId:account.clinicId,accountId:account.id,isManager:account.isManager,ownDoctor,patientIds,permissions:account.permissions},tx);
+    }));
+  }
   withClinicalPermission<T>(
     actor: Actor | undefined,
     patientId: string,

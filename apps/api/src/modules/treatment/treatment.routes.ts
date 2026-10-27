@@ -5,6 +5,7 @@ export function treatmentRoutes(c: TreatmentController) {
   r.get('/treatment/:id/visits', c.visitState);
   r.post('/treatment/:id/visits', c.startVisit);
   r.post('/treatment/:id/visits/actions', c.visitAction);
+  r.post('/treatment/:id/visits/procedures', c.addVisitProcedures);
   r.get('/treatment/:id/plans', c.plans);
   r.post('/treatment/:id/plans', c.savePlan);
   r.post('/treatment/:id/plans/lifecycle', c.lifecycle);

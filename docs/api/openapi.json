@@ -13,6 +13,9 @@
   ],
   "tags": [
     {
+      "name": "Consultations"
+    },
+    {
       "name": "Identity"
     },
     {
@@ -67,6 +70,1901 @@
     }
   ],
   "paths": {
+    "/consultation-settings/price": {
+      "get": {
+        "operationId": "get_consultation_settings_price",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "Read default consultation price",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultationPrice"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_consultation_settings_price",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "Configure default consultation price",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact configured APP_ORIGIN; local default http://localhost:4173, not necessarily the API URL."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "description": "Current session csrfToken. Refresh after login/recovery rotation; never put in shared environment exports."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultationPrice"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/consultationPriceSchema"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consultation-settings/remuneration": {
+      "post": {
+        "operationId": "post_consultation_settings_remuneration",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "Configure doctor remuneration",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact configured APP_ORIGIN; local default http://localhost:4173, not necessarily the API URL."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "description": "Current session csrfToken. Refresh after login/recovery rotation; never put in shared environment exports."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Remuneration"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/remunerationSchema"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consultation-settings/remuneration/{doctorId}": {
+      "get": {
+        "operationId": "get_consultation_settings_remuneration_doctorId",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "Read retained remuneration settings",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+        "parameters": [
+          {
+            "name": "doctorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemunerationHistory"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consultations": {
+      "get": {
+        "operationId": "get_consultations",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "List consultations for a date within current scope",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consultations"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consultations/{patientId}": {
+      "get": {
+        "operationId": "get_consultations_patientId",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "List patient consultations within current scope",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consultations"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post_consultations_patientId",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "Arrange standalone consultation without debt",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact configured APP_ORIGIN; local default http://localhost:4173, not necessarily the API URL."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "description": "Current session csrfToken. Refresh after login/recovery rotation; never put in shared environment exports."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consultation"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/bookConsultationSchema"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consultations/{patientId}/entry": {
+      "post": {
+        "operationId": "post_consultations_patientId_entry",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "Explicitly record room entry and one charge",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact configured APP_ORIGIN; local default http://localhost:4173, not necessarily the API URL."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "description": "Current session csrfToken. Refresh after login/recovery rotation; never put in shared environment exports."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consultation"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/enterConsultationSchema"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consultations/{patientId}/complete": {
+      "post": {
+        "operationId": "post_consultations_patientId_complete",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "Complete consultation independently of encounter",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact configured APP_ORIGIN; local default http://localhost:4173, not necessarily the API URL."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "description": "Current session csrfToken. Refresh after login/recovery rotation; never put in shared environment exports."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consultation"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/completeConsultationSchema"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consultations/{patientId}/{consultationId}/remuneration": {
+      "get": {
+        "operationId": "get_consultations_patientId_consultationId_remuneration",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "Read protected frozen remuneration snapshot",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+        "parameters": [
+          {
+            "name": "patientId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "consultationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultationRemuneration"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/treatment/{id}/visits/procedures": {
+      "post": {
+        "operationId": "post_treatment_id_visits_procedures",
+        "tags": [
+          "Consultations"
+        ],
+        "summary": "Start accepted procedures in the existing encounter",
+        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact configured APP_ORIGIN; local default http://localhost:4173, not necessarily the API URL."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "description": "Current session csrfToken. Refresh after login/recovery rotation; never put in shared environment exports."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Visit"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/addVisitProceduresSchema"
+              }
+            }
+          }
+        }
+      }
+    },
     "/session": {
       "get": {
         "operationId": "get_session",
@@ -24661,6 +26559,371 @@
       }
     },
     "schemas": {
+      "Consultation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "patientId": {
+            "type": "string"
+          },
+          "doctorId": {
+            "type": "string"
+          },
+          "appointmentId": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "number"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "booked"
+              },
+              {
+                "type": "string",
+                "const": "entered"
+              },
+              {
+                "type": "string",
+                "const": "completed"
+              }
+            ]
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "MRU"
+              },
+              {
+                "type": "string",
+                "const": "EUR"
+              },
+              {
+                "type": "string",
+                "const": "USD"
+              },
+              {
+                "type": "string",
+                "const": "JPY"
+              },
+              {
+                "type": "string",
+                "const": "KWD"
+              }
+            ]
+          },
+          "priceMinor": {
+            "type": "string"
+          },
+          "visitId": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "enteredAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "at": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "patientId",
+          "doctorId",
+          "appointmentId",
+          "date",
+          "revision",
+          "status",
+          "currency",
+          "priceMinor",
+          "visitId",
+          "enteredAt",
+          "completedAt",
+          "at",
+          "actorId"
+        ]
+      },
+      "Consultations": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Consultation"
+        }
+      },
+      "ConsultationPrice": {
+        "anyOf": [
+          {
+            "type": "null"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "revision": {
+                "type": "number"
+              },
+              "currency": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "const": "MRU"
+                  },
+                  {
+                    "type": "string",
+                    "const": "EUR"
+                  },
+                  {
+                    "type": "string",
+                    "const": "USD"
+                  },
+                  {
+                    "type": "string",
+                    "const": "JPY"
+                  },
+                  {
+                    "type": "string",
+                    "const": "KWD"
+                  }
+                ]
+              },
+              "priceMinor": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "actorId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "revision",
+              "currency",
+              "priceMinor",
+              "at",
+              "actorId"
+            ]
+          }
+        ]
+      },
+      "Remuneration": {
+        "type": "object",
+        "properties": {
+          "doctorId": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "number"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "salary"
+              },
+              {
+                "type": "string",
+                "const": "percentage"
+              }
+            ]
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "at": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "doctorId",
+          "revision",
+          "mode",
+          "rate",
+          "at",
+          "actorId"
+        ]
+      },
+      "RemunerationHistory": {
+        "type": "object",
+        "properties": {
+          "history": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Remuneration"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "revision": {
+                      "type": "number"
+                    },
+                    "currency": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "MRU"
+                        },
+                        {
+                          "type": "string",
+                          "const": "EUR"
+                        },
+                        {
+                          "type": "string",
+                          "const": "USD"
+                        },
+                        {
+                          "type": "string",
+                          "const": "JPY"
+                        },
+                        {
+                          "type": "string",
+                          "const": "KWD"
+                        }
+                      ]
+                    },
+                    "priceMinor": {
+                      "type": "string"
+                    },
+                    "at": {
+                      "type": "string"
+                    },
+                    "actorId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "revision",
+                    "currency",
+                    "priceMinor",
+                    "at",
+                    "actorId"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "history"
+        ]
+      },
+      "ConsultationRemuneration": {
+        "anyOf": [
+          {
+            "type": "null"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "doctorId": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "number"
+              },
+              "mode": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "const": "salary"
+                  },
+                  {
+                    "type": "string",
+                    "const": "percentage"
+                  }
+                ]
+              },
+              "rate": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "at": {
+                "type": "string"
+              },
+              "actorId": {
+                "type": "string"
+              },
+              "recognizedBaseMinor": {
+                "type": "string"
+              },
+              "shareNumerator": {
+                "type": "string"
+              },
+              "shareDenominator": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "doctorId",
+              "revision",
+              "mode",
+              "rate",
+              "at",
+              "actorId",
+              "recognizedBaseMinor",
+              "shareNumerator",
+              "shareDenominator"
+            ]
+          }
+        ]
+      },
       "Session": {
         "type": "object",
         "properties": {
@@ -25069,6 +27332,105 @@
       "HistoricalSnapshot": {
         "type": "object",
         "properties": {
+          "consultations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "booked"
+                    },
+                    {
+                      "type": "string",
+                      "const": "entered"
+                    },
+                    {
+                      "type": "string",
+                      "const": "completed"
+                    }
+                  ]
+                },
+                "at": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "number"
+                },
+                "date": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "patientId": {
+                  "type": "string"
+                },
+                "doctorId": {
+                  "type": "string"
+                },
+                "appointmentId": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "visitId": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "enteredAt": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "completedAt": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "actorId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "status",
+                "at",
+                "revision",
+                "date",
+                "id",
+                "patientId",
+                "doctorId",
+                "appointmentId",
+                "visitId",
+                "enteredAt",
+                "completedAt",
+                "actorId"
+              ]
+            }
+          },
           "patient": {
             "$ref": "#/components/schemas/Patient"
           },
@@ -25474,6 +27836,10 @@
                     },
                     {
                       "type": "string",
+                      "const": "completed"
+                    },
+                    {
+                      "type": "string",
                       "const": "presented"
                     },
                     {
@@ -25483,10 +27849,6 @@
                     {
                       "type": "string",
                       "const": "in_progress"
-                    },
-                    {
-                      "type": "string",
-                      "const": "completed"
                     },
                     {
                       "type": "string",
@@ -25763,13 +28125,13 @@
                 "patientId": {
                   "type": "string"
                 },
+                "visitId": {
+                  "type": "string"
+                },
                 "planId": {
                   "type": "string"
                 },
                 "itemId": {
-                  "type": "string"
-                },
-                "visitId": {
                   "type": "string"
                 },
                 "acceptedRevision": {
@@ -25786,9 +28148,9 @@
                 "at",
                 "id",
                 "patientId",
+                "visitId",
                 "planId",
                 "itemId",
-                "visitId",
                 "acceptedRevision",
                 "performedBy",
                 "performedByName"
@@ -27738,15 +30100,15 @@
             "anyOf": [
               {
                 "type": "string",
+                "const": "booked"
+              },
+              {
+                "type": "string",
                 "const": "completed"
               },
               {
                 "type": "string",
                 "const": "cancelled"
-              },
-              {
-                "type": "string",
-                "const": "booked"
               },
               {
                 "type": "string",
@@ -28110,6 +30472,10 @@
               },
               {
                 "type": "string",
+                "const": "completed"
+              },
+              {
+                "type": "string",
                 "const": "presented"
               },
               {
@@ -28119,10 +30485,6 @@
               {
                 "type": "string",
                 "const": "in_progress"
-              },
-              {
-                "type": "string",
-                "const": "completed"
               },
               {
                 "type": "string",
@@ -28449,6 +30811,10 @@
                     },
                     {
                       "type": "string",
+                      "const": "completed"
+                    },
+                    {
+                      "type": "string",
                       "const": "presented"
                     },
                     {
@@ -28458,10 +30824,6 @@
                     {
                       "type": "string",
                       "const": "in_progress"
-                    },
-                    {
-                      "type": "string",
-                      "const": "completed"
                     },
                     {
                       "type": "string",
@@ -29213,9 +31575,38 @@
                   "type": "string"
                 },
                 "planId": {
-                  "type": "string"
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 },
                 "itemId": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "sourceKind": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "const": "procedure"
+                    },
+                    {
+                      "type": "string",
+                      "const": "consultation"
+                    }
+                  ]
+                },
+                "consultationId": {
                   "type": "string"
                 },
                 "currency": {
@@ -31995,6 +34386,10 @@
               },
               {
                 "type": "string",
+                "const": "completed"
+              },
+              {
+                "type": "string",
                 "const": "presented"
               },
               {
@@ -32004,10 +34399,6 @@
               {
                 "type": "string",
                 "const": "in_progress"
-              },
-              {
-                "type": "string",
-                "const": "completed"
               },
               {
                 "type": "string",
@@ -32569,6 +34960,259 @@
         "required": [
           "error"
         ]
+      },
+      "consultationPriceSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "MRU",
+              "EUR",
+              "USD",
+              "JPY",
+              "KWD"
+            ]
+          },
+          "price": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,3})?$"
+          }
+        },
+        "required": [
+          "commandId",
+          "revision",
+          "currency",
+          "price"
+        ],
+        "additionalProperties": false
+      },
+      "remunerationSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "doctorId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "salary",
+              "percentage"
+            ]
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?:100|[0-9]{1,2})(?:\\.[0-9]{1,6})?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "commandId",
+          "doctorId",
+          "revision",
+          "mode",
+          "rate"
+        ],
+        "additionalProperties": false
+      },
+      "bookConsultationSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "doctorId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "appointmentId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "price": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,3})?$"
+          }
+        },
+        "required": [
+          "commandId",
+          "id",
+          "doctorId",
+          "appointmentId",
+          "date"
+        ],
+        "additionalProperties": false
+      },
+      "enterConsultationSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "revision": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "visitId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "commandId",
+          "id",
+          "revision",
+          "visitId"
+        ],
+        "additionalProperties": false
+      },
+      "completeConsultationSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "revision": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "commandId",
+          "id",
+          "revision"
+        ],
+        "additionalProperties": false
+      },
+      "addVisitProceduresSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "revision": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "procedures": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "planId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "itemId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "planRevision": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "planId",
+                "itemId",
+                "planRevision"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "commandId",
+          "id",
+          "revision",
+          "procedures"
+        ],
+        "additionalProperties": false
       },
       "signInSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",

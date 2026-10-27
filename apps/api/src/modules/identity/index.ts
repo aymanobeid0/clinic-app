@@ -33,6 +33,7 @@ export function createIdentityAccess(database: Database, now: () => number) {
     withAssigner: service.withAssigner.bind(service),
     withClinicalPatients: service.withClinicalPatients.bind(service),
     withClinicalPermission: service.withClinicalPermission.bind(service),
+    withConsultationScope: service.withConsultationScope.bind(service),
   };
 }
 export type IdentityAccess = ReturnType<typeof createIdentityAccess>;

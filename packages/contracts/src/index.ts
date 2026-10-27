@@ -286,6 +286,7 @@ export type HistoricalPlan = Pick<TreatmentVersion,'id'|'patientId'|'revision'|'
   items:Pick<TreatmentItem,'id'|'procedureId'|'catalogRevision'|'name'|'durationMinutes'|'scope'|'teeth'|'chartCategory'>[];
 };
 export type HistoricalSnapshot = {
+  consultations?:Omit<Consultation,'priceMinor'|'currency'>[];
   patient: Patient;
   cutoff: string;
   clinical: {kind:string; versions:ClinicalVersion<ClinicalContent | VisitNoteContent | PrescriptionContent>[]}[];
@@ -350,7 +351,7 @@ export const schedulingSettingsSchema = z
       .max(100)
       .refine(
         (v) => new Set(v).size === v.length,
-        "Les noms des fauteuils doivent être distincts.",
+        "Les noms des fauteuils doivent Ãªtre distincts.",
       ),
   })
   .strict();
@@ -497,7 +498,7 @@ export const chartContentSchema = z
         if (c.finding === 'other' && !c.note?.trim())
           add('Une note est requise pour Autre.');
         if (c.finding === 'sound' && c.surfaces.length)
-          add('Sain concerne la dent entière.');
+          add('Sain concerne la dent entiÃ¨re.');
         if (new Set(c.surfaces).size !== c.surfaces.length)
           add('Surface en double.');
         if (
@@ -601,7 +602,7 @@ export const treatmentItemSchema = z
     )
       c.addIssue({
         code: 'custom',
-        message: 'Sélection FDI incompatible avec la portée.',
+        message: 'SÃ©lection FDI incompatible avec la portÃ©e.',
       });
   });
 export const treatmentPlanSchema = z
@@ -710,6 +711,115 @@ export const startVisitSchema = z
   })
   .strict();
 export type VisitSelection = z.infer<typeof visitSelectionSchema>;
+export const addVisitProceduresSchema = z
+  .object({
+    commandId: z.uuid(),
+    id: z.uuid(),
+    revision: z.number().int().positive(),
+    procedures: z.array(visitSelectionSchema).min(1).max(100),
+  })
+  .strict();
+export const consultationPriceSchema = z
+  .object({
+    commandId: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    currency: currencyCodeSchema,
+    price: exactAmountSchema,
+  })
+  .strict();
+export const remunerationSchema = z
+  .object({
+    commandId: z.uuid(),
+    doctorId: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    mode: z.enum(["salary", "percentage"]),
+    rate: z
+      .string()
+      .regex(/^(?:100|[0-9]{1,2})(?:\.[0-9]{1,6})?$/)
+      .nullable(),
+  })
+  .strict()
+  .refine(
+    (v) =>
+      v.mode === "salary"
+        ? v.rate === null
+        : v.rate !== null && Number(v.rate) <= 100,
+    {
+      message:
+        "Pourcentage exact entre 0 et 100 requis, ou taux nul pour un salaire.",
+      path: ["rate"],
+    },
+  );
+export type Remuneration = {
+  doctorId: string;
+  revision: number;
+  mode: "salary" | "percentage";
+  rate: string | null;
+  at: string;
+  actorId: string;
+};
+export type ConsultationPrice = {
+  revision: number;
+  currency: keyof typeof verifiedCurrencies;
+  priceMinor: string;
+  at: string;
+  actorId: string;
+};
+export const bookConsultationSchema = z
+  .object({
+    commandId: z.uuid(),
+    id: z.uuid(),
+    doctorId: z.uuid(),
+    appointmentId: z.uuid().nullable(),
+    date: z.iso.date(),
+    price: exactAmountSchema.optional(),
+  })
+  .strict();
+export const enterConsultationSchema = z
+  .object({
+    commandId: z.uuid(),
+    id: z.uuid(),
+    revision: z.number().int().positive(),
+    visitId: z.uuid(),
+  })
+  .strict();
+export const completeConsultationSchema = z
+  .object({
+    commandId: z.uuid(),
+    id: z.uuid(),
+    revision: z.number().int().positive(),
+  })
+  .strict();
+export type Consultation = {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  appointmentId: string | null;
+  date: string;
+  revision: number;
+  status: "booked" | "entered" | "completed";
+  currency: keyof typeof verifiedCurrencies;
+  priceMinor: string;
+  visitId: string | null;
+  enteredAt: string | null;
+  completedAt: string | null;
+  at: string;
+  actorId: string;
+};
+// Rate snapshots remain in the protected source record, never ordinary staff billing outputs.
+export type ConsultationRecord = Consultation & {
+  remuneration: Remuneration | null;
+};
+export type ConsultationCharge = {
+  sourceKind: "consultation";
+  id: string;
+  consultationId: string;
+  patientId: string;
+  performedBy: string;
+  currency: string;
+  agreedMinor: string;
+  at: string;
+};
 export type Visit = {
   id: string;
   patientId: string;
@@ -922,8 +1032,10 @@ export type BillingWorkspace = {
   deposits: {settlementId: string; currency: string; amountMinor: string; availableMinor: string}[];
   charges: {
     id: string;
-    planId: string;
-    itemId: string;
+    planId: string | null;
+    itemId: string | null;
+    sourceKind?: 'procedure' | 'consultation';
+    consultationId?: string;
     currency: string;
     performedBy: string;
     completedAt: string | null;

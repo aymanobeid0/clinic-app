@@ -83,6 +83,8 @@ function parameters(operation: Operation): Parameter[] {
   }
   if (p === "/appointments/choices")
     result.push(query("q", { type: "string", maxLength: 120, default: "" }));
+  if (p === "/consultations")
+    result.push(query("date", { type: "string", format: "date" }, true));
   if (p === "/medications" && operation.method === "get")
     result.push(
       query("q", { type: "string", maxLength: 160, default: "" }),
@@ -138,8 +140,20 @@ export function buildOpenApi() {
       type: "object",
       properties: {
         error: { type: "string" },
-        fields: { type: "object", maxProperties: 20, propertyNames: { maxLength: 160 }, additionalProperties: { type: "string", maxLength: 256 }, description: "Optional safe known field paths (dot notation, zero-based array indices) and French correction guidance. Never submitted values." },
-        code: { type: "string", enum: ["export_scope_changed"], description: "Only export authorization-stamp change: recreate through current server authorization; genuine denial remains blocked." },
+        fields: {
+          type: "object",
+          maxProperties: 20,
+          propertyNames: { maxLength: 160 },
+          additionalProperties: { type: "string", maxLength: 256 },
+          description:
+            "Optional safe known field paths (dot notation, zero-based array indices) and French correction guidance. Never submitted values.",
+        },
+        code: {
+          type: "string",
+          enum: ["export_scope_changed"],
+          description:
+            "Only export authorization-stamp change: recreate through current server authorization; genuine denial remains blocked.",
+        },
       },
       required: ["error"],
     },
@@ -258,7 +272,16 @@ export function buildOpenApi() {
         content: {
           "application/json": {
             schema: ref("Error"),
-            example: code === "400" ? { error: "Vérifiez les champs saisis.", fields: { password: "Saisissez au moins 12 caractères." } } : { error: "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel." },
+            example:
+              code === "400"
+                ? {
+                    error: "Vérifiez les champs saisis.",
+                    fields: { password: "Saisissez au moins 12 caractères." },
+                  }
+                : {
+                    error:
+                      "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel.",
+                  },
           },
         },
       };

@@ -1,4 +1,4 @@
-import { projectBilling } from './billing.projection.js';
+import { projectBilling } from "./billing.projection.js";
 import { AppError } from "../../errors/app-error.js";
 import { randomUUID } from "node:crypto";
 import type { z } from "zod";
@@ -102,6 +102,17 @@ export class BillingService {
           credits: [],
         };
         await perform(c, tx, state, value);
+        if (
+          value.chargeIds.some((id) =>
+            state.charges.some(
+              (ch) => ch.id === id && ch.sourceKind === "consultation",
+            ),
+          )
+        )
+          throw new AppError(
+            409,
+            "Les corrections de consultation seront disponibles avec le règlement dédié.",
+          );
         const invoices = await r.invoices(patientId);
         value.invoiceIds = invoices
           .filter((i) =>
@@ -156,7 +167,10 @@ export class BillingService {
     const charge = state.charges.find((ch) => ch.id === data.chargeId);
     if (!charge) throw new AppError(404, "Charge introuvable.");
     if (charge.revision !== data.revision)
-      throw new AppError(409, "Cette charge a changé. Actualisez-la et vérifiez votre saisie avant de confirmer à nouveau.");
+      throw new AppError(
+        409,
+        "Cette charge a changé. Actualisez-la et vérifiez votre saisie avant de confirmer à nouveau.",
+      );
     const plans = treatmentBilling(tx, c.clinicId);
     const currency = await plans.currency(charge.currency);
     const target = exactMinor(data.finalCharge, currency!.precision);
@@ -183,9 +197,11 @@ export class BillingService {
       value.credits.push(...released.credits);
       value.settlementIds.push(...released.releases.map((r) => r.settlementId));
     }
-    const plan = (await plans.versions(state.patientId, charge.planId))
-      .filter((v) => v.acceptance)
-      .at(-1);
+    const plan = charge.planId
+      ? (await plans.versions(state.patientId, charge.planId))
+          .filter((v) => v.acceptance)
+          .at(-1)
+      : undefined;
     await new BillingRepository(tx, c.clinicId).adjust(
       state.patientId,
       charge.currency,
@@ -428,7 +444,11 @@ export class BillingService {
       async (c, tx, state, v) => {
         if (!c.canCancelClinical)
           throw new AppError(403, "Annulation clinique autorisée requise.");
-        const all = await projectBilling(tx, { ...c, ownWork: false }, patientId);
+        const all = await projectBilling(
+          tx,
+          { ...c, ownWork: false },
+          patientId,
+        );
         const charges = all.charges.filter((ch) => ch.planId === data.planId);
         if (
           !charges.length ||
@@ -523,6 +543,15 @@ export class BillingService {
         const items: Invoice["items"] = data.chargeIds.map((id) => {
           const charge = state.charges.find((ch) => ch.id === id);
           if (!charge) throw new AppError(404, "Charge introuvable.");
+          if (
+            !charge.planId ||
+            !charge.itemId ||
+            charge.sourceKind === "consultation"
+          )
+            throw new AppError(
+              409,
+              "La facture est réservée aux actes de traitement.",
+            );
           if (
             !charge.completedAt ||
             charge.dueMinor !== "0" ||
@@ -626,7 +655,7 @@ export class BillingService {
             const invoice = invoices.find((v) =>
               v.items.some((i) => i.chargeId === ch.id),
             );
-            if (!ch.completedAt)
+            if (!ch.completedAt || !ch.itemId)
               throw new AppError(409, "Acte terminé requis.");
             return {
               chargeId: ch.id,
@@ -803,6 +832,11 @@ export class BillingService {
           (a) => {
             const charge = state.charges.find((ch) => ch.id === a.chargeId);
             if (!charge) throw new AppError(404, "Charge introuvable.");
+            if (charge.sourceKind === "consultation")
+              throw new AppError(
+                409,
+                "Utilisez le règlement dédié de consultation (prochaine étape).",
+              );
             if (charge.currency !== data.currency)
               throw new AppError(400, "Devise différente.");
             const fresh = exactMinor(a.newMoney, currency.precision),
@@ -960,6 +994,11 @@ export class BillingService {
         const linkedInvoices = (await r.invoices(patientId)).filter((v) =>
           v.items.some((i) => i.chargeId === charge.id),
         );
+        if (!charge.planId || charge.sourceKind === "consultation")
+          throw new AppError(
+            409,
+            "La réconciliation du plan ne s’applique pas à une consultation.",
+          );
         const versions = await plans.versions(patientId, charge.planId),
           plan = versions.at(-1);
         if (

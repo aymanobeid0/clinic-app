@@ -12,6 +12,7 @@ import type {
   Visit,
   ProcedureStart,
   ProcedureCompletion,
+  addVisitProceduresSchema,
 } from '@clinic/contracts';
 import type { Actor, IdentityAccess } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
@@ -128,7 +129,9 @@ export class VisitService {
           await r.complete(event);
           const plan = (await plans.versions(patientId, data.planId)).at(-1)!;
           if (
-            plan.acceptance && ['accepted','in_progress'].includes(plan.status) && plan.items.every(
+            plan.acceptance &&
+            ['accepted', 'in_progress'].includes(plan.status) &&
+            plan.items.every(
               (i) =>
                 i.id === data.itemId ||
                 state.completions.some(
@@ -151,13 +154,39 @@ export class VisitService {
       },
     );
     this.updates.publish(result.clinicId);
-    if(data.action==='complete')this.updates.publish(result.clinicId,'suggestions:'+patientId);
+    if (data.action === 'complete')
+      this.updates.publish(result.clinicId, 'suggestions:' + patientId);
     return result.value;
   }
   async start(
     actor: Actor | undefined,
     patientId: string,
     data: z.infer<typeof startVisitSchema>,
+  ) {
+    return this.startOrAdd(actor, patientId, data);
+  }
+  async add(
+    actor: Actor | undefined,
+    patientId: string,
+    data: z.infer<typeof addVisitProceduresSchema>,
+  ) {
+    return this.startOrAdd(
+      actor,
+      patientId,
+      {
+        commandId: data.commandId,
+        id: data.id,
+        appointmentId: null,
+        procedures: data.procedures,
+      },
+      data.revision,
+    );
+  }
+  private async startOrAdd(
+    actor: Actor | undefined,
+    patientId: string,
+    data: z.infer<typeof startVisitSchema>,
+    addRevision?: number,
   ) {
     const result = await this.identity.withClinicalPermission(
       actor,
@@ -171,7 +200,9 @@ export class VisitService {
         await plans.lock();
         const replay = await plans.replay(
           data.commandId,
-          ['visit', patientId, data],
+          addRevision === undefined
+            ? ['visit', patientId, data]
+            : ['visit-add', patientId, data, addRevision],
           c.accountId,
         );
         if (replay.receipt) {
@@ -183,22 +214,42 @@ export class VisitService {
         }
         if (!(await r.available(patientId)))
           throw new AppError(409, 'Patient indisponible ou archivé.');
-        if (await r.existing(data.id))
+        const existing = await r.existing(data.id);
+        const current = existing?.snapshot as unknown as Visit | undefined;
+        if (
+          addRevision !== undefined &&
+          (!current ||
+            current.patientId !== patientId ||
+            current.doctorId !== c.accountId)
+        )
+          throw new AppError(403, 'Visite non autorisée.');
+        if (
+          addRevision !== undefined &&
+          (current!.revision !== addRevision || current!.status !== 'draft')
+        )
+          throw new AppError(409, 'La visite a changé. Rechargez les soins.');
+        if (existing && addRevision === undefined)
           throw new AppError(409, 'Identifiant de visite déjà utilisé.');
         const at = new Date(this.now()).toISOString(),
           name = await plans.name(c.accountId);
-        const visit: Visit = {
-          id: data.id,
-          patientId,
-          doctorId: c.accountId,
-          doctorName: name,
-          appointmentId: data.appointmentId,
-          revision: 1,
-          status: 'draft',
-          startedAt: at,
-          procedures: [],
-        };
-        if (data.appointmentId)
+        const visit: Visit = current
+          ? {
+              ...current,
+              revision: current.revision + 1,
+              procedures: [...current.procedures],
+            }
+          : {
+              id: data.id,
+              patientId,
+              doctorId: c.accountId,
+              doctorName: name,
+              appointmentId: data.appointmentId,
+              revision: 1,
+              status: 'draft',
+              startedAt: at,
+              procedures: [],
+            };
+        if (data.appointmentId && addRevision === undefined)
           await transitionVisitAppointment(
             tx,
             c.clinicId,
@@ -211,7 +262,10 @@ export class VisitService {
         const state = await r.state(patientId);
         if (
           state.visits.some(
-            (v) => v.doctorId === c.accountId && v.status === 'draft',
+            (v) =>
+              v.doctorId === c.accountId &&
+              v.status === 'draft' &&
+              (addRevision === undefined || v.id !== data.id),
           )
         )
           throw new AppError(
@@ -229,6 +283,13 @@ export class VisitService {
           if (seen.has(key))
             throw new AppError(400, 'Acte sélectionné en double.');
           seen.add(key);
+          if (
+            visit.procedures.some(
+              (p) =>
+                p.planId === selection.planId && p.itemId === selection.itemId,
+            )
+          )
+            throw new AppError(409, 'Acte déjà sélectionné dans cette visite.');
           const versions = await plans.versions(patientId, selection.planId),
             plan = versions.at(-1);
           if (
@@ -237,10 +298,7 @@ export class VisitService {
             !['accepted', 'in_progress'].includes(plan.status) ||
             plan.revision !== selection.planRevision
           )
-            throw new AppError(
-              409,
-              'Relisez la version acceptée du plan.',
-            );
+            throw new AppError(409, 'Relisez la version acceptée du plan.');
           if (
             state.completions.some(
               (v) => v.planId === plan.id && v.itemId === selection.itemId,
@@ -267,7 +325,8 @@ export class VisitService {
               visitId: visit.id,
               acceptedRevision: versions.find(
                 (v) =>
-                  v.acceptance?.proposalRevision === plan.acceptance!.proposalRevision &&
+                  v.acceptance?.proposalRevision ===
+                    plan.acceptance!.proposalRevision &&
                   v.acceptance?.confirmedAt === plan.acceptance!.confirmedAt,
               )!.revision,
               acceptance: plan.acceptance,
@@ -288,7 +347,8 @@ export class VisitService {
             if (plan.status === 'accepted') changed.set(plan.id, versions);
           }
         }
-        await r.create(visit);
+        if (addRevision === undefined) await r.create(visit);
+        else await r.update(visit);
         // This immutable fact and the participating billing operation must share tx (#20).
         for (const event of events)
           await recordProcedureStart(tx, c.clinicId, event);

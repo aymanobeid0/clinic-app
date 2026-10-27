@@ -3,6 +3,7 @@ import type { RequestHandler } from 'express';
 import { z } from 'zod';
 import {
   startVisitSchema,
+  addVisitProceduresSchema,
   visitActionSchema,
   treatmentPlanSchema,
   planLifecycleSchema,
@@ -19,6 +20,15 @@ export class TreatmentController {
     readonly updates: ClinicUpdates,
     readonly now: () => number,
   ) {}
+  addVisitProcedures: RequestHandler = async (req, res) => {
+    res.json(
+      await this.visits.add(
+        req.session.actor,
+        z.uuid().parse(req.params.id),
+        addVisitProceduresSchema.parse(req.body),
+      ),
+    );
+  };
   visitAction: RequestHandler = async (req, res) => {
     res.json(
       await this.visits.action(

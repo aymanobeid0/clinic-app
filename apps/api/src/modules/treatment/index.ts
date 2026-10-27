@@ -1,6 +1,10 @@
 import { VisitRepository } from './visit.repository.js';
 import { cancelChargedPlan } from './cancel-charged-plan.js';
 import { VisitService } from './visit.service.js';
+import {ConsultationService} from './consultation.service.js';
+import {ConsultationRepository} from './consultation.repository.js';
+import {consultationRoutes} from './consultation.routes.js';
+import {Router} from 'express';
 import { TreatmentRepository } from './treatment.repository.js';
 import type { IdentityAccess } from '../identity/index.js';
 import type { ClinicUpdates } from '../../clinic-updates.js';
@@ -12,14 +16,14 @@ export function createTreatmentRoutes(
   updates: ClinicUpdates,
   now: () => number,
 ) {
-  return treatmentRoutes(
+  return Router().use(consultationRoutes(new ConsultationService(identity,updates,now))).use(treatmentRoutes(
     new TreatmentController(
       new TreatmentService(identity, updates, now),
       new VisitService(identity, updates, now),
       updates,
       now,
     ),
-  );
+  ));
 }
 // Public scheduling projection deliberately excludes prices and patient content.
 export async function procedureDurations(
@@ -95,6 +99,7 @@ export async function captureTreatment(tx:import('../../database.js').ClinicTran
  const plans=await new TreatmentRepository(tx,clinicId).versions(patientId);
  const state=await new VisitRepository(tx,clinicId).state(patientId);
  return {
+  consultations:(await new ConsultationRepository(tx,clinicId).current(patientId)).map(({priceMinor:_,currency:__,remuneration:___,...v})=>v),
   plans:plans.map(p=>({id:p.id,patientId:p.patientId,revision:p.revision,title:p.title,status:p.status,notes:p.notes,cancellation:p.cancellation,recordedAt:p.recordedAt,authorId:p.authorId,authorName:p.authorName,
     evidence:p.evidence?safeEvidence(p.evidence,attachments):undefined,
     acceptance:p.acceptance?safeEvidence(p.acceptance,attachments):undefined,

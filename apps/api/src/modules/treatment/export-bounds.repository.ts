@@ -7,6 +7,7 @@ export async function assertExportBound(
   patientId: string,
 ) {
   const counts = await Promise.all([
+    tx.consultationRevision.count({where:{clinicId,patientId}}),
     tx.treatmentPlanRevision.count({ where: { clinicId, patientId } }),
     tx.treatmentVisit.count({ where: { clinicId, patientId } }),
     tx.procedureStart.count({ where: { clinicId, patientId } }),
