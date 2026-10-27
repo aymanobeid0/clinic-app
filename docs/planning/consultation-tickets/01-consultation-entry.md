@@ -1,4 +1,4 @@
-# A1 â€” Record standalone consultation entry and continue care
+# A1 — Record standalone consultation entry and continue care
 
 Status: owner-approved and published 2026-10-27. A1 execution explicitly authorized; dependent stages require prerequisite human-approved merge.
 
@@ -24,7 +24,7 @@ An authorized user can arrange a standalone consultation for an existing or newl
 
 ## Blocked by
 
-- #51 completed backend evidence gate. Decision prerequisites #2â€“#6 are closed; relevant approved decisions remain binding.
+- #51 completed backend evidence gate. Decision prerequisites #2–#6 are closed; relevant approved decisions remain binding.
 
 ## Execution boundary
 

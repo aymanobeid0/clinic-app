@@ -2,6 +2,7 @@ import { VisitRepository } from './visit.repository.js';
 import { cancelChargedPlan } from './cancel-charged-plan.js';
 import { VisitService } from './visit.service.js';
 import {ConsultationService} from './consultation.service.js';
+import {ConsultationController} from './consultation.controller.js';
 import {ConsultationRepository} from './consultation.repository.js';
 import {consultationRoutes} from './consultation.routes.js';
 import {Router} from 'express';
@@ -16,7 +17,7 @@ export function createTreatmentRoutes(
   updates: ClinicUpdates,
   now: () => number,
 ) {
-  return Router().use(consultationRoutes(new ConsultationService(identity,updates,now))).use(treatmentRoutes(
+  return Router().use(consultationRoutes(new ConsultationController(new ConsultationService(identity,updates,now)))).use(treatmentRoutes(
     new TreatmentController(
       new TreatmentService(identity, updates, now),
       new VisitService(identity, updates, now),

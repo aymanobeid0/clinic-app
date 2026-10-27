@@ -23,7 +23,7 @@ export function createProcedureCharge(
   return new BillingRepository(tx, clinicId).charge(event);
 }
 export async function createConsultationCharge(tx:ClinicTransaction,clinicId:string,event:import('@clinic/contracts').ConsultationCharge) {
- await tx.billingEntry.create({data:{id:event.id,clinicId,patientId:event.patientId,kind:'charge',sourceId:event.consultationId,performedBy:event.performedBy,currency:event.currency,amountMinor:event.agreedMinor,snapshot:event}});
+ await new BillingRepository(tx,clinicId).consultationCharge(event);
 }
 export { projectBilling as captureBilling } from './billing.projection.js';
 export async function captureOwnInvoices(tx:ClinicTransaction,clinicId:string,patientId:string,accountId:string) {

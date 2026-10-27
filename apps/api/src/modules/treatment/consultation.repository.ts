@@ -1,11 +1,32 @@
 import type {
-  ConsultationRecord,
+  Consultation,
   ConsultationPrice,
   Remuneration,
 } from "@clinic/contracts";
 import type { ClinicTransaction } from "../../database.js";
 
+export type ConsultationRecord = Omit<
+  Consultation,
+  "priceMinor" | "currency"
+> & {
+  priceMinor: string;
+  currency: ConsultationPrice["currency"];
+  remuneration: Remuneration | null;
+};
+
 export class ConsultationRepository {
+  activeDoctor(id: string) {
+    return this.tx.account.findFirst({
+      where: {
+        clinicId: this.clinicId,
+        id,
+        kind: "doctor",
+        disabled: false,
+        historicalOnly: false,
+      },
+      select: { id: true },
+    });
+  }
   constructor(
     readonly tx: ClinicTransaction,
     readonly clinicId: string,

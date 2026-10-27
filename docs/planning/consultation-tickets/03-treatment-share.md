@@ -1,4 +1,4 @@
-# A3 â€” Recognize settled treatment income at the doctor's frozen rate
+# A3 — Recognize settled treatment income at the doctor's frozen rate
 
 Status: owner-approved and published 2026-10-27. A1 execution explicitly authorized; dependent stages require prerequisite human-approved merge.
 
@@ -22,8 +22,8 @@ The manager and concerned doctor can inspect the percentage-based doctor's own t
 
 ## Blocked by
 
-- A1 â€” merged remuneration configuration and start/entry snapshot foundation.
-- A2 â€” merged common source-linked share output and correction behavior reused by treatment.
+- #104 — merged remuneration configuration and start/entry snapshot foundation.
+- #105 — merged common source-linked share output and correction behavior reused by treatment.
 
 ## Execution boundary
 

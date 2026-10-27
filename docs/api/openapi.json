@@ -26675,8 +26675,6 @@
           "date",
           "revision",
           "status",
-          "currency",
-          "priceMinor",
           "visitId",
           "enteredAt",
           "completedAt",
@@ -26800,9 +26798,6 @@
             "items": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/Remuneration"
-                },
-                {
                   "type": "object",
                   "properties": {
                     "revision": {
@@ -26849,6 +26844,9 @@
                     "at",
                     "actorId"
                   ]
+                },
+                {
+                  "$ref": "#/components/schemas/Remuneration"
                 }
               ]
             }

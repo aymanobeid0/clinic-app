@@ -1,4 +1,4 @@
-# A2 â€” Receive consultation payment and recognize its reserved share
+# A2 — Receive consultation payment and recognize its reserved share
 
 Status: owner-approved and published 2026-10-27. A1 execution explicitly authorized; dependent stages require prerequisite human-approved merge.
 
@@ -24,7 +24,7 @@ Record actual full consultation payment before or after room entry using the nor
 
 ## Blocked by
 
-- A1 â€” merged standalone consultation identity, room entry, source projection and remuneration configuration/snapshot.
+- #104 — merged standalone consultation identity, room entry, source projection and remuneration configuration/snapshot.
 
 ## Execution boundary
 

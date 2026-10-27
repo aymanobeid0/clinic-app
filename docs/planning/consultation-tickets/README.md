@@ -9,11 +9,11 @@
 3. [A3 settled treatment share](03-treatment-share.md), after merged A1/A2; reuses their configuration and source-linked share/correction output.
 4. [B frontend workflows](04-frontend-logic.md), after merged A2/A3 and completed #59.
 
-The owner's layer order overrides the skill's default inclusion of UI in every slice. Each backend slice is independently verifiable through authenticated HTTP/persistence. A1 intentionally delivers the unpaid path; A2 delivers pre-entry payment without exposing an unfinished product UI between stages. No ticket is a silent expansion/reopening of #52â€“#59. Dependent implementation waits for human-approved prerequisite merge; current owner authorization covers execution once those gates are met.
+The owner's layer order overrides the skill's default inclusion of UI in every slice. Each backend slice is independently verifiable through authenticated HTTP/persistence. A1 intentionally delivers the unpaid path; A2 delivers pre-entry payment without exposing an unfinished product UI between stages. No ticket is a silent expansion/reopening of #52–#59. Dependent implementation waits for human-approved prerequisite merge; current owner authorization covers execution once those gates are met.
 
 ## Current service evidence
 
-Direct GitHub reads on2026-10-27: #2â€“#6 CLOSED with current criteria read, #51 CLOSED, #59 CLOSED. Their current bodies retain approved decision/test/architecture references. Owner's confirmed PR101/103 merges are accepted without new merge checks. Existing #51 and #59 detailed implementation/review reports remain evidence pointers, not tests rerun by this preparation.
+Direct GitHub reads on2026-10-27: #2–#6 CLOSED with current criteria read, #51 CLOSED, #59 CLOSED. Their current bodies retain approved decision/test/architecture references. Owner's confirmed PR101/103 merges are accepted without new merge checks. Existing #51 and #59 detailed implementation/review reports remain evidence pointers, not tests rerun by this preparation.
 
 Current native blocked-by edges read directly:
 
@@ -29,7 +29,7 @@ Current native blocked-by edges read directly:
 | #73 | #67, #68, #70, #72 |
 | #74 | #60 |
 | #75 | #63, #64, #66, #67, #70, #74 |
-| #76 | #61â€“#75 |
+| #76 | #61–#75 |
 
 All listed UI issues are OPEN and project Backlog. #51 project Done. #59 project was stale Review; synchronized to Done using the owner's prior merged acceptance, not a new PR merge audit. No existing native edge removed. Repository-wide current issue listing has no new consultation/remuneration issue; connector search for consultation returned none. CLI initially failed with `error connecting to api.github.com`; supported elevated read retry succeeded. No unresolved connection blocker.
 
@@ -48,7 +48,7 @@ Preserve every current body/edge and original requirement. Added #107 as a nativ
 | #75 | Cutoff-bound consultation/own-work snapshots, excluding later changes and active compensation reports. |
 | #76 | Connected role coverage of both500/40% sequences, same encounter, pending notes and reservation/correction isolation before scaffold retirement. |
 
-Publication reread bodies before additive updates and compared again before each write. Created #104–#107 in dependency order; native edges #104←#51, #105←#104, #106←#104/#105, #107←#105/#106/#59 read back as intended. Every UI additive body/state and preservation of old native edges was checked after write. Project status reflects actual frontier, not readiness as execution permission. No parent #1/#49 body or completed #52â€“#59 issue is modified.
+Publication reread bodies before additive updates and compared again before each write. Created #104–#107 in dependency order; native edges #104←#51, #105←#104, #106←#104/#105, #107←#105/#106/#59 read back as intended. Every UI additive body/state and preservation of old native edges was checked after write. Project status reflects actual frontier, not readiness as execution permission. No parent #1/#49 body or completed #52–#59 issue is modified.
 
 ## Skills, checks and preservation
 

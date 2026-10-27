@@ -351,7 +351,7 @@ export const schedulingSettingsSchema = z
       .max(100)
       .refine(
         (v) => new Set(v).size === v.length,
-        "Les noms des fauteuils doivent Ãªtre distincts.",
+        "Les noms des fauteuils doivent être distincts.",
       ),
   })
   .strict();
@@ -498,7 +498,7 @@ export const chartContentSchema = z
         if (c.finding === 'other' && !c.note?.trim())
           add('Une note est requise pour Autre.');
         if (c.finding === 'sound' && c.surfaces.length)
-          add('Sain concerne la dent entiÃ¨re.');
+          add('Sain concerne la dent entière.');
         if (new Set(c.surfaces).size !== c.surfaces.length)
           add('Surface en double.');
         if (
@@ -602,7 +602,7 @@ export const treatmentItemSchema = z
     )
       c.addIssue({
         code: 'custom',
-        message: 'SÃ©lection FDI incompatible avec la portÃ©e.',
+        message: 'Sélection FDI incompatible avec la portée.',
       });
   });
 export const treatmentPlanSchema = z
@@ -711,17 +711,18 @@ export const startVisitSchema = z
   })
   .strict();
 export type VisitSelection = z.infer<typeof visitSelectionSchema>;
+const consultationIdSchema = z.uuid().transform(v=>v.toLowerCase());
 export const addVisitProceduresSchema = z
   .object({
-    commandId: z.uuid(),
-    id: z.uuid(),
+    commandId: consultationIdSchema,
+    id: consultationIdSchema,
     revision: z.number().int().positive(),
-    procedures: z.array(visitSelectionSchema).min(1).max(100),
+    procedures: z.array(visitSelectionSchema.extend({planId:consultationIdSchema,itemId:consultationIdSchema})).min(1).max(100),
   })
   .strict();
 export const consultationPriceSchema = z
   .object({
-    commandId: z.uuid(),
+    commandId: consultationIdSchema,
     revision: z.number().int().nonnegative(),
     currency: currencyCodeSchema,
     price: exactAmountSchema,
@@ -729,8 +730,8 @@ export const consultationPriceSchema = z
   .strict();
 export const remunerationSchema = z
   .object({
-    commandId: z.uuid(),
-    doctorId: z.uuid(),
+    commandId: consultationIdSchema,
+    doctorId: consultationIdSchema,
     revision: z.number().int().nonnegative(),
     mode: z.enum(["salary", "percentage"]),
     rate: z
@@ -767,26 +768,26 @@ export type ConsultationPrice = {
 };
 export const bookConsultationSchema = z
   .object({
-    commandId: z.uuid(),
-    id: z.uuid(),
-    doctorId: z.uuid(),
-    appointmentId: z.uuid().nullable(),
+    commandId: consultationIdSchema,
+    id: consultationIdSchema,
+    doctorId: consultationIdSchema,
+    appointmentId: consultationIdSchema.nullable(),
     date: z.iso.date(),
     price: exactAmountSchema.optional(),
   })
   .strict();
 export const enterConsultationSchema = z
   .object({
-    commandId: z.uuid(),
-    id: z.uuid(),
+    commandId: consultationIdSchema,
+    id: consultationIdSchema,
     revision: z.number().int().positive(),
-    visitId: z.uuid(),
+    visitId: consultationIdSchema,
   })
   .strict();
 export const completeConsultationSchema = z
   .object({
-    commandId: z.uuid(),
-    id: z.uuid(),
+    commandId: consultationIdSchema,
+    id: consultationIdSchema,
     revision: z.number().int().positive(),
   })
   .strict();
@@ -798,17 +799,13 @@ export type Consultation = {
   date: string;
   revision: number;
   status: "booked" | "entered" | "completed";
-  currency: keyof typeof verifiedCurrencies;
-  priceMinor: string;
+  currency?: keyof typeof verifiedCurrencies;
+  priceMinor?: string;
   visitId: string | null;
   enteredAt: string | null;
   completedAt: string | null;
   at: string;
   actorId: string;
-};
-// Rate snapshots remain in the protected source record, never ordinary staff billing outputs.
-export type ConsultationRecord = Consultation & {
-  remuneration: Remuneration | null;
 };
 export type ConsultationCharge = {
   sourceKind: "consultation";

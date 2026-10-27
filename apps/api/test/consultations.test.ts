@@ -875,3 +875,75 @@ it("keeps the linked appointment in care after consultation completion until the
     ).body,
   ).toHaveLength(2);
 });
+
+it("canonicalizes UUID casing before booking, room entry, own lists and safe command replay", async () => {
+  const s = await consultationScenario();
+  const booking = {
+    ...s.booking,
+    commandId: randomUUID().toUpperCase(),
+    id: randomUUID().toUpperCase(),
+    doctorId: s.doctor.id.toUpperCase(),
+  };
+  const path = `/consultations/${s.patient.id.toUpperCase()}`;
+  const booked = await s.doctor.post(path, booking);
+  expect(booked.status).toBe(200);
+  expect(booked.body.doctorId).toBe(s.doctor.id);
+  const entry = {
+    commandId: randomUUID().toUpperCase(),
+    id: booking.id,
+    revision: 1,
+    visitId: randomUUID().toUpperCase(),
+  };
+  expect((await s.doctor.post(`${path}/entry`, entry)).status).toBe(200);
+  expect(
+    (
+      await s.doctor.post(`${path}/entry`, {
+        ...entry,
+        commandId: entry.commandId.toLowerCase(),
+        id: entry.id.toLowerCase(),
+        visitId: entry.visitId.toLowerCase(),
+      })
+    ).status,
+  ).toBe(200);
+  const list = await s.doctor.browser.get(`/api${path}`);
+  expect(
+    list.body.find((v: { id: string }) => v.id === booking.id.toLowerCase()),
+  ).toMatchObject({ status: "entered", doctorId: s.doctor.id });
+  const visit = (
+    await s.doctor.browser.get(`/api/treatment/${s.patient.id}/visits`)
+  ).body.visits[0];
+  expect(visit.id).toBe(entry.visitId.toLowerCase());
+});
+
+it("lets appointment-only reception book while redacting patient prices on create, replay and day lists", async () => {
+  const s = await consultationScenario();
+  const staff = await s.create("scheduling-only", "staff", [
+    "appointments.manage",
+  ]);
+  const booking = { ...s.booking, commandId: randomUUID(), id: randomUUID() };
+  const response = await staff.post(s.base, booking);
+  expect(response.status).toBe(200);
+  expect(response.body).not.toHaveProperty("priceMinor");
+  expect(response.body).not.toHaveProperty("currency");
+  expect((await staff.post(s.base, booking)).body).not.toHaveProperty(
+    "priceMinor",
+  );
+  const list = await staff.browser
+    .get("/api/consultations")
+    .query({ date: s.booking.date });
+  expect(list.status).toBe(200);
+  expect(JSON.stringify(list.body)).not.toMatch(
+    /priceMinor|currency|remuneration/,
+  );
+  expect(
+    (await staff.browser.get("/api/consultation-settings/price")).status,
+  ).toBe(403);
+  expect(
+    (await staff.browser.get(`/api${s.base}/${s.booking.id}/remuneration`))
+      .status,
+  ).toBe(403);
+  const manager = await s.m.browser.get(`/api${s.base}`);
+  expect(
+    manager.body.find((v: { id: string }) => v.id === booking.id).priceMinor,
+  ).toBe("50000");
+});

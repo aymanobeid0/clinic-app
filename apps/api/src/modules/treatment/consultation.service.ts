@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import type {
   Consultation,
-  ConsultationRecord,
   ConsultationPrice,
   Remuneration,
   Visit,
@@ -15,7 +14,10 @@ import type {
 import type { Actor, IdentityAccess } from "../identity/index.js";
 import type { ClinicUpdates } from "../../clinic-updates.js";
 import { AppError } from "../../errors/app-error.js";
-import { ConsultationRepository } from "./consultation.repository.js";
+import {
+  ConsultationRepository,
+  type ConsultationRecord,
+} from "./consultation.repository.js";
 import { TreatmentRepository } from "./treatment.repository.js";
 import { VisitRepository } from "./visit.repository.js";
 import { exactMinor } from "./treatment.service.js";
@@ -25,10 +27,17 @@ import {
 } from "../scheduling/index.js";
 import { createConsultationCharge } from "../billing/index.js";
 
-const visible = ({
-  remuneration: _,
-  ...value
-}: ConsultationRecord): Consultation => value;
+const canReadPrice = (c: {
+  isManager: boolean;
+  permissions: readonly string[];
+}) => c.isManager || c.permissions.includes("billing.read");
+const visible = (
+  record: ConsultationRecord,
+  c: { isManager: boolean; permissions: readonly string[] },
+): Consultation => {
+  const { remuneration: _, priceMinor, currency, ...value } = record;
+  return { ...value, ...(canReadPrice(c) ? { priceMinor, currency } : {}) };
+};
 export class ConsultationService {
   constructor(
     readonly identity: IdentityAccess,
@@ -55,16 +64,15 @@ export class ConsultationService {
                 (v.doctorId === c.accountId &&
                   c.patientIds.includes(v.patientId))),
           )
-          .map(visible),
+          .map((v) => visible(v, c)),
     );
   }
   price(actor: Actor | undefined) {
-    return this.identity.withConsultationScope(
-      actor,
-      null,
-      async (c, tx) =>
-        (await new ConsultationRepository(tx, c.clinicId).price()) ?? null,
-    );
+    return this.identity.withConsultationScope(actor, null, async (c, tx) => {
+      if (!canReadPrice(c))
+        throw new AppError(403, "Lecture financière requise pour le tarif.");
+      return (await new ConsultationRepository(tx, c.clinicId).price()) ?? null;
+    });
   }
   async setPrice(
     actor: Actor | undefined,
@@ -121,15 +129,7 @@ export class ConsultationService {
           clinicId: c.clinicId,
           value: replay.receipt as unknown as Remuneration,
         };
-      const doctor = await tx.account.findFirst({
-        where: {
-          clinicId: c.clinicId,
-          id: data.doctorId,
-          kind: "doctor",
-          disabled: false,
-          historicalOnly: false,
-        },
-      });
+      const doctor = await r.activeDoctor(data.doctorId);
       if (!doctor) throw new AppError(409, "Dentiste actif requis.");
       const old = await r.remuneration(data.doctorId);
       if ((old?.revision ?? 0) !== data.revision)
@@ -171,7 +171,10 @@ export class ConsultationService {
           )
         ).at(-1);
         if (!value) throw new AppError(404, "Consultation introuvable.");
-        if (!c.isManager && (!c.ownDoctor || value.doctorId !== c.accountId))
+        if (
+          !c.isManager &&
+          (!c.ownDoctor || value.doctorId !== c.accountId || !canReadPrice(c))
+        )
           throw new AppError(403, "Rémunération non autorisée.");
         return value.remuneration
           ? {
@@ -209,21 +212,13 @@ export class ConsultationService {
         if (replay.receipt)
           return {
             clinicId: c.clinicId,
-            value: visible(replay.receipt as unknown as ConsultationRecord),
+            value: visible(replay.receipt as unknown as ConsultationRecord, c),
           };
         if ((await r.versions(undefined, data.id)).length)
           throw new AppError(409, "Identifiant de consultation déjà utilisé.");
         if (!(await new VisitRepository(tx, c.clinicId).available(patientId)))
           throw new AppError(409, "Patient indisponible ou archivé.");
-        const doctor = await tx.account.findFirst({
-          where: {
-            clinicId: c.clinicId,
-            id: data.doctorId,
-            kind: "doctor",
-            disabled: false,
-            historicalOnly: false,
-          },
-        });
+        const doctor = await r.activeDoctor(data.doctorId);
         if (!doctor) throw new AppError(409, "Dentiste actif requis.");
         if (data.appointmentId)
           await validateConsultationAppointment(
@@ -269,7 +264,7 @@ export class ConsultationService {
         };
         await r.append(value);
         await plans.save(data.commandId, c.accountId, replay.hash, value);
-        return { clinicId: c.clinicId, value: visible(value) };
+        return { clinicId: c.clinicId, value: visible(value, c) };
       },
     );
     this.updates.publish(result.clinicId);
@@ -307,7 +302,7 @@ export class ConsultationService {
           c.accountId,
         );
         if (replay.receipt)
-          return { clinicId: c.clinicId, value: visible(old) };
+          return { clinicId: c.clinicId, value: visible(old, c) };
         if (old.revision !== data.revision)
           throw new AppError(
             409,
@@ -400,7 +395,7 @@ export class ConsultationService {
         }
         await r.append(value);
         await plans.save(data.commandId, c.accountId, replay.hash, value);
-        return { clinicId: c.clinicId, value: visible(value) };
+        return { clinicId: c.clinicId, value: visible(value, c) };
       },
     );
     this.updates.publish(result.clinicId);

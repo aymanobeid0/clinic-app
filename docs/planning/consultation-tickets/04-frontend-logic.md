@@ -1,4 +1,4 @@
-# B â€” Expose consultation and remuneration frontend workflows
+# B — Expose consultation and remuneration frontend workflows
 
 Status: owner-approved and published 2026-10-27. A1 execution explicitly authorized; dependent stages require prerequisite human-approved merge.
 
@@ -19,12 +19,12 @@ Presentation-independent frontend interfaces connect patient registration/select
 - [ ] TanStack Query owns scoped projections/refresh, RHF current-tab inputs, React private command feedback and Zustand only genuinely shared local state. No persistent sensitive drafts, duplicated backend rules or unnecessary abstractions.
 - [ ] Loading/empty/validation/failure/denied/conflict/unknown outcomes are truthful. Changed inputs during uncertainty cannot alter the exact retained command/path/payload retry. Identity/patient/scope changes retire prior drafts, results and output authority.
 - [ ] Rendered hook consumers prove both500/40% sequences, stale revisions, scope changes and exact retry. At least one connected fictional API journey proves backend/logic integration; label mocked evidence honestly.
-- [ ] Affected existing billing, visit, scheduling, settings, reports/export and historical logic consumers remain valid. No designed components/pages/routes/main-app composition or scaffold retirement; final UI acceptance remains #60â€“#76.
+- [ ] Affected existing billing, visit, scheduling, settings, reports/export and historical logic consumers remain valid. No designed components/pages/routes/main-app composition or scaffold retirement; final UI acceptance remains #60–#76.
 
 ## Blocked by
 
-- A2 and A3 â€” reviewed behavior merged into the execution base (A1 transitively).
-- #59 â€” completed frontend behavior gate; #52â€“#59 remain closed as previous delivered scope.
+- #105 and #106 — reviewed behavior merged into the execution base (A1 transitively).
+- #59 — completed frontend behavior gate; #52–#59 remain closed as previous delivered scope.
 
 ## Execution boundary
 
