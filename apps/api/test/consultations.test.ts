@@ -877,7 +877,7 @@ it("keeps the linked appointment in care after consultation completion until the
 });
 
 it("canonicalizes UUID casing before booking, room entry, own lists and safe command replay", async () => {
-  const s = await consultationScenario();
+  const s = await consultationScenario(true);
   const booking = {
     ...s.booking,
     commandId: randomUUID().toUpperCase(),
@@ -913,6 +913,22 @@ it("canonicalizes UUID casing before booking, room entry, own lists and safe com
     await s.doctor.browser.get(`/api/treatment/${s.patient.id}/visits`)
   ).body.visits[0];
   expect(visit.id).toBe(entry.visitId.toLowerCase());
+  const add = await s.doctor.post(
+    `/treatment/${s.patient.id.toUpperCase()}/visits/procedures`,
+    {
+      commandId: randomUUID().toUpperCase(),
+      id: entry.visitId,
+      revision: 1,
+      procedures: s.command.items.map((i) => ({
+        planId: s.command.id.toUpperCase(),
+        itemId: i.id.toUpperCase(),
+        planRevision: 4,
+      })),
+    },
+  );
+  expect(add.status).toBe(200);
+  expect(add.body.id).toBe(entry.visitId.toLowerCase());
+  expect(add.body.procedures).toHaveLength(1);
 });
 
 it("lets appointment-only reception book while redacting patient prices on create, replay and day lists", async () => {

@@ -24,7 +24,10 @@ export class TreatmentController {
     res.json(
       await this.visits.add(
         req.session.actor,
-        z.uuid().parse(req.params.id),
+        z
+          .uuid()
+          .transform((v) => v.toLowerCase())
+          .parse(req.params.id),
         addVisitProceduresSchema.parse(req.body),
       ),
     );
