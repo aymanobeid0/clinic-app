@@ -521,6 +521,504 @@ async function consultationScenario(accepted = false) {
   };
   return { ...s, base, booking, entry };
 }
+
+it("reserves a full pre-entry payment and recognizes share once at the payment rate", async () => {
+  const s = await consultationScenario();
+  const methodId = randomUUID();
+  expect(
+    (
+      await s.m.post("/billing/payment-methods", {
+        commandId: randomUUID(),
+        id: methodId,
+        revision: 0,
+        name: "Espèces",
+        active: true,
+      })
+    ).status,
+  ).toBe(200);
+  const path = `/billing/${s.patient.id}/consultations/${s.booking.id}/payment`;
+  const payment = {
+    commandId: randomUUID(),
+    revision: 1,
+    currency: "MRU",
+    amount: "500",
+    methodId,
+  };
+  const paid = await s.m.post(path, payment);
+  expect(paid.status).toBe(200);
+  expect(paid.body).toMatchObject({
+    newMoneyMinor: "50000",
+    depositMinor: "0",
+    receiptNumber: expect.any(String),
+  });
+  expect((await s.m.post(path, payment)).body).toEqual(paid.body);
+  const sharePath = `/api${s.base}/${s.booking.id}/remuneration`;
+  expect((await s.doctor.browser.get(sharePath)).body).toMatchObject({
+    rate: "40",
+    recognizedBaseMinor: "50000",
+    shareNumerator: "2000000",
+    shareDenominator: "100",
+  });
+  const before = (await s.m.browser.get(`/api/billing/${s.patient.id}`)).body;
+  expect(before.charges).toEqual([]);
+  expect(before.totals).toEqual([
+    expect.objectContaining({ dueMinor: "0", creditMinor: "0" }),
+  ]);
+  expect(before.creditSources).toEqual([]);
+  await s.m.post("/consultation-settings/remuneration", {
+    commandId: randomUUID(),
+    doctorId: s.doctor.id,
+    revision: 1,
+    mode: "percentage",
+    rate: "50",
+  });
+  expect(
+    (await s.doctor.post(`${s.base}/entry`, { ...s.entry, revision: 2 }))
+      .status,
+  ).toBe(200);
+  const after = (await s.m.browser.get(`/api/billing/${s.patient.id}`)).body;
+  expect(after.charges).toEqual([
+    expect.objectContaining({ dueMinor: "0", paidMinor: "50000" }),
+  ]);
+  expect(after.settlements).toHaveLength(1);
+  expect((await s.doctor.browser.get(sharePath)).body).toMatchObject({
+    rate: "40",
+    recognizedBaseMinor: "50000",
+    shareNumerator: "2000000",
+  });
+});
+
+async function paymentScenario(accepted = false) {
+  const s = await consultationScenario(accepted);
+  await s.m.post(`/accounts/${s.doctor.id}/permissions`, {
+    currentPassword: "Fictional-manager-pass-2",
+    permissions: [
+      "clinical.read",
+      "procedures.start",
+      "billing.read",
+      "billing.edit",
+      "refunds",
+      "reversals",
+      "financial.print",
+      "reports.financial",
+    ],
+  });
+  const methodId = randomUUID();
+  await s.m.post("/billing/payment-methods", {
+    commandId: randomUUID(),
+    id: methodId,
+    revision: 0,
+    name: "Espèces",
+    active: true,
+  });
+  return {
+    ...s,
+    paymentPath: `/billing/${s.patient.id}/consultations/${s.booking.id}/payment`,
+    payment: {
+      commandId: randomUUID(),
+      revision: 1,
+      currency: "MRU",
+      amount: "500",
+      methodId,
+    },
+    billingPath: `/billing/${s.patient.id}`,
+    sharePath: `/api${s.base}/${s.booking.id}/remuneration`,
+  };
+}
+
+it("settles entry-first debt at its frozen rate and rejects installments, currency mismatch and duplicate races", async () => {
+  const s = await paymentScenario();
+  expect((await s.doctor.post(`${s.base}/entry`, s.entry)).status).toBe(200);
+  expect(
+    (await s.doctor.browser.get(s.sharePath)).body.recognizedBaseMinor,
+  ).toBe("0");
+  await s.m.post("/consultation-settings/remuneration", {
+    commandId: randomUUID(),
+    doctorId: s.doctor.id,
+    revision: 1,
+    mode: "percentage",
+    rate: "50",
+  });
+  for (const patch of [
+    { amount: "250" },
+    { amount: "500.001" },
+    { currency: "USD" },
+  ])
+    expect(
+      (
+        await s.doctor.post(s.paymentPath, {
+          ...s.payment,
+          revision: 2,
+          ...patch,
+        })
+      ).status,
+    ).toBeGreaterThanOrEqual(400);
+  const p = { ...s.payment, revision: 2 };
+  const race = await Promise.all([
+    s.doctor.post(s.paymentPath, p),
+    s.doctor.post(s.paymentPath, p),
+    s.doctor.post(s.paymentPath, { ...p, commandId: randomUUID() }),
+  ]);
+  expect(race.map((r) => r.status).sort()).toEqual([200, 200, 409]);
+  expect(
+    (await s.m.browser.get(`/api${s.billingPath}`)).body.charges[0],
+  ).toMatchObject({ dueMinor: "0", paidMinor: "50000" });
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    rate: "40",
+    shareNumerator: "2000000",
+    recognizedBaseMinor: "50000",
+  });
+  expect(
+    (await s.doctor.post(s.paymentPath, { ...p, amount: "499" })).status,
+  ).toBe(409);
+});
+
+it("uses ordinary release and approved refund for reserved funds without freeing credit or subtracting share twice", async () => {
+  const s = await paymentScenario();
+  const paid = await s.doctor.post(s.paymentPath, s.payment);
+  expect(paid.status).toBe(200);
+  const release = {
+    commandId: randomUUID(),
+    chargeId: s.booking.id,
+    settlementId: paid.body.id,
+    amount: "100",
+    reason: "Correction fictive",
+  };
+  const released = await s.doctor.post(
+    `${s.billingPath}/allocation-releases`,
+    release,
+  );
+  expect(released.status).toBe(200);
+  expect(
+    (await s.doctor.post(`${s.billingPath}/allocation-releases`, release)).body,
+  ).toEqual(released.body);
+  const state = (await s.doctor.browser.get(`/api${s.billingPath}`)).body;
+  expect(state.totals[0]).toMatchObject({ creditMinor: "0", dueMinor: "0" });
+  expect(state.creditSources[0]).toMatchObject({
+    availableMinor: "10000",
+    reservedConsultationId: s.booking.id,
+  });
+  const request = await s.doctor.post(`${s.billingPath}/refund-requests`, {
+    commandId: randomUUID(),
+    sourceId: state.creditSources[0].id,
+    amount: "100",
+    reason: "Retour fictif",
+  });
+  expect(request.status).toBe(200);
+  const action = {
+    commandId: randomUUID(),
+    requestId: request.body.id,
+    reason: "Approbation fictive",
+  };
+  expect((await s.doctor.post(`${s.billingPath}/refunds`, action)).status).toBe(
+    409,
+  );
+  expect(
+    (await s.doctor.post(`${s.billingPath}/refund-approvals`, action)).status,
+  ).toBe(200);
+  const refund = { ...action, commandId: randomUUID() };
+  expect((await s.doctor.post(`${s.billingPath}/refunds`, refund)).status).toBe(
+    200,
+  );
+  expect((await s.doctor.post(`${s.billingPath}/refunds`, refund)).status).toBe(
+    200,
+  );
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "40000",
+    shareNumerator: "1600000",
+  });
+  expect(
+    (await s.doctor.post(`${s.base}/entry`, { ...s.entry, revision: 2 }))
+      .status,
+  ).toBe(200);
+  expect(
+    (await s.doctor.browser.get(`/api${s.billingPath}`)).body.charges[0]
+      .dueMinor,
+  ).toBe("10000");
+  expect(
+    (
+      await s.doctor.post(`${s.billingPath}/reversals`, {
+        commandId: randomUUID(),
+        settlementId: paid.body.id,
+        reason: "Erreur fictive",
+      })
+    ).status,
+  ).toBe(409);
+});
+
+it("reverses a pre-entry receipt once, retaining its rate and source for replacement payment", async () => {
+  const s = await paymentScenario();
+  const paid = await s.doctor.post(s.paymentPath, s.payment);
+  const reversal = {
+    commandId: randomUUID(),
+    settlementId: paid.body.id,
+    reason: "Saisie fictive erronée",
+  };
+  const race = await Promise.all([
+    s.doctor.post(`${s.billingPath}/reversals`, reversal),
+    s.doctor.post(`${s.billingPath}/reversals`, reversal),
+  ]);
+  expect(race.map((r) => r.status)).toEqual([200, 200]);
+  expect(
+    (await s.doctor.browser.get(s.sharePath)).body.recognizedBaseMinor,
+  ).toBe("0");
+  await s.m.post("/consultation-settings/remuneration", {
+    commandId: randomUUID(),
+    doctorId: s.doctor.id,
+    revision: 1,
+    mode: "percentage",
+    rate: "50",
+  });
+  expect(
+    (
+      await s.doctor.post(s.paymentPath, {
+        ...s.payment,
+        commandId: randomUUID(),
+        revision: 2,
+      })
+    ).status,
+  ).toBe(200);
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    rate: "40",
+    recognizedBaseMinor: "50000",
+  });
+});
+
+it("honors pre-entry financial scope, protects exact shares and keeps payment separate from clinical access", async () => {
+  const s = await paymentScenario();
+  const staff = await s.create("cashier", "staff", [
+    "billing.read",
+    "billing.edit",
+    "reports.financial",
+    "financial.print",
+    "financial.download",
+    "exports.financial",
+    "financial.history",
+    "exports.patients",
+  ]);
+  const other = await s.create("other-cashier", "doctor", [
+    "clinical.read",
+    "billing.read",
+    "billing.edit",
+    "reports.financial",
+  ]);
+  expect(
+    (
+      await s.m.post(`/patient-access/${s.patient.id}/share`, {
+        commandId: randomUUID(),
+        revision: 1,
+        accountId: other.id,
+        kind: "shared",
+      })
+    ).status,
+  ).toBe(200);
+  expect((await other.post(s.paymentPath, s.payment)).status).toBe(403);
+  expect(
+    (
+      await s.doctor.post(`${s.billingPath}/settlements`, {
+        commandId: randomUUID(),
+        currency: "MRU",
+        methodId: s.payment.methodId,
+        newMoney: "500",
+        deposit: "500",
+        allocations: [],
+      })
+    ).status,
+  ).toBe(403);
+  const paid = await staff.post(s.paymentPath, s.payment);
+  expect(paid.status).toBe(200);
+  for (const actor of [staff, other])
+    expect((await actor.browser.get(s.sharePath)).status).toBe(403);
+  expect(
+    (await other.browser.get(`/api${s.billingPath}`)).body.settlements,
+  ).toEqual([]);
+  const receipt = await staff.browser.get(
+    `/api${s.billingPath}/settlements/${paid.body.id}/print`,
+  );
+  expect(receipt.status).toBe(200);
+  expect(JSON.stringify(receipt.body)).not.toMatch(
+    /shareNumerator|remuneration|recognizedBaseMinor|"rate"/,
+  );
+  const report = await s.doctor.browser
+    .get("/api/reports/financial")
+    .query({ date: s.booking.date });
+  expect(report.status).toBe(200);
+  expect(report.body.totals).toEqual([
+    expect.objectContaining({
+      newMoneyMinor: "50000",
+      dueMinor: "0",
+      creditMinor: "0",
+    }),
+  ]);
+  const staffReport = await staff.browser
+    .get("/api/reports/financial")
+    .query({ date: s.booking.date });
+  expect(JSON.stringify(staffReport.body)).not.toMatch(
+    /shareNumerator|remuneration|recognizedBaseMinor|"rate"/,
+  );
+  const exported = await staff.post("/exports", {
+    commandId: randomUUID(),
+    category: "financial",
+    patientId: s.patient.id,
+    format: "json",
+  });
+  expect(exported.status).toBe(201);
+  const content = await staff.browser.get(
+    `/api/exports/${exported.body.id}/content`,
+  );
+  expect(content.status).toBe(200);
+  expect(JSON.stringify(content.body)).toContain(s.booking.id);
+  expect(JSON.stringify(content.body)).not.toMatch(
+    /shareNumerator|remuneration|recognizedBaseMinor|"rate"/,
+  );
+  expect(
+    (await staff.browser.get(`/api/clinical/${s.patient.id}/notes`)).status,
+  ).toBe(403);
+  const isolated = await consultationScenario();
+  expect((await isolated.m.post(s.paymentPath, s.payment)).status).toBe(404);
+  // Removing care captures only the existing financial snapshot; later entry/payment cannot advance it.
+  const base = `/patient-access/${s.patient.id}`;
+  expect(
+    (
+      await s.m.post(`${base}/remove`, {
+        commandId: randomUUID(),
+        revision: 2,
+        accountId: s.doctor.id,
+      })
+    ).status,
+  ).toBe(200);
+  const removalId = (await s.m.browser.get(`/api${base}/history`)).body.at(
+    -1,
+  ).id;
+  expect(
+    (
+      await s.m.post(`${base}/historical`, {
+        commandId: randomUUID(),
+        revision: 3,
+        accountId: s.doctor.id,
+        removalId,
+      })
+    ).status,
+  ).toBe(200);
+  const history = await s.doctor.browser.get(`/api/historical/${s.patient.id}`);
+  expect(history.status).toBe(200);
+  expect(history.body.financial.settlements).toHaveLength(1);
+  expect(history.body.financial.charges).toEqual([]);
+  expect(JSON.stringify(history.body)).not.toMatch(
+    /shareNumerator|remuneration|recognizedBaseMinor|"rate"/,
+  );
+  expect((await s.doctor.browser.get(s.sharePath)).status).toBe(403);
+  expect(
+    (
+      await s.doctor.post(s.paymentPath, {
+        ...s.payment,
+        commandId: randomUUID(),
+        revision: 2,
+      })
+    ).status,
+  ).toBe(403);
+});
+
+it("serializes payment against room entry with truthful conflicts and preserves exact fractional rates", async () => {
+  const s = await paymentScenario();
+  await s.m.post("/consultation-settings/remuneration", {
+    commandId: randomUUID(),
+    doctorId: s.doctor.id,
+    revision: 1,
+    mode: "percentage",
+    rate: "12.345678",
+  });
+  const [pay, entry] = await Promise.all([
+    s.doctor.post(s.paymentPath, s.payment),
+    s.doctor.post(`${s.base}/entry`, s.entry),
+  ]);
+  expect([pay.status, entry.status].sort()).toEqual([200, 409]);
+  if (pay.status === 409)
+    expect(
+      (await s.doctor.post(s.paymentPath, { ...s.payment, revision: 2 }))
+        .status,
+    ).toBe(200);
+  else
+    expect(
+      (await s.doctor.post(`${s.base}/entry`, { ...s.entry, revision: 2 }))
+        .status,
+    ).toBe(200);
+  const state = (await s.doctor.browser.get(`/api${s.billingPath}`)).body;
+  expect(state.charges).toEqual([
+    expect.objectContaining({ paidMinor: "50000", dueMinor: "0" }),
+  ]);
+  expect(state.settlements).toHaveLength(1);
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "50000",
+    shareNumerator: "617283900000",
+    shareDenominator: "100000000",
+    currency: "MRU",
+    consultationId: s.booking.id,
+  });
+});
+
+it("cannot spend released consultation funds on treatment while ordinary installments still work", async () => {
+  const s = await paymentScenario(true);
+  const paid = await s.doctor.post(s.paymentPath, s.payment);
+  expect(
+    (
+      await s.doctor.post(`${s.billingPath}/allocation-releases`, {
+        commandId: randomUUID(),
+        chargeId: s.booking.id,
+        settlementId: paid.body.id,
+        amount: "100",
+        reason: "Libération fictive",
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (await s.doctor.post(`${s.base}/entry`, { ...s.entry, revision: 2 }))
+      .status,
+  ).toBe(200);
+  expect(
+    (
+      await s.doctor.post(`/treatment/${s.patient.id}/visits/procedures`, {
+        commandId: randomUUID(),
+        id: s.entry.visitId,
+        revision: 1,
+        procedures: s.command.items.map((i) => ({
+          planId: s.command.id,
+          itemId: i.id,
+          planRevision: 4,
+        })),
+      })
+    ).status,
+  ).toBe(200);
+  const state = (await s.m.browser.get(`/api${s.billingPath}`)).body;
+  const charge = state.charges.find(
+    (ch: { sourceKind?: string }) => ch.sourceKind !== "consultation",
+  );
+  const settle = {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: null,
+    newMoney: "0",
+    deposit: "0",
+    allocations: [{ chargeId: charge.id, newMoney: "0", credit: "100" }],
+  };
+  expect((await s.m.post(`${s.billingPath}/settlements`, settle)).status).toBe(
+    409,
+  );
+  expect(
+    (
+      await s.doctor.post(`${s.billingPath}/settlements`, {
+        ...settle,
+        commandId: randomUUID(),
+        methodId: s.payment.methodId,
+        newMoney: "50",
+        allocations: [{ chargeId: charge.id, newMoney: "50", credit: "0" }],
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (await s.doctor.browser.get(s.sharePath)).body.recognizedBaseMinor,
+  ).toBe("40000");
+});
 it("continues accepted treatment in the consultation encounter and leaves one pending note when care ends", async () => {
   const s = await consultationScenario(true);
   expect((await s.doctor.post(`${s.base}/entry`, s.entry)).status).toBe(200);

@@ -32,7 +32,7 @@ const group = (tag: string, description: string, rows: Row[]): Operation[] =>
 export const operations = [
   ...group(
     "Consultations",
-    "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+    "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
     [
       [
         "get",
@@ -772,6 +772,15 @@ export const operations = [
         "settlementSchema",
         200,
         "Atomic funds accounting; credit-only is not new cash. Explicit excess deposit.",
+      ],
+      [
+        "post",
+        "/billing/{id}/consultations/{consultationId}/payment",
+        "Receive full consultation payment before or after entry",
+        "Settlement",
+        "consultationPaymentSchema",
+        200,
+        "billing.edit and active patient scope for own doctor; full agreed currency/amount only. Reservation excluded from free credit. Revision conflict or exact replay; no care entry. Corrections use existing allocation releases and refund approval.",
       ],
       [
         "get",

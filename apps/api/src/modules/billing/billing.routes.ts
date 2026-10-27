@@ -2,6 +2,10 @@ import { Router } from "express";
 import type { BillingController } from "./billing.controller.js";
 export function billingRoutes(c: BillingController) {
   const router = Router();
+  router.post(
+    "/billing/:id/consultations/:consultationId/payment",
+    c.consultationPayment,
+  );
   router.post("/billing/:id/credits", c.credit);
   router.post("/billing/:id/allocation-releases", c.release);
   router.post("/billing/:id/reversals", c.reverse);

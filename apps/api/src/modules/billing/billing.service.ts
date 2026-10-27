@@ -23,6 +23,7 @@ import type {
   refundActionSchema,
   reversePaymentSchema,
   cancelChargedPlanSchema,
+  consultationPaymentSchema,
 } from "@clinic/contracts";
 import type { Actor, IdentityAccess } from "../identity/index.js";
 import { treatmentBilling, exactMinor } from "../treatment/index.js";
@@ -35,6 +36,21 @@ const agreed = (item: TreatmentItem) =>
   BigInt(item.priceMinor) -
   BigInt(item.discountMinor) +
   (item.extras ?? []).reduce((n, e) => n + BigInt(e.amountMinor), 0n);
+// A reservation is a funding target, never a started-care charge or debt.
+const fundingTargets = (state: BillingWorkspace) => [
+  ...state.charges,
+  ...state.settlements.flatMap((s) =>
+    s.consultation
+      ? [
+          {
+            id: s.consultation.chargeId,
+            currency: s.currency,
+            performedBy: s.consultation.performedBy,
+          },
+        ]
+      : [],
+  ),
+];
 type Scope = {
   clinicId: string;
   accountId: string;
@@ -48,6 +64,96 @@ export class BillingService {
     readonly updates: ClinicUpdates,
     readonly now: () => number,
   ) {}
+  async payConsultation(
+    actor: Actor | undefined,
+    patientId: string,
+    id: string,
+    data: z.infer<typeof consultationPaymentSchema>,
+  ) {
+    const result = await this.identity.withFinancialPermission(
+      actor,
+      patientId,
+      "billing.edit",
+      async (c, tx) => {
+        const plans = treatmentBilling(tx, c.clinicId),
+          r = new BillingRepository(tx, c.clinicId);
+        await plans.lock();
+        const consultation = await plans.consultation(patientId, id);
+        if (!consultation) throw new AppError(404, "Consultation introuvable.");
+        if (c.ownWork && consultation.doctorId !== c.accountId)
+          throw new AppError(403, "Périmètre financier non autorisé.");
+        const replay = await r.replay(data.commandId, c.accountId, [
+          "consultation-payment",
+          patientId,
+          id,
+          data,
+        ]);
+        if (replay.receipt)
+          return { clinicId: c.clinicId, value: replay.receipt };
+        if (consultation.revision !== data.revision)
+          throw new AppError(409, "La consultation a changé.");
+        const currency = await plans.currency(data.currency);
+        if (!currency || data.currency !== consultation.currency)
+          throw new AppError(400, "Devise différente ou non activée.");
+        const amount = exactMinor(data.amount, currency.precision);
+        if (amount <= 0n || amount !== BigInt(consultation.priceMinor))
+          throw new AppError(409, "Paiement intégral du tarif convenu requis.");
+        const state = await projectBilling(tx, c, patientId);
+        const charge = state.charges.find(
+          (ch) => ch.sourceKind === "consultation" && ch.consultationId === id,
+        );
+        const chargeId = charge?.id ?? id;
+        const funds = await this.funds(tx, c, patientId);
+        if (
+          funds.allocations
+            .filter((a) => a.chargeId === chargeId)
+            .some(
+              (a) => BigInt(a.newMoneyMinor) + BigInt(a.creditMinor) > 0n,
+            ) ||
+          (charge && BigInt(charge.dueMinor) !== amount)
+        )
+          throw new AppError(409, "Consultation déjà réglée ou corrigée.");
+        const method = (await r.methods()).find(
+          (m) => m.id === data.methodId && m.active,
+        );
+        if (!method) throw new AppError(400, "Moyen de paiement actif requis.");
+        const at = new Date(this.now()).toISOString();
+        await plans.freezeConsultation(patientId, id, at, c.accountId);
+        const value: Settlement = {
+          id: randomUUID(),
+          patientId,
+          currency: data.currency,
+          actorId: c.accountId,
+          at,
+          receiptNumber: await r.nextReceipt(new Date(at).getUTCFullYear()),
+          methodId: method.id,
+          methodName: method.name,
+          newMoneyMinor: amount.toString(),
+          depositMinor: "0",
+          creditUsedMinor: "0",
+          allocations: [
+            {
+              chargeId,
+              newMoneyMinor: amount.toString(),
+              creditMinor: "0",
+              sources: [],
+            },
+          ],
+          consultation: {
+            consultationId: id,
+            chargeId,
+            performedBy: consultation.doctorId,
+          },
+          identity: await r.documentIdentity(patientId),
+        };
+        await r.settlement(value);
+        await r.save(data.commandId, c.accountId, replay.hash, value);
+        return { clinicId: c.clinicId, value };
+      },
+    );
+    this.updates.publish(result.clinicId);
+    return result.value;
+  }
   private async correct(
     actor: Actor | undefined,
     patientId: string,
@@ -102,17 +208,6 @@ export class BillingService {
           credits: [],
         };
         await perform(c, tx, state, value);
-        if (
-          value.chargeIds.some((id) =>
-            state.charges.some(
-              (ch) => ch.id === id && ch.sourceKind === "consultation",
-            ),
-          )
-        )
-          throw new AppError(
-            409,
-            "Les corrections de consultation seront disponibles avec le règlement dédié.",
-          );
         const invoices = await r.invoices(patientId);
         value.invoiceIds = invoices
           .filter((i) =>
@@ -246,7 +341,9 @@ export class BillingService {
       "release",
       data,
       async (c, tx, state, v) => {
-        const charge = state.charges.find((ch) => ch.id === data.chargeId);
+        const charge = fundingTargets(state).find(
+          (ch) => ch.id === data.chargeId,
+        );
         if (!charge) throw new AppError(404, "Charge introuvable.");
         const currency = await treatmentBilling(tx, c.clinicId).currency(
           charge.currency,
@@ -409,7 +506,7 @@ export class BillingService {
               BigInt(src.amountMinor) > 0n,
           );
           if (fresh === "0" && !sources.length) continue;
-          if (!state.charges.some((ch) => ch.id === a.chargeId))
+          if (!fundingTargets(state).some((ch) => ch.id === a.chargeId))
             throw new AppError(403, "Périmètre financier non autorisé.");
           v.releases.push({
             settlementId: a.settlementId,
@@ -876,7 +973,9 @@ export class BillingService {
             "Le crédit non attribué nécessite une autorité financière générale.",
           );
         const available = state.creditSources
-          .filter((l) => l.currency === data.currency)
+          .filter(
+            (l) => l.currency === data.currency && !l.reservedConsultationId,
+          )
           .map((l) => ({ id: l.id, remaining: BigInt(l.availableMinor) }));
         for (const allocation of allocations) {
           let needed = BigInt(allocation.creditMinor);

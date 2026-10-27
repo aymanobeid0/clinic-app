@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import type {
   Consultation,
@@ -25,7 +24,10 @@ import {
   transitionVisitAppointment,
   validateConsultationAppointment,
 } from "../scheduling/index.js";
-import { createConsultationCharge } from "../billing/index.js";
+import {
+  createConsultationCharge,
+  consultationFunds,
+} from "../billing/index.js";
 
 const canReadPrice = (c: {
   isManager: boolean;
@@ -164,10 +166,12 @@ export class ConsultationService {
     }));
   }
   frozen(actor: Actor | undefined, patientId: string, id: string) {
-    return this.identity.withConsultationScope(
+    return this.identity.withFinancialPermission(
       actor,
       patientId,
+      "billing.read",
       async (c, tx) => {
+        await new TreatmentRepository(tx, c.clinicId).lock();
         const value = (
           await new ConsultationRepository(tx, c.clinicId).versions(
             patientId,
@@ -175,17 +179,19 @@ export class ConsultationService {
           )
         ).at(-1);
         if (!value) throw new AppError(404, "Consultation introuvable.");
-        if (
-          !c.isManager &&
-          (!c.ownDoctor || value.doctorId !== c.accountId || !canReadPrice(c))
-        )
+        if (!c.canApprove || (c.ownWork && value.doctorId !== c.accountId))
           throw new AppError(403, "Rémunération non autorisée.");
         return value.remuneration
           ? {
               ...value.remuneration,
-              recognizedBaseMinor: "0",
-              shareNumerator: "0",
-              shareDenominator: "100",
+              ...(await consultationFunds(
+                tx,
+                c.clinicId,
+                patientId,
+                id,
+                value.currency,
+                value.remuneration.rate,
+              )),
             }
           : null;
       },
@@ -377,7 +383,7 @@ export class ConsultationService {
           };
           await createConsultationCharge(tx, c.clinicId, {
             sourceKind: "consultation",
-            id: randomUUID(),
+            id: old.id,
             consultationId: old.id,
             patientId,
             performedBy: old.doctorId,
