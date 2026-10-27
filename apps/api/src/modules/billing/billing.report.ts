@@ -31,6 +31,12 @@ export async function reportPatientBilling(
     .filter((e) => e.kind === "correction")
     .map((e) => e.snapshot as unknown as FinancialCorrection);
   const onDay = (at: string) => at.slice(0, 10) === date;
+  const visibleAllocation = (
+    s: import("@clinic/contracts").Settlement,
+    chargeId: string,
+  ) =>
+    state.charges.some((ch) => ch.id === chargeId) ||
+    s.consultation?.performedBy === c.accountId;
   const sum = (values: string[]) =>
     values.reduce((n, v) => n + BigInt(v), 0n).toString();
   const totals = state.totals.map((t) => {
@@ -41,9 +47,7 @@ export async function reportPatientBilling(
       (v) => v.currency === t.currency && onDay(v.at),
     );
     const ownAllocations = payments.flatMap((s) =>
-      s.allocations.filter((a) =>
-        state.charges.some((ch) => ch.id === a.chargeId),
-      ),
+      s.allocations.filter((a) => visibleAllocation(s, a.chargeId)),
     );
     const reversed = new Set(
       corrections
@@ -98,9 +102,7 @@ export async function reportPatientBilling(
             c.ownWork
               ? sum(
                   s.allocations
-                    .filter((a) =>
-                      state.charges.some((ch) => ch.id === a.chargeId),
-                    )
+                    .filter((a) => visibleAllocation(s, a.chargeId))
                     .map((a) => a.newMoneyMinor),
                 )
               : s.newMoneyMinor,
@@ -117,7 +119,7 @@ export async function reportPatientBilling(
     .filter((s) => onDay(s.at))
     .flatMap((s) => {
       const allocations = s.allocations.filter((a) =>
-        state.charges.some((ch) => ch.id === a.chargeId),
+        visibleAllocation(s, a.chargeId),
       );
       if (c.ownWork && !allocations.length) return [];
       return [

@@ -198,7 +198,9 @@ export async function projectBilling(
         ...charges,
         ...planned,
         ...openingBalances,
-        ...(!c.ownWork ? allSettlements : []),
+        ...allSettlements.filter(
+          (s) => !c.ownWork || s.consultation?.performedBy === c.accountId,
+        ),
       ].map((e) => e.currency),
     ),
   ].sort();
@@ -220,6 +222,7 @@ export async function projectBilling(
       .filter(
         (l) =>
           l.currency === currency &&
+          !l.reservedConsultationId &&
           (!c.ownWork || l.performedBy === c.accountId),
       )
       .reduce((n, l) => n + BigInt(l.availableMinor), 0n)
@@ -230,8 +233,10 @@ export async function projectBilling(
         (s) =>
           s.depositMinor === "0" &&
           s.allocations.length > 0 &&
-          s.allocations.every((a) =>
-            charges.some((ch) => ch.id === a.chargeId),
+          s.allocations.every(
+            (a) =>
+              charges.some((ch) => ch.id === a.chargeId) ||
+              s.consultation?.performedBy === c.accountId,
           ),
       )
     : allSettlements;
@@ -250,7 +255,15 @@ export async function projectBilling(
         (v) =>
           !c.ownWork ||
           (v.chargeIds.length > 0 &&
-            v.chargeIds.every((id) => charges.some((ch) => ch.id === id)) &&
+            v.chargeIds.every(
+              (id) =>
+                charges.some((ch) => ch.id === id) ||
+                allSettlements.some(
+                  (s) =>
+                    s.consultation?.chargeId === id &&
+                    s.consultation.performedBy === c.accountId,
+                ),
+            ) &&
             v.credits.every((l) => l.performedBy === c.accountId) &&
             (!v.sourceId ||
               funds.lots.some(

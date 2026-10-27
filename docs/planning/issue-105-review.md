@@ -1,0 +1,29 @@
+# #105 independent review
+
+Reviewer: one separate `reviewer` agent, both Standards and Spec, no implementation edits or reviewer fanout. Read repository `.agents/skills/code-review/SKILL.md` and applied its substantive two-axis checks under owner/repository single-reviewer override. Sources: AGENTS, skill-integration/issue-tracker, architecture, CONTEXT, ADR0002, Approved integration, implementation scope, financial/access contracts and current GitHub105 body/comments/native blocker. Initial sandbox GitHub reads failed `error connecting to api.github.com`; elevated read-only retry succeeded.105 open/no comments;104 closed.
+
+Comparison: `git diff dc561a20540a0dc7ca440b21d1093765e9a9d31e...HEAD`; initial source `10a212b42c09002edb9131811956008bfcf51abb`, one commit `10a212b feat: receive dedicated consultation payments and recognize reserved shares (#105)`. Fixed point resolves and diff is nonempty. This report initially records independent code inspection; runtime recheck follows builder fixes and source pin. Builder test assertions are not independent execution evidence.
+
+## Standards
+
+No actionable documented-standard or baseline-smell findings at initial inspection. New HTTP operation follows Routes→Controller→Service→Repository, module crossings use public entry points, monetary arithmetic uses integer/rational values and existing scoped transaction/lock. No UI/payroll or live migration introduced. Existing index-module orchestration conventions are preserved; incidental formatting is not treated as a correctness finding.
+
+## Spec
+
+1. **[P1] Client consultation IDs collide in the global billing ledger.** Initial `consultation.service.ts:386` replaces server-generated charge ID with `old.id`; `payConsultation` also chooses consultation ID as future target. ConsultationRevision IDs are client-chosen and clinic-scoped, whereas BillingEntry.id is a global primary key. Two clinics can validly book the same UUID but the second cannot enter; a collision with another ledger entry also fails. Approved architecture requires clinic isolation, and105 requires atomic single-charge entry. Keep a separate server-generated retained target and test same consultation UUID across clinics.
+
+2. **[P2] Normal corrections can leave consultation debt impossible to settle.** Initial `billing.service.ts:98–115` demands original agreed fee and rejects any existing effective allocation or changed due. Entry500→ordinary authorized credit adjustment400 leaves due400: paying400 fails original-price check; paying500 fails due check. Paying500 then releasing100 leaves due100 after entry but neither released funds nor a full residual correction settlement can restore it. Approved integration requires normal source-linked release/correction reuse; scope scenario6 preserves old credit/new money once. Support complete corrected outstanding settlement and safe source-linked same-consultation reallocation, retaining full-only initial payment, original frozen rate and receipt semantics.
+
+Initial totals: Standards0; Spec2 (worst P1). Both findings sent to builder and fixed by builder in `c926e00a8b1acfe91b140dcfe667a6792385a471`. Same reviewer rechecked the full comparison diff and the fix diff. The consultation now retains a private generated `billingChargeId`, resolves legacy entered charge IDs and strips the private field from ordinary consultation and clinical/history capture. Dedicated settlement requires the whole current outstanding amount (initially the agreed fee), supports permitted free/same-consultation credit and creates a receipt only for actual new money. Released mixed-source lots retain reservation by allocation target rather than mistaking an old deposit root for free credit. Neither fix changes the original frozen rate.
+
+Final recheck at `c926e00a8b1acfe91b140dcfe667a6792385a471`: Standards0; Spec0. Both initial findings resolved; no additional actionable findings.
+
+## Verification scope and limitations
+
+Independently inspected reservation/funds projection, payment/correction/receipt paths, daily financial attribution, export/history capture and access/file boundaries. Initial inspection waited for the builder's active focused suite. After builder pinned the fixes and confirmed no active DB test, reviewer independently executed:
+
+`CLINIC_TEST_PORT=55445 npx vitest run apps/api/test/consultations.test.ts -t 'identical client|fully settles corrected|counts old credit|honors pre-entry|serializes payment|ordinary release'`
+
+Actual PowerShell invocation set `$env:CLINIC_TEST_PORT='55445'`; elevated supported execution succeeded. Result **6 passed,12 skipped,1 file,25.95s**, started2026-10-27 21:46:24 UTC at source `c926e00a8b1acfe91b140dcfe667a6792385a471`. These independently prove same client UUID across clinics, corrected full debt settlement and same-consultation reapplication without a new receipt, old-credit/new-money recognition and reservation retention, pre-entry doctor/staff scope plus report/export/history redaction, payment/entry competition with exact fractional percentage and ordinary release/approved refund without double subtraction. Post-run `git rev-parse HEAD` remained the same; `git diff c926e00 -- apps packages docs/api/openapi.json --stat` was empty. Comparison `git diff ... --check` passed.
+
+No reviewer full suite, browser/UI, production/live migration or real-data check was run. File access was inspected through unchanged authorization/capture boundaries; no new remuneration file generator exists. Broad regression/build/OpenAPI completion and task-DB cleanup remain builder responsibilities, separately evidenced in the implementation report. Only task-owned fictional DB55445 was used; no owner/ERP/Apidog/manual resources,4173/4175 servers or DB55437 touched. No unresolved connection blocker remains after the elevated GitHub retry. This independent review does not authorize a merge or subsequent ticket.

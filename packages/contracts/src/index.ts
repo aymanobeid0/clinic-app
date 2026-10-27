@@ -791,6 +791,14 @@ export const completeConsultationSchema = z
     revision: z.number().int().positive(),
   })
   .strict();
+export const consultationPaymentSchema = z.object({
+  commandId: consultationIdSchema,
+  revision: z.number().int().positive(),
+  currency: currencyCodeSchema,
+  amount: exactAmountSchema,
+  credit: exactAmountSchema.default('0'),
+  methodId: consultationIdSchema.nullable(),
+}).strict();
 export type Consultation = {
   id: string;
   patientId: string;
@@ -1102,6 +1110,7 @@ export const settlementSchema = z
   })
   .strict();
 export type Settlement = {
+  consultation?: { consultationId: string; chargeId: string; performedBy: string };
   identity: {patientName: string; patientNumber: number; clinicName: string};
   id: string;
   patientId: string;
@@ -1230,6 +1239,7 @@ export const cancelChargedPlanSchema = correctionCommand
   })
   .strict();
 export type CreditSource = {
+  reservedConsultationId?: string;
   id: string;
   chargeId: string | null;
   currency: string;

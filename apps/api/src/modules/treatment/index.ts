@@ -1,71 +1,132 @@
-import { VisitRepository } from './visit.repository.js';
-import { cancelChargedPlan } from './cancel-charged-plan.js';
-import { VisitService } from './visit.service.js';
-import {ConsultationService} from './consultation.service.js';
-import {ConsultationController} from './consultation.controller.js';
-import {ConsultationRepository} from './consultation.repository.js';
-import {consultationRoutes} from './consultation.routes.js';
-import {Router} from 'express';
-import { TreatmentRepository } from './treatment.repository.js';
-import type { IdentityAccess } from '../identity/index.js';
-import type { ClinicUpdates } from '../../clinic-updates.js';
-import { TreatmentController } from './treatment.controller.js';
-import { TreatmentService } from './treatment.service.js';
-import { treatmentRoutes } from './treatment.routes.js';
+import { VisitRepository } from "./visit.repository.js";
+import { AppError } from "../../errors/app-error.js";
+import { cancelChargedPlan } from "./cancel-charged-plan.js";
+import { VisitService } from "./visit.service.js";
+import { ConsultationService } from "./consultation.service.js";
+import { ConsultationController } from "./consultation.controller.js";
+import { ConsultationRepository } from "./consultation.repository.js";
+import { consultationRoutes } from "./consultation.routes.js";
+import { Router } from "express";
+import { TreatmentRepository } from "./treatment.repository.js";
+import type { IdentityAccess } from "../identity/index.js";
+import type { ClinicUpdates } from "../../clinic-updates.js";
+import { TreatmentController } from "./treatment.controller.js";
+import { TreatmentService } from "./treatment.service.js";
+import { treatmentRoutes } from "./treatment.routes.js";
 export function createTreatmentRoutes(
   identity: IdentityAccess,
   updates: ClinicUpdates,
   now: () => number,
 ) {
-  return Router().use(consultationRoutes(new ConsultationController(new ConsultationService(identity,updates,now)))).use(treatmentRoutes(
-    new TreatmentController(
-      new TreatmentService(identity, updates, now),
-      new VisitService(identity, updates, now),
-      updates,
-      now,
-    ),
-  ));
+  return Router()
+    .use(
+      consultationRoutes(
+        new ConsultationController(
+          new ConsultationService(identity, updates, now),
+        ),
+      ),
+    )
+    .use(
+      treatmentRoutes(
+        new TreatmentController(
+          new TreatmentService(identity, updates, now),
+          new VisitService(identity, updates, now),
+          updates,
+          now,
+        ),
+      ),
+    );
 }
 // Public scheduling projection deliberately excludes prices and patient content.
 export async function procedureDurations(
-  tx: import('../../database.js').ClinicTransaction,
+  tx: import("../../database.js").ClinicTransaction,
   clinicId: string,
 ) {
   return new TreatmentRepository(tx, clinicId).durations();
 }
 
-export { recordProcedureStart } from './procedure-start.js';
-export { exactMinor } from './treatment.service.js';
+export { recordProcedureStart } from "./procedure-start.js";
+export { exactMinor } from "./treatment.service.js";
 
 // Billing coordinates financial writes with the retained treatment agreement.
-export function treatmentBilling(tx: import('../../database.js').ClinicTransaction, clinicId: string) {
+export function treatmentBilling(
+  tx: import("../../database.js").ClinicTransaction,
+  clinicId: string,
+) {
   const repository = new TreatmentRepository(tx, clinicId);
   return {
     lock: () => repository.lock(),
-    completions: (patientId: string) => new VisitRepository(tx, clinicId).completions(patientId),
-    versions: (patientId: string, planId?: string) => repository.versions(patientId, planId),
+    completions: (patientId: string) =>
+      new VisitRepository(tx, clinicId).completions(patientId),
+    versions: (patientId: string, planId?: string) =>
+      repository.versions(patientId, planId),
     currency: (code: string) => repository.enabled(code),
-    cancel: async (patientId: string, planId: string, revision: number, actorId: string, reason: string, at: string) => {
-      await cancelChargedPlan(tx,clinicId,patientId,planId,revision,actorId,reason,at);
+    consultation: async (patientId: string, id: string) =>
+      (
+        await new ConsultationRepository(tx, clinicId).versions(patientId, id)
+      ).at(-1),
+    freezeConsultation: async (
+      patientId: string,
+      id: string,
+      at: string,
+      actorId: string,
+      billingChargeId: string,
+    ) => {
+      const r = new ConsultationRepository(tx, clinicId);
+      const old = (await r.versions(patientId, id)).at(-1)!;
+      const remuneration =
+        old.remuneration ?? (await r.remuneration(old.doctorId));
+      if (!remuneration)
+        throw new AppError(
+          409,
+          "Configurez le mode de rémunération du dentiste.",
+        );
+      await r.append({
+        ...old,
+        remuneration,
+        billingChargeId,
+        revision: old.revision + 1,
+        at,
+        actorId,
+      });
+    },
+    cancel: async (
+      patientId: string,
+      planId: string,
+      revision: number,
+      actorId: string,
+      reason: string,
+      at: string,
+    ) => {
+      await cancelChargedPlan(
+        tx,
+        clinicId,
+        patientId,
+        planId,
+        revision,
+        actorId,
+        reason,
+        at,
+      );
     },
   };
 }
 
 // Clinical notes use this patient-scoped encounter projection, without pricing.
 export async function noteVisit(
-  tx: import('../../database.js').ClinicTransaction,
+  tx: import("../../database.js").ClinicTransaction,
   clinicId: string,
   patientId: string,
   visitId: string,
 ) {
   const row = await new VisitRepository(tx, clinicId).existing(visitId);
   if (!row || row.patientId !== patientId) return null;
-  const v = row.snapshot as unknown as import('@clinic/contracts').Visit;
+  const v = row.snapshot as unknown as import("@clinic/contracts").Visit;
   return { id: row.id, status: v.status };
 }
 
 export async function noteVisits(
-  tx: import('../../database.js').ClinicTransaction,
+  tx: import("../../database.js").ClinicTransaction,
   clinicId: string,
   patientId: string,
 ) {
@@ -96,30 +157,96 @@ export async function completedChartWork(
     ];
   });
 }
-export async function captureTreatment(tx:import('../../database.js').ClinicTransaction,clinicId:string,patientId:string,attachments:import('@clinic/contracts').AttachmentVersion[]) {
- const plans=await new TreatmentRepository(tx,clinicId).versions(patientId);
- const state=await new VisitRepository(tx,clinicId).state(patientId);
- return {
-  consultations:(await new ConsultationRepository(tx,clinicId).current(patientId)).map(({priceMinor:_,currency:__,remuneration:___,...v})=>v),
-  plans:plans.map(p=>({id:p.id,patientId:p.patientId,revision:p.revision,title:p.title,status:p.status,notes:p.notes,cancellation:p.cancellation,recordedAt:p.recordedAt,authorId:p.authorId,authorName:p.authorName,
-    evidence:p.evidence?safeEvidence(p.evidence,attachments):undefined,
-    acceptance:p.acceptance?safeEvidence(p.acceptance,attachments):undefined,
-    items:p.items.map(i=>({id:i.id,procedureId:i.procedureId,catalogRevision:i.catalogRevision,name:i.name,durationMinutes:i.durationMinutes,scope:i.scope,teeth:i.teeth,chartCategory:i.chartCategory}))})),
-  starts:state.starts.map(s=>({id:s.id,patientId:s.patientId,planId:s.planId,itemId:s.itemId,visitId:s.visitId,acceptedRevision:s.acceptedRevision,performedBy:s.performedBy,performedByName:s.performedByName,at:s.at})),
-  visits:state.visits,completions:state.completions,
- };
+export async function captureTreatment(
+  tx: import("../../database.js").ClinicTransaction,
+  clinicId: string,
+  patientId: string,
+  attachments: import("@clinic/contracts").AttachmentVersion[],
+) {
+  const plans = await new TreatmentRepository(tx, clinicId).versions(patientId);
+  const state = await new VisitRepository(tx, clinicId).state(patientId);
+  return {
+    consultations: (
+      await new ConsultationRepository(tx, clinicId).current(patientId)
+    ).map(
+      ({
+        priceMinor: _,
+        currency: __,
+        remuneration: ___,
+        billingChargeId: ____,
+        ...v
+      }) => v,
+    ),
+    plans: plans.map((p) => ({
+      id: p.id,
+      patientId: p.patientId,
+      revision: p.revision,
+      title: p.title,
+      status: p.status,
+      notes: p.notes,
+      cancellation: p.cancellation,
+      recordedAt: p.recordedAt,
+      authorId: p.authorId,
+      authorName: p.authorName,
+      evidence: p.evidence ? safeEvidence(p.evidence, attachments) : undefined,
+      acceptance: p.acceptance
+        ? safeEvidence(p.acceptance, attachments)
+        : undefined,
+      items: p.items.map((i) => ({
+        id: i.id,
+        procedureId: i.procedureId,
+        catalogRevision: i.catalogRevision,
+        name: i.name,
+        durationMinutes: i.durationMinutes,
+        scope: i.scope,
+        teeth: i.teeth,
+        chartCategory: i.chartCategory,
+      })),
+    })),
+    starts: state.starts.map((s) => ({
+      id: s.id,
+      patientId: s.patientId,
+      planId: s.planId,
+      itemId: s.itemId,
+      visitId: s.visitId,
+      acceptedRevision: s.acceptedRevision,
+      performedBy: s.performedBy,
+      performedByName: s.performedByName,
+      at: s.at,
+    })),
+    visits: state.visits,
+    completions: state.completions,
+  };
 }
-function safeEvidence<T extends import('@clinic/contracts').PlanEvidence>(evidence:T,attachments:import('@clinic/contracts').AttachmentVersion[]):T {
-  const {attachment,...rest}=evidence;
-  return {...rest,...(attachment && attachments.some(v=>v.id===attachment.id && v.revision===attachment.revision)?{attachment}:{})} as T;
+function safeEvidence<T extends import("@clinic/contracts").PlanEvidence>(
+  evidence: T,
+  attachments: import("@clinic/contracts").AttachmentVersion[],
+): T {
+  const { attachment, ...rest } = evidence;
+  return {
+    ...rest,
+    ...(attachment &&
+    attachments.some(
+      (v) => v.id === attachment.id && v.revision === attachment.revision,
+    )
+      ? { attachment }
+      : {}),
+  } as T;
 }
 
 // Shared monetary reference; callers keep their own authorization and workflow.
-export function enabledClinicCurrency(tx: import('../../database.js').ClinicTransaction, clinicId: string, code: string) {
-  return new TreatmentRepository(tx,clinicId).enabled(code);
+export function enabledClinicCurrency(
+  tx: import("../../database.js").ClinicTransaction,
+  clinicId: string,
+  code: string,
+) {
+  return new TreatmentRepository(tx, clinicId).enabled(code);
 }
 
-export function enabledClinicCurrencies(tx: import('../../database.js').ClinicTransaction, clinicId: string) {
-  return new TreatmentRepository(tx,clinicId).currencies();
+export function enabledClinicCurrencies(
+  tx: import("../../database.js").ClinicTransaction,
+  clinicId: string,
+) {
+  return new TreatmentRepository(tx, clinicId).currencies();
 }
-export {assertExportBound as boundTreatmentExport} from './export-bounds.repository.js';
+export { assertExportBound as boundTreatmentExport } from "./export-bounds.repository.js";

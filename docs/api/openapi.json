@@ -77,7 +77,7 @@
           "Consultations"
         ],
         "summary": "Read default consultation price",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
         "parameters": [],
         "responses": {
           "200": {
@@ -223,7 +223,7 @@
           "Consultations"
         ],
         "summary": "Configure default consultation price",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -402,7 +402,7 @@
           "Consultations"
         ],
         "summary": "Configure doctor remuneration",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "Origin",
@@ -581,7 +581,7 @@
           "Consultations"
         ],
         "summary": "Read retained remuneration settings",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
         "parameters": [
           {
             "name": "doctorId",
@@ -739,7 +739,7 @@
           "Consultations"
         ],
         "summary": "List consultations for a date within current scope",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
         "parameters": [
           {
             "name": "date",
@@ -897,7 +897,7 @@
           "Consultations"
         ],
         "summary": "List patient consultations within current scope",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
         "parameters": [
           {
             "name": "patientId",
@@ -1053,7 +1053,7 @@
           "Consultations"
         ],
         "summary": "Arrange standalone consultation without debt",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "patientId",
@@ -1241,7 +1241,7 @@
           "Consultations"
         ],
         "summary": "Explicitly record room entry and one charge",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "patientId",
@@ -1429,7 +1429,7 @@
           "Consultations"
         ],
         "summary": "Complete consultation independently of encounter",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "patientId",
@@ -1617,7 +1617,7 @@
           "Consultations"
         ],
         "summary": "Read protected frozen remuneration snapshot",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
         "parameters": [
           {
             "name": "patientId",
@@ -1784,7 +1784,7 @@
           "Consultations"
         ],
         "summary": "Start accepted procedures in the existing encounter",
-        "description": "Standalone consultations share encounters and billing. Booking is not room entry or clinical access. This A1 API delivers unpaid entry only; dedicated payment/share recognition is deferred to #105. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "description": "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -18318,6 +18318,203 @@
         }
       }
     },
+    "/billing/{id}/consultations/{consultationId}/payment": {
+      "post": {
+        "operationId": "post_billing_id_consultations_consultationId_payment",
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Fully settle consultation before or after entry",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nbilling.edit and active patient scope for own doctor; full outstanding amount only (agreed fee initially, corrected balance after ordinary corrections). Optional credit reuses free funds or funds reserved to this consultation, never another consultation. Only new money creates a receipt; credit-only methodId is null. Reservation excluded from free credit. Revision conflict or exact replay; no care entry. Corrections use existing allocation releases and refund approval.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "consultationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Exact configured APP_ORIGIN; local default http://localhost:4173, not necessarily the API URL."
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "description": "Current session csrfToken. Refresh after login/recovery rotation; never put in shared environment exports."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful authorized response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settlement"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "no-store under /api after the rate limiter."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input, unsupported precision or domain validation. See operation and shared schema; business refinements are enforced on server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Vérifiez les champs saisis.",
+                  "fields": {
+                    "password": "Saisissez au moins 12 caractères."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, expired or revoked session, invalid credentials or current password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Origin/CSRF failure, missing capability, wrong account stage/kind or patient/content scope. Client IDs confer no authority.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Missing or inaccessible clinic/patient/record. Do not infer another clinic exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stale revision, changed command payload/actor, conflicting state or exhausted funds/stock/quota. Fetch current state and reconcile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Body/file/source or export exceeds supported limits; never silently truncated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Global IP or login/recovery identity limit. Returns safe French JSON guidance; respect retry metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Sanitized unexpected failure; failed consequential transactions roll back.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required mail/private file service unavailable or bounded work busy. Retry only as documented.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Impossible d’effectuer cette action. Vérifiez votre accès et l’état actuel."
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/consultationPaymentSchema"
+              }
+            }
+          }
+        }
+      }
+    },
     "/billing/{id}/settlements/{settlementId}": {
       "get": {
         "operationId": "get_billing_id_settlements_settlementId",
@@ -26906,6 +27103,18 @@
               },
               "shareDenominator": {
                 "type": "string"
+              },
+              "consultationId": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "settlementIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
@@ -26917,7 +27126,10 @@
               "actorId",
               "recognizedBaseMinor",
               "shareNumerator",
-              "shareDenominator"
+              "shareDenominator",
+              "consultationId",
+              "currency",
+              "settlementIds"
             ]
           }
         ]
@@ -31485,6 +31697,9 @@
             "items": {
               "type": "object",
               "properties": {
+                "reservedConsultationId": {
+                  "type": "string"
+                },
                 "id": {
                   "type": "string"
                 },
@@ -31596,11 +31811,11 @@
                   "anyOf": [
                     {
                       "type": "string",
-                      "const": "procedure"
+                      "const": "consultation"
                     },
                     {
                       "type": "string",
-                      "const": "consultation"
+                      "const": "procedure"
                     }
                   ]
                 },
@@ -31902,6 +32117,25 @@
       "Settlement": {
         "type": "object",
         "properties": {
+          "consultation": {
+            "type": "object",
+            "properties": {
+              "consultationId": {
+                "type": "string"
+              },
+              "chargeId": {
+                "type": "string"
+              },
+              "performedBy": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "consultationId",
+              "chargeId",
+              "performedBy"
+            ]
+          },
           "identity": {
             "type": "object",
             "properties": {
@@ -32461,6 +32695,9 @@
             "items": {
               "type": "object",
               "properties": {
+                "reservedConsultationId": {
+                  "type": "string"
+                },
                 "id": {
                   "type": "string"
                 },
@@ -34107,6 +34344,9 @@
             "items": {
               "type": "object",
               "properties": {
+                "reservedConsultationId": {
+                  "type": "string"
+                },
                 "id": {
                   "type": "string"
                 },
@@ -37451,6 +37691,61 @@
           "newMoney",
           "deposit",
           "allocations"
+        ],
+        "additionalProperties": false
+      },
+      "consultationPaymentSchema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "revision": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "MRU",
+              "EUR",
+              "USD",
+              "JPY",
+              "KWD"
+            ]
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,3})?$"
+          },
+          "credit": {
+            "default": "0",
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,3})?$"
+          },
+          "methodId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "commandId",
+          "revision",
+          "currency",
+          "amount",
+          "methodId"
         ],
         "additionalProperties": false
       },

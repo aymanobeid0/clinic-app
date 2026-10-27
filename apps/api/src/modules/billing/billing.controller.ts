@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { z } from "zod";
 import {
+  consultationPaymentSchema,
   openingBalanceSchema,
   reconcileChargeSchema,
   paymentMethodSchema,
@@ -17,6 +18,16 @@ import type { BillingService } from "./billing.service.js";
 const patientId = (value: unknown) => z.uuid().parse(value).toLowerCase();
 export class BillingController {
   constructor(readonly service: BillingService) {}
+  consultationPayment: RequestHandler = async (req, res) => {
+    res.json(
+      await this.service.payConsultation(
+        req.session.actor,
+        patientId(req.params.id),
+        patientId(req.params.consultationId),
+        consultationPaymentSchema.parse(req.body),
+      ),
+    );
+  };
   credit: RequestHandler = async (req, res) => {
     res.json(
       await this.service.credit(

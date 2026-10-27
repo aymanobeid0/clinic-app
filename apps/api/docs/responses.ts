@@ -12,6 +12,9 @@ export type DocumentationResponses = {
         recognizedBaseMinor: string;
         shareNumerator: string;
         shareDenominator: string;
+        consultationId: string;
+        currency: string;
+        settlementIds: string[];
       })
     | null;
   Session: { csrfToken: string };
