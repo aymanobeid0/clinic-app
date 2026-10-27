@@ -18324,8 +18324,8 @@
         "tags": [
           "Billing"
         ],
-        "summary": "Receive full consultation payment before or after entry",
-        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nbilling.edit and active patient scope for own doctor; full agreed currency/amount only. Reservation excluded from free credit. Revision conflict or exact replay; no care entry. Corrections use existing allocation releases and refund approval.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
+        "summary": "Fully settle consultation before or after entry",
+        "description": "Managers have clinic-wide financial authority but no clinical authority. For nonmanagers: billing.read for workspace/settlement/invoice reads; billing.edit for settlements, opening debt, reconciliation, allocation releases and method lookup; invoices.issue for invoice issuance; discounts for credits/charged cancellation; reversals for payment reversal; refunds for refund request/approval/execution. financial.print/download additionally requires billing.read. Method configuration is manager-only; ordinary doctors cannot enter unassigned opening debt. Ordinary doctors require active patient scope and own-performed-work only; staff get neutral references unless separately clinically authorized. History/output are separately granted. Exact minor-unit strings and currency-separated totals; no conversion. commandId binds actor/payload and current authorization; stale/exhausted/changed commands409.\n\nbilling.edit and active patient scope for own doctor; full outstanding amount only (agreed fee initially, corrected balance after ordinary corrections). Optional credit reuses free funds or funds reserved to this consultation, never another consultation. Only new money creates a receipt; credit-only methodId is null. Reservation excluded from free credit. Revision conflict or exact replay; no care entry. Corrections use existing allocation releases and refund approval.\n\nRetain commandId and exact payload for an uncertain-response retry; a changed payload needs a new command after reconciliation. Current authorization is rechecked. No generic Idempotency-Key header.",
         "parameters": [
           {
             "name": "id",
@@ -37722,10 +37722,22 @@
             "type": "string",
             "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,3})?$"
           },
-          "methodId": {
+          "credit": {
+            "default": "0",
             "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            "pattern": "^(0|[1-9][0-9]{0,14})(\\.[0-9]{1,3})?$"
+          },
+          "methodId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [

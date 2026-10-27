@@ -12,6 +12,7 @@ export type ConsultationRecord = Omit<
   priceMinor: string;
   currency: ConsultationPrice["currency"];
   remuneration: Remuneration | null;
+  billingChargeId?: string;
 };
 
 export class ConsultationRepository {

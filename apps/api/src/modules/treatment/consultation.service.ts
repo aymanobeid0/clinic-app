@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { randomUUID } from "node:crypto";
 import type {
   Consultation,
   ConsultationPrice,
@@ -36,6 +37,7 @@ const canReadPrice = (c: {
 const visible = (
   {
     remuneration: _remuneration,
+    billingChargeId: _billingChargeId,
     priceMinor,
     currency,
     ...value
@@ -271,6 +273,7 @@ export class ConsultationService {
           at: this.at(),
           actorId: c.accountId,
           remuneration: null,
+          billingChargeId: randomUUID(),
         };
         await r.append(value);
         await plans.save(data.commandId, c.accountId, replay.hash, value);
@@ -378,12 +381,13 @@ export class ConsultationService {
             visitId: data.visitId,
             enteredAt: at,
             remuneration,
+            billingChargeId: old.billingChargeId ?? randomUUID(),
             at,
             actorId: c.accountId,
           };
           await createConsultationCharge(tx, c.clinicId, {
             sourceKind: "consultation",
-            id: old.id,
+            id: value.billingChargeId!,
             consultationId: old.id,
             patientId,
             performedBy: old.doctorId,

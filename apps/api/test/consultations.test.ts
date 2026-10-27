@@ -679,7 +679,7 @@ it("uses ordinary release and approved refund for reserved funds without freeing
   expect(paid.status).toBe(200);
   const release = {
     commandId: randomUUID(),
-    chargeId: s.booking.id,
+    chargeId: paid.body.allocations[0].chargeId,
     settlementId: paid.body.id,
     amount: "100",
     reason: "Correction fictive",
@@ -964,7 +964,7 @@ it("cannot spend released consultation funds on treatment while ordinary install
     (
       await s.doctor.post(`${s.billingPath}/allocation-releases`, {
         commandId: randomUUID(),
-        chargeId: s.booking.id,
+        chargeId: paid.body.allocations[0].chargeId,
         settlementId: paid.body.id,
         amount: "100",
         reason: "Libération fictive",
@@ -1018,6 +1018,176 @@ it("cannot spend released consultation funds on treatment while ordinary install
   expect(
     (await s.doctor.browser.get(s.sharePath)).body.recognizedBaseMinor,
   ).toBe("40000");
+});
+
+it("keeps identical client consultation IDs isolated between clinics", async () => {
+  const a = await paymentScenario(),
+    b = await paymentScenario();
+  const booked = await b.doctor.post(b.base, {
+    ...b.booking,
+    id: a.booking.id,
+    commandId: randomUUID(),
+  });
+  expect(booked.status).toBe(200);
+  const payA = await a.doctor.post(a.paymentPath, a.payment);
+  const payB = await b.doctor.post(
+    `/billing/${b.patient.id}/consultations/${a.booking.id}/payment`,
+    b.payment,
+  );
+  expect(payA.status).toBe(200);
+  expect(payB.status).toBe(200);
+  expect(payA.body.allocations[0].chargeId).not.toBe(
+    payB.body.allocations[0].chargeId,
+  );
+  expect(
+    (await a.doctor.post(`${a.base}/entry`, { ...a.entry, revision: 2 }))
+      .status,
+  ).toBe(200);
+  expect(
+    (
+      await b.doctor.post(`${b.base}/entry`, {
+        ...b.entry,
+        id: a.booking.id,
+        revision: 2,
+      })
+    ).status,
+  ).toBe(200);
+  for (const s of [a, b])
+    expect(
+      (await s.doctor.browser.get(`/api${s.billingPath}`)).body.charges[0],
+    ).toMatchObject({ paidMinor: "50000", dueMinor: "0" });
+});
+
+it("fully settles corrected debt and reapplies same-consultation credit without a new receipt or duplicate share", async () => {
+  const s = await paymentScenario();
+  expect((await s.doctor.post(`${s.base}/entry`, s.entry)).status).toBe(200);
+  const charge = (await s.m.browser.get(`/api${s.billingPath}`)).body
+    .charges[0];
+  expect(
+    (
+      await s.m.post(`${s.billingPath}/credits`, {
+        commandId: randomUUID(),
+        chargeId: charge.id,
+        revision: 0,
+        finalCharge: "400",
+        reason: "Correction fictive du prix",
+      })
+    ).status,
+  ).toBe(200);
+  const paid = await s.m.post(s.paymentPath, {
+    ...s.payment,
+    revision: 2,
+    amount: "400",
+  });
+  expect(paid.status).toBe(200);
+  expect(
+    (
+      await s.m.post(`${s.billingPath}/allocation-releases`, {
+        commandId: randomUUID(),
+        chargeId: charge.id,
+        settlementId: paid.body.id,
+        amount: "100",
+        reason: "Réaffectation fictive",
+      })
+    ).status,
+  ).toBe(200);
+  const reapplied = await s.doctor.post(s.paymentPath, {
+    ...s.payment,
+    commandId: randomUUID(),
+    revision: 3,
+    amount: "100",
+    credit: "100",
+    methodId: null,
+  });
+  expect(reapplied.status).toBe(200);
+  expect(reapplied.body).toMatchObject({
+    receiptNumber: null,
+    newMoneyMinor: "0",
+    creditUsedMinor: "10000",
+  });
+  expect(
+    (await s.doctor.browser.get(`/api${s.billingPath}`)).body.charges[0],
+  ).toMatchObject({ dueMinor: "0", paidMinor: "40000" });
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "40000",
+    shareNumerator: "1600000",
+    rate: "40",
+  });
+});
+
+it("counts old credit and new money once and retains reservation when original deposit funds are released", async () => {
+  const s = await paymentScenario();
+  const deposit = await s.m.post(`${s.billingPath}/settlements`, {
+    commandId: randomUUID(),
+    currency: "MRU",
+    methodId: s.payment.methodId,
+    newMoney: "200",
+    deposit: "200",
+    allocations: [],
+  });
+  expect(deposit.status).toBe(200);
+  const paid = await s.m.post(s.paymentPath, { ...s.payment, credit: "200" });
+  expect(paid.status).toBe(200);
+  expect(paid.body).toMatchObject({
+    newMoneyMinor: "30000",
+    creditUsedMinor: "20000",
+    receiptNumber: expect.any(String),
+  });
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "50000",
+    shareNumerator: "2000000",
+  });
+  const chargeId = paid.body.allocations[0].chargeId;
+  expect(
+    (
+      await s.m.post(`${s.billingPath}/allocation-releases`, {
+        commandId: randomUUID(),
+        chargeId,
+        settlementId: paid.body.id,
+        amount: "400",
+        reason: "Réaffectation fictive de fonds mixtes",
+      })
+    ).status,
+  ).toBe(200);
+  const state = (await s.m.browser.get(`/api${s.billingPath}`)).body;
+  expect(state.totals[0].creditMinor).toBe("0");
+  const positive = state.creditSources.filter(
+    (l: { availableMinor: string }) => BigInt(l.availableMinor) > 0n,
+  );
+  expect(positive).toHaveLength(2);
+  expect(positive).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        rootSettlementId: deposit.body.id,
+        availableMinor: "10000",
+        reservedConsultationId: s.booking.id,
+      }),
+    ]),
+  );
+  expect(
+    positive.every(
+      (l: { reservedConsultationId: string }) =>
+        l.reservedConsultationId === s.booking.id,
+    ),
+  ).toBe(true);
+  const reapplied = await s.m.post(s.paymentPath, {
+    ...s.payment,
+    commandId: randomUUID(),
+    revision: 2,
+    amount: "400",
+    credit: "400",
+    methodId: null,
+  });
+  expect(reapplied.status).toBe(200);
+  expect(reapplied.body.receiptNumber).toBeNull();
+  expect((await s.doctor.browser.get(s.sharePath)).body).toMatchObject({
+    recognizedBaseMinor: "50000",
+    shareNumerator: "2000000",
+  });
+  const report = await s.m.browser
+    .get("/api/reports/financial")
+    .query({ date: s.booking.date });
+  expect(report.body.totals[0].newMoneyMinor).toBe("50000");
 });
 it("continues accepted treatment in the consultation encounter and leaves one pending note when care ends", async () => {
   const s = await consultationScenario(true);

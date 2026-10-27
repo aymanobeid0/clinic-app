@@ -796,7 +796,8 @@ export const consultationPaymentSchema = z.object({
   revision: z.number().int().positive(),
   currency: currencyCodeSchema,
   amount: exactAmountSchema,
-  methodId: consultationIdSchema,
+  credit: exactAmountSchema.default('0'),
+  methodId: consultationIdSchema.nullable(),
 }).strict();
 export type Consultation = {
   id: string;

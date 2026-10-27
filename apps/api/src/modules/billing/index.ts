@@ -28,7 +28,9 @@ export async function consultationFunds(
     .filter((e) => e.kind === "correction")
     .map((e) => e.snapshot as unknown as FinancialCorrection);
   const chargeIds = new Set([
-    id,
+    ...settlements
+      .filter((s) => s.consultation?.consultationId === id)
+      .map((s) => s.consultation!.chargeId),
     ...entries
       .filter((e) => e.kind === "charge")
       .map((e) => e.snapshot as unknown as ConsultationCharge)

@@ -776,11 +776,11 @@ export const operations = [
       [
         "post",
         "/billing/{id}/consultations/{consultationId}/payment",
-        "Receive full consultation payment before or after entry",
+        "Fully settle consultation before or after entry",
         "Settlement",
         "consultationPaymentSchema",
         200,
-        "billing.edit and active patient scope for own doctor; full agreed currency/amount only. Reservation excluded from free credit. Revision conflict or exact replay; no care entry. Corrections use existing allocation releases and refund approval.",
+        "billing.edit and active patient scope for own doctor; full outstanding amount only (agreed fee initially, corrected balance after ordinary corrections). Optional credit reuses free funds or funds reserved to this consultation, never another consultation. Only new money creates a receipt; credit-only methodId is null. Reservation excluded from free credit. Revision conflict or exact replay; no care entry. Corrections use existing allocation releases and refund approval.",
       ],
       [
         "get",

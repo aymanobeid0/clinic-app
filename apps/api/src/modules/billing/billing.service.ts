@@ -96,47 +96,84 @@ export class BillingService {
         if (!currency || data.currency !== consultation.currency)
           throw new AppError(400, "Devise différente ou non activée.");
         const amount = exactMinor(data.amount, currency.precision);
-        if (amount <= 0n || amount !== BigInt(consultation.priceMinor))
-          throw new AppError(409, "Paiement intégral du tarif convenu requis.");
+        const credit = exactMinor(data.credit, currency.precision);
+        if (amount <= 0n || credit > amount)
+          throw new AppError(409, "Montant intégral positif requis.");
         const state = await projectBilling(tx, c, patientId);
         const charge = state.charges.find(
           (ch) => ch.sourceKind === "consultation" && ch.consultationId === id,
         );
-        const chargeId = charge?.id ?? id;
+        const chargeId =
+          charge?.id ?? consultation.billingChargeId ?? randomUUID();
         const funds = await this.funds(tx, c, patientId);
-        if (
-          funds.allocations
-            .filter((a) => a.chargeId === chargeId)
-            .some(
-              (a) => BigInt(a.newMoneyMinor) + BigInt(a.creditMinor) > 0n,
-            ) ||
-          (charge && BigInt(charge.dueMinor) !== amount)
-        )
-          throw new AppError(409, "Consultation déjà réglée ou corrigée.");
+        const paid = funds.allocations
+          .filter((a) => a.chargeId === chargeId)
+          .reduce(
+            (n, a) => n + BigInt(a.newMoneyMinor) + BigInt(a.creditMinor),
+            0n,
+          );
+        const outstanding =
+          BigInt(charge?.chargedMinor ?? consultation.priceMinor) - paid;
+        if (amount !== outstanding)
+          throw new AppError(409, "Règlement intégral du solde actuel requis.");
+        const sources: Settlement["allocations"][number]["sources"] = [];
+        let needed = credit;
+        for (const lot of state.creditSources.filter(
+          (l) =>
+            l.currency === data.currency &&
+            (!l.reservedConsultationId || l.reservedConsultationId === id),
+        )) {
+          const used =
+            BigInt(lot.availableMinor) < needed
+              ? BigInt(lot.availableMinor)
+              : needed;
+          if (used > 0n)
+            sources.push({
+              settlementId: lot.id,
+              amountMinor: used.toString(),
+            });
+          needed -= used;
+        }
+        if (needed > 0n)
+          throw new AppError(409, "Crédit disponible insuffisant.");
+        const fresh = amount - credit;
         const method = (await r.methods()).find(
           (m) => m.id === data.methodId && m.active,
         );
-        if (!method) throw new AppError(400, "Moyen de paiement actif requis.");
+        if ((fresh > 0n && !method) || (fresh === 0n && data.methodId !== null))
+          throw new AppError(
+            400,
+            "Moyen de paiement actif requis uniquement pour les nouveaux fonds.",
+          );
         const at = new Date(this.now()).toISOString();
-        await plans.freezeConsultation(patientId, id, at, c.accountId);
+        await plans.freezeConsultation(
+          patientId,
+          id,
+          at,
+          c.accountId,
+          chargeId,
+        );
         const value: Settlement = {
           id: randomUUID(),
           patientId,
           currency: data.currency,
           actorId: c.accountId,
           at,
-          receiptNumber: await r.nextReceipt(new Date(at).getUTCFullYear()),
-          methodId: method.id,
-          methodName: method.name,
-          newMoneyMinor: amount.toString(),
+          receiptNumber:
+            fresh > 0n
+              ? await r.nextReceipt(new Date(at).getUTCFullYear())
+              : null,
+          methodId: method?.id ?? null,
+          methodName: method?.name ?? null,
+          newMoneyMinor: fresh.toString(),
           depositMinor: "0",
-          creditUsedMinor: "0",
+          creditUsedMinor: credit.toString(),
           allocations: [
             {
               chargeId,
-              newMoneyMinor: amount.toString(),
-              creditMinor: "0",
-              sources: [],
+              newMoneyMinor: fresh.toString(),
+              creditMinor: credit.toString(),
+              sources,
             },
           ],
           consultation: {

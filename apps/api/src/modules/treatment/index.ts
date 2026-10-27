@@ -70,6 +70,7 @@ export function treatmentBilling(
       id: string,
       at: string,
       actorId: string,
+      billingChargeId: string,
     ) => {
       const r = new ConsultationRepository(tx, clinicId);
       const old = (await r.versions(patientId, id)).at(-1)!;
@@ -83,6 +84,7 @@ export function treatmentBilling(
       await r.append({
         ...old,
         remuneration,
+        billingChargeId,
         revision: old.revision + 1,
         at,
         actorId,
@@ -166,7 +168,15 @@ export async function captureTreatment(
   return {
     consultations: (
       await new ConsultationRepository(tx, clinicId).current(patientId)
-    ).map(({ priceMinor: _, currency: __, remuneration: ___, ...v }) => v),
+    ).map(
+      ({
+        priceMinor: _,
+        currency: __,
+        remuneration: ___,
+        billingChargeId: ____,
+        ...v
+      }) => v,
+    ),
     plans: plans.map((p) => ({
       id: p.id,
       patientId: p.patientId,

@@ -61,9 +61,10 @@ export function projectFunds(
     }),
   );
   for (const lot of lots) {
-    const consultation = settlements.find(
-      (s) => s.id === lot.rootSettlementId,
-    )?.consultation;
+    const consultation =
+      settlements.find((s) => s.consultation?.chargeId === lot.chargeId)
+        ?.consultation ??
+      settlements.find((s) => s.id === lot.rootSettlementId)?.consultation;
     if (consultation) lot.reservedConsultationId = consultation.consultationId;
   }
   for (const lot of lots) {
