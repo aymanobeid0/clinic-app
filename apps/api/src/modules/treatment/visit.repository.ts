@@ -2,8 +2,10 @@ import type {
   Visit,
   ProcedureStart,
   ProcedureCompletion,
+  Remuneration,
 } from "@clinic/contracts";
 import type { ClinicTransaction } from "../../database.js";
+type StartRecord = ProcedureStart & { remuneration?: Remuneration | null };
 export class VisitRepository {
   constructor(
     readonly tx: ClinicTransaction,
@@ -35,7 +37,10 @@ export class VisitRepository {
       visits: visits
         .map((v) => v.snapshot as unknown as Visit)
         .sort((a, b) => a.startedAt.localeCompare(b.startedAt)),
-      starts: starts.map((s) => s.snapshot as unknown as ProcedureStart),
+      starts: starts.map((s) => {
+        const visible = ({ remuneration: _, ...event }: StartRecord) => event;
+        return visible(s.snapshot as unknown as StartRecord);
+      }),
       completions: completions.map(
         (s) => s.snapshot as unknown as ProcedureCompletion,
       ),
@@ -82,7 +87,13 @@ export class VisitRepository {
       },
     });
   }
-  async start(event: ProcedureStart) {
+  async remunerationStart(patientId: string, id: string) {
+    const row = await this.tx.procedureStart.findFirst({
+      where: { clinicId: this.clinicId, patientId, id },
+    });
+    return row ? (row.snapshot as unknown as StartRecord) : null;
+  }
+  async start(event: ProcedureStart, remuneration: Remuneration | null) {
     await this.tx.procedureStart.create({
       data: {
         id: event.id,
@@ -91,7 +102,7 @@ export class VisitRepository {
         planId: event.planId,
         itemId: event.itemId,
         visitId: event.visitId,
-        snapshot: event,
+        snapshot: { ...event, remuneration },
       },
     });
   }

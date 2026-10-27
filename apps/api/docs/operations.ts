@@ -31,6 +31,18 @@ const group = (tag: string, description: string, rows: Row[]): Operation[] =>
 
 export const operations = [
   ...group(
+    "Treatment remuneration",
+    "Manager or concerned active doctor with billing.read and patient scope only. Rate freezes once at procedure start; missing configuration and legacy unsnapshotted work remain explicit with null share, never today's rate. Salary mode reports no percentage share or payroll. Only actual allocations to this performer's provided care count; free deposits and unpaid debt do not. Exact numerator/denominator in minor units, currencies separate. Retained source allocations include releases/reversals at the frozen rate; release then refund does not subtract twice. No remuneration in general billing, clinical, export or cutoff snapshots.",
+    [
+      [
+        "get",
+        "/treatment/{id}/starts/{startId}/remuneration",
+        "Read protected settled treatment share",
+        "TreatmentRemuneration",
+      ],
+    ],
+  ),
+  ...group(
     "Consultations",
     "Standalone consultations share encounters and billing. Booking/payment is not room entry or clinical access. Actual full payment is consultation-reserved, creates one ordinary receipt and immediately recognizes share at the earlier payment/entry rate. Normal source-linked release/refund/reversal applies. Default price is manager-configured; remuneration history manager-only, frozen snapshot manager/concerned doctor only. No product UI or payroll.",
     [

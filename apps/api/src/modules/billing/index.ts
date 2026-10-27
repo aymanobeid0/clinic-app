@@ -12,6 +12,13 @@ import type {
   FinancialCorrection,
   ConsultationCharge,
 } from "@clinic/contracts";
+function exactShare(base: bigint, rate: string) {
+  const digits = rate.split(".")[1]?.length ?? 0;
+  return {
+    shareNumerator: (base * BigInt(rate.replace(".", ""))).toString(),
+    shareDenominator: (100n * 10n ** BigInt(digits)).toString(),
+  };
+}
 export async function consultationFunds(
   tx: ClinicTransaction,
   clinicId: string,
@@ -41,7 +48,6 @@ export async function consultationFunds(
   const base = funds.allocations
     .filter((a) => chargeIds.has(a.chargeId))
     .reduce((n, a) => n + BigInt(a.newMoneyMinor) + BigInt(a.creditMinor), 0n);
-  const digits = rate?.split(".")[1]?.length ?? 0;
   return {
     consultationId: id,
     currency,
@@ -49,8 +55,39 @@ export async function consultationFunds(
       .filter((s) => s.consultation?.consultationId === id)
       .map((s) => s.id),
     recognizedBaseMinor: base.toString(),
-    shareNumerator: (base * BigInt((rate ?? "0").replace(".", ""))).toString(),
-    shareDenominator: (100n * 10n ** BigInt(digits)).toString(),
+    ...exactShare(base, rate ?? "0"),
+  };
+}
+// Shared retained funds, including releases/reversals: deposits alone earn no share.
+export async function treatmentFunds(
+  tx: ClinicTransaction,
+  clinicId: string,
+  patientId: string,
+  chargeId: string,
+  rate: string | null | undefined,
+) {
+  const entries = await new BillingRepository(tx, clinicId).entries(patientId);
+  const funds = projectFunds(
+    entries
+      .filter((e) => e.kind === "settlement")
+      .map((e) => e.snapshot as unknown as Settlement),
+    entries
+      .filter((e) => e.kind === "correction")
+      .map((e) => e.snapshot as unknown as FinancialCorrection),
+  );
+  const allocations = funds.allocations
+    .filter((a) => a.chargeId === chargeId)
+    .map(({ chargeId: _, ...a }) => a);
+  const base = allocations.reduce(
+    (n, a) => n + BigInt(a.newMoneyMinor) + BigInt(a.creditMinor),
+    0n,
+  );
+  return {
+    recognizedBaseMinor: base.toString(),
+    ...(rate == null
+      ? { shareNumerator: null, shareDenominator: null }
+      : exactShare(base, rate)),
+    allocations,
   };
 }
 export function createBillingRoutes(

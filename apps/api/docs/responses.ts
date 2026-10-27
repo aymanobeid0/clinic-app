@@ -6,6 +6,7 @@ export type DocumentationResponses = {
   Consultations: C.Consultation[];
   ConsultationPrice: C.ConsultationPrice | null;
   Remuneration: C.Remuneration;
+  TreatmentRemuneration: C.TreatmentRemuneration;
   RemunerationHistory: { history: (C.ConsultationPrice | C.Remuneration)[] };
   ConsultationRemuneration:
     | (C.Remuneration & {
