@@ -4,7 +4,7 @@ Updated 2026-10-27 UTC. Earlier history: HANDOFF.history-2026-10-25.md; previous
 
 ## Authorized scope and current state
 
-Owner directly authorized #106 A3 implementation/publication in this chat: one builder, one independent combined Standards/Spec reviewer; no new interview, #107, UI, payroll, production/live migration, real patient data or real mail. Owner confirms prerequisite merges; accepted without inspecting PR109 or auditing prior merges. Current106 body/comments/native blockers read: open, no comments, native104/105 closed. Project106 stale Blocked corrected to Building; keep open/Review at publication until owner-approved merge.
+Owner directly authorized #106 A3 implementation/publication in this chat: one builder, one independent combined Standards/Spec reviewer; no new interview, #107, UI, payroll, production/live migration, real patient data or real mail. Owner confirms prerequisite merges; accepted without inspecting PR109 or auditing prior merges. Current106 body/comments/native blockers read: open, no comments, native104/105 closed. Project106 now Review; issue106 OPEN until owner-approved merge.
 
 Fresh fetched main/base/comparison: `4e22e4d432a174e6ee370495b847067f76dea94e`. Branch `codex/issue-106-treatment-share`; final application/contracts/test/OpenAPI source `1d0f2efca3f8e8cb08c8a543e480374132fa1d21`. No source edits after this pin. Contract: current #106, approved integration in docs/planning/consultation-integration.md, ADR0002, financial/access decisions and architecture.
 
@@ -20,6 +20,6 @@ Task-owned fictional Compose project `clinic-issue106-test`, container `clinic-i
 
 Owner local docs/api/apidog.md, docs/planning/delivery-status.md and two untracked API error-planning notes preserved/excluded. Stash4e97123b318d9c9797845a8e0d07a714e8e1288d untouched. No reset/destructive checkout or ignored credential-file reads.
 
-Next: push/open and attach PR under standing publication authorization; set106 Review. Full suite, independent review, task cleanup and evidence complete. Human reviews/merges. Do not begin107 automatically.
+Published/attached PR110: https://github.com/aymanobeid0/clinic-app/pull/110 (OPEN/MERGEABLE, non-draft). Publication head5d7d8a0105687d20ff9759fa9b35bd77a4c47f90; subsequent commits only update evidence. Full suite, independent review, task cleanup and handoff mirrors complete. Next: owner reviews and manually merges. Human reviews/merges. Do not begin107 automatically.
 
 Suggested skills: repository code-review for requested follow-up, same reviewer for any source fixes; implement/TDD for separately authorized later work; handoff/pr at delivery. Exact reads/overrides and provenance are in the per-ticket implementation/review reports.

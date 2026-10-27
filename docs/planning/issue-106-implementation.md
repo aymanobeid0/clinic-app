@@ -30,3 +30,5 @@ Owner changes `docs/api/apidog.md`, `docs/planning/delivery-status.md` and untra
 ## Publication checkpoint
 
 HANDOFF and established OS-temp mirrors updated before PR, linking actual builder/independent evidence. Current project106 stale Blocked reconciled to Building during implementation, native dependencies preserved. Standing owner publication authorization applies; no merge authorization. Final source stays1d0f2ef; remaining delivery commits contain evidence only. PR URL/Review readback recorded after publication below.
+
+Published [PR110](https://github.com/aymanobeid0/clinic-app/pull/110), non-draft to main, publication head `5d7d8a0105687d20ff9759fa9b35bd77a4c47f90`. Branch push succeeded; attached to this chat through Codex artifact tool. GitHub readback: OPEN/MERGEABLE, issue106 OPEN and Project Review. No merge/closure/Done or #107 start. Post-publication commit only refreshes these evidence links/status. Workspace HANDOFF and sandbox/native `clinic-app-HANDOFF.md` mirrors refreshed with matching hashes; no unresolved blocker. Next: owner reviews and manually merges.
