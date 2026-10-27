@@ -32,10 +32,14 @@ const canReadPrice = (c: {
   permissions: readonly string[];
 }) => c.isManager || c.permissions.includes("billing.read");
 const visible = (
-  record: ConsultationRecord,
+  {
+    remuneration: _remuneration,
+    priceMinor,
+    currency,
+    ...value
+  }: ConsultationRecord,
   c: { isManager: boolean; permissions: readonly string[] },
 ): Consultation => {
-  const { remuneration: _, priceMinor, currency, ...value } = record;
   return { ...value, ...(canReadPrice(c) ? { priceMinor, currency } : {}) };
 };
 export class ConsultationService {
