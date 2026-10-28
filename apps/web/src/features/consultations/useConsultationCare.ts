@@ -17,7 +17,8 @@ export function useConsultationCare(
   const command = useConsultationCommand<Consultation>(
     identity,
     patientId,
-    `${accessScope}:${id}`,
+    accessScope,
+    id,
   );
   const allowed =
     activeAccount(identity) &&

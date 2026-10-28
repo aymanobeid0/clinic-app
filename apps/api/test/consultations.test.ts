@@ -1799,7 +1799,7 @@ it("keeps reception booking separate from clinical access and protects doctor re
 it("rejects stale and changed retries, missing remuneration and unrelated appointments without partial care", async () => {
   const s = await consultationScenario();
   expect(
-    (await s.doctor.post(s.base, { ...s.booking, date: "2026-10-28" })).status,
+    (await s.doctor.post(s.base, { ...s.booking, date: new Date(Date.parse(s.booking.date) + 86_400_000).toISOString().slice(0, 10) })).status,
   ).toBe(409);
   expect(
     (await s.doctor.post(`${s.base}/entry`, { ...s.entry, revision: 2 }))

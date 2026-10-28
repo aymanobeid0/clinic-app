@@ -107,7 +107,8 @@ export function useConsultationPayment(
   const command = useConsultationCommand<Settlement>(
     identity,
     patientId,
-    `${accessScope}:${id}`,
+    accessScope,
+    id,
   );
   const allowed =
     activeAccount(identity) &&
@@ -168,7 +169,7 @@ export function useRemunerationForm(
   doctorId: string,
   revision: number,
 ) {
-  const command = useConsultationCommand(identity, "", doctorId);
+  const command = useConsultationCommand(identity, "", "active", doctorId);
   const editor = useCommandForm<z.infer<typeof rateSchema>, unknown>(
     JSON.stringify([identityScope(identity), doctorId]),
     { doctorId, revision, mode: "percentage", rate: "" },

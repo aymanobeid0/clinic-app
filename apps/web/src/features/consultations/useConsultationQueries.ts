@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { useEffect } from "react";
 import type {
   Identity,
   Consultation,
@@ -7,6 +8,7 @@ import type {
   TreatmentRemuneration,
 } from "@clinic/contracts";
 import { useCareQuery } from "../clinical/useCareQuery.js";
+import { useConsultationAuthority } from "./consultation.authority.js";
 import {
   activeAccount,
   activePatientScope,
@@ -31,6 +33,7 @@ function useProjection<T>(
   allowed: boolean,
 ) {
   const key = consultationKey(identity, patientId, accessScope);
+  const authority = useConsultationAuthority(identity, patientId, accessScope);
   // Reuse authorized data-free clinic invalidations; each projection is always
   // fetched again through its own permission/patient-scoped endpoint.
   const events = identity.isManager
@@ -41,12 +44,27 @@ function useProjection<T>(
           identity.permissions.includes("clinical.read")
         ? "catalog/events"
         : undefined;
-  const query = useCareQuery<T>([...key, view], path, events, allowed, key);
+  const query = useCareQuery<T>(
+    [...key, view],
+    path,
+    events,
+    allowed && !authority.suspended,
+    key,
+  );
+  useEffect(() => {
+    if (query.denied && !authority.suspended) void authority.retire();
+  }, [query.denied, authority.suspended, authority.retire]);
   return {
     ...query,
-    data: allowed ? query.data : undefined,
-    denied: !allowed || query.denied,
-    refetch: () => (allowed ? query.refetch() : Promise.resolve(undefined)),
+    data: allowed && !authority.suspended ? query.data : undefined,
+    denied: !allowed || authority.suspended || query.denied,
+    refetch: async () => {
+      if (!allowed) return;
+      const result = await query.refetch();
+      // A fresh authorized read can release suspension; old snapshots cannot.
+      if (!result.error) authority.resume();
+      return result;
+    },
   };
 }
 export function useConsultations(

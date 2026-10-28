@@ -274,3 +274,58 @@ test("mocked treatment share retains explicit legacy/missing state instead of a 
     '{"status":"legacy_unsnapshotted","remuneration":null,"shareNumerator":null,"shareDenominator":null}',
   );
 });
+
+for (const deniedAction of ["payment", "read"]) {
+  test(`review regression: ${deniedAction}403 retires shared consultation data and all tab drafts`, async ({
+    page,
+  }) => {
+    let denied = false;
+    await page.route("**/api/**", (route) => {
+      const req = route.request(),
+        url = req.url();
+      if (url.endsWith("/events"))
+        return route.fulfill({
+          contentType: "text/event-stream",
+          body: ": verification\n\n",
+        });
+      if (
+        (req.method() === "POST" && url.endsWith("/payment")) ||
+        (denied && url.endsWith(`/consultations/${consultation.patientId}`))
+      )
+        return route.fulfill({ status: 403, json: { error: "Accès retiré" } });
+      return route.fulfill({
+        json: url.endsWith("/remuneration")
+          ? { rate: "40", shareNumerator: "2000000", shareDenominator: "100" }
+          : url.endsWith("/visits")
+            ? { visits: [], starts: [], completions: [], appointments: [] }
+            : url.includes("/billing/")
+              ? { charges: [], totals: [] }
+              : url.includes("/notes")
+                ? []
+                : [consultation],
+      });
+    });
+    await page.goto("/test/consultation-workflows.harness.html?care");
+    await expect(page.getByTestId("share")).toContainText('"rate":"40"');
+    await page.getByLabel("Prix convenu").fill("500");
+    if (deniedAction === "payment") {
+      await page.getByLabel("Montant reçu").fill("500");
+      await page
+        .getByLabel("Méthode")
+        .fill("66666666-6666-4666-8666-666666666666");
+      await page.getByRole("button", { name: "Payer", exact: true }).click();
+    } else {
+      denied = true;
+      await page.getByRole("button", { name: "Relire", exact: true }).click();
+    }
+    await expect(page.getByTestId("rows")).toBeEmpty();
+    await expect(page.getByTestId("share")).toHaveCount(0);
+    await expect(page.getByLabel("Prix convenu")).toHaveValue("");
+    await expect(page.getByTestId("denied")).toHaveText("true");
+    denied = false;
+    await page.getByRole("button", { name: "Relire", exact: true }).click();
+    await expect(page.getByTestId("rows")).toContainText(consultation.id);
+    await expect(page.getByTestId("denied")).toHaveText("false");
+    await expect(page.getByLabel("Prix convenu")).toHaveValue("");
+  });
+}
