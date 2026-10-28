@@ -11,6 +11,7 @@ import { HttpError } from "../identity/identity.api.js";
 import { useCareQuery } from "../clinical/useCareQuery.js";
 import { useTreatmentCommand } from "./useTreatmentCommand.js";
 import { visitMessages as t } from "./visit.messages.js";
+import { identityScope } from "../identity/identity.workflow.js";
 export function useVisits(
   patientId: string,
   identity: Identity,
@@ -18,7 +19,13 @@ export function useVisits(
   onLock: (kind: string, value: boolean) => void,
 ) {
   const cache = useQueryClient(),
-    key = ["visits", identity.clinicId, identity.accountId, patientId];
+    key = [
+      "visits",
+      identity.clinicId,
+      identity.accountId,
+      patientId,
+      identityScope(identity),
+    ];
   const query = useCareQuery<VisitState>(key, `treatment/${patientId}/visits`);
   const [epoch, setEpoch] = useState(0);
   const lock = useCallback(
@@ -32,6 +39,11 @@ export function useVisits(
       void cache.invalidateQueries({
         queryKey: ["plans", identity.clinicId, identity.accountId, patientId],
       });
+      void cache.invalidateQueries({
+        queryKey: ["notes", identity.clinicId, identity.accountId, patientId],
+      });
+      void cache.invalidateQueries({ queryKey: ["clinical"] });
+      void cache.invalidateQueries({ queryKey: ["billing"] });
     },
     lock,
     t.saved,
@@ -61,6 +73,12 @@ export function useVisits(
       command.save(`treatment/${patientId}/visits`, {
         id: crypto.randomUUID(),
         appointmentId,
+        procedures,
+      }),
+    addProcedures: (visit: Visit, procedures: VisitSelection[]) =>
+      command.save(`treatment/${patientId}/visits/procedures`, {
+        id: visit.id,
+        revision: visit.revision,
         procedures,
       }),
     complete: (visit: Visit, planId: string, itemId: string) =>
