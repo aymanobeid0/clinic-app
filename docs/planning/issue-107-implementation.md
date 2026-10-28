@@ -56,6 +56,8 @@ After full-suite success, re-inspected exact container project label and127.0.0.
 
 Publication checkpoint: HANDOFF replaced with current107 scope/pins/review/results/cleanup/next step before PR, with OS-temp mirrors refreshed. The same reviewer report preserves initial findings and both rechecks; final disposition0/0. PR uses standing publication authorization and Closes107; issue remains OPEN/project Review until owner-approved merge. Publication URL/readback follows after creation.
 
+Published and attached [PR111](https://github.com/aymanobeid0/clinic-app/pull/111), non-draft to main. Publication head `b95144a2929b23018ac46a979097d4049c3cbe9b`; application/test source remainsc278c42. GitHub readback: OPEN/MERGEABLE, issue107 OPEN, Project Review. Subsequent delivery commit only refreshes evidence/HANDOFF publication status. Native OS-temp mirrors for HANDOFF, implementation and independent review have matching file hashes. Owner review/manual merge is next; no merge, issue closure/Done, UI start or deployment performed.
+
 ## Preservation and connection evidence
 
 Owner files excluded: docs/api/apidog.md (SHA25663AC4C981572BDA2EF056F7E75F0D211C4EBBF2CB35F693083B77970C77A5E24), docs/planning/delivery-status.md (6B4570B3CC423F3D0DC6FD70193BFBC7815AAED54B76EC68FA648D8E3F4ABAB9), untracked api-error-messages-review.md (C09AB3B04C37CA046ED240590F8ACF23B03E626EE2F2CAB6B9DB732087CB4F96), api-validation-errors-plan.md (C98D5BF701F311B52EF5B9418A8F44C46F8D8FEDE1C06EFD5BC9308EEA3B8A1D). Stash4e97123b318d9c9797845a8e0d07a714e8e1288d untouched. No reset/destructive checkout or ignored credential-file reads.

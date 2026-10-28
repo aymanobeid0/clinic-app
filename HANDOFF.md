@@ -6,7 +6,7 @@ Updated2026-10-28 UTC. Workflow authority: AGENTS.md and docs/agents/skill-integ
 
 Owner directly authorized #107 implementation/publication in this delegated chat: one builder and one separate combined Standards/Spec reviewer, no new interview. Frontend business logic only; no product components/pages/routes/main-app/scaffold retirement, payroll, production/live migration or real patient/mail. New approved design remains a later UI reference; old scaffold is not its design basis. No next UI ticket is authorized.
 
-Current107 body/comments/native blockers read: OPEN, no comments,105/106/59 CLOSED. Fresh main/base/comparison `d79e6c7683c44b908b0b8b35cc11ae95c6526d80`;106 source ancestry verified, no unnecessary prior-merge audit. Branch `codex/issue-107-consultation-logic`. Final reviewed/tested application/config/test source `c278c4200bc64f4856e7112ea8cc65e27f8431d1`; no source edits afterward. Issue107 remains OPEN. PR publication/Project Review readback pending below.
+Current107 body/comments/native blockers read: OPEN, no comments,105/106/59 CLOSED. Fresh main/base/comparison `d79e6c7683c44b908b0b8b35cc11ae95c6526d80`;106 source ancestry verified, no unnecessary prior-merge audit. Branch `codex/issue-107-consultation-logic`. Final reviewed/tested application/config/test source `c278c4200bc64f4856e7112ea8cc65e27f8431d1`; no source edits afterward. Published/attached PR111: https://github.com/aymanobeid0/clinic-app/pull/111, OPEN/MERGEABLE/non-draft to main. Publication headb95144a; later delivery commits only update evidence. Issue107 OPEN, Project Review, verified by current GitHub readback.
 
 ## Delivery and evidence
 
@@ -24,6 +24,6 @@ Owner local docs/api/apidog.md, docs/planning/delivery-status.md and two untrack
 
 ## Next and suggested skills
 
-Push/open/attach the completed branch under standing publication authorization, refresh publication status and OS-temp mirrors. Human review/merge remains separate. Leave107 OPEN/Review until owner-approved merge; do not start UI automatically.
+Handoff, implementation/review reports and native OS-temp mirrors complete with matching hashes. Next: owner reviews PR111 and manually merges. Leave107 OPEN/Review until approved merge; do not start UI automatically. No outstanding connection/resource blocker. Human merge and production/live-data authorization remain separate.
 
 Suggested skills: repository code-review for same-reviewer follow-up, implement/TDD for any necessary fixes, handoff and pr for delivery. Exact skill reads/overrides are in implementation/review evidence.
