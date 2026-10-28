@@ -15,13 +15,11 @@ import { provisionClinic } from "../../api/src/modules/identity/index.js";
 
 const origin = "http://127.0.0.1:4187";
 const port = process.env.CLINIC_TEST_PORT;
-if (port !== "55445")
-  throw new Error("Issue107 disposable database on55445 required.");
 const owner = openDatabase(
-  `postgresql://clinic_test:fictional-only@127.0.0.1:${port}/clinic_issue7`,
+  `postgresql://clinic_test:fictional-only@127.0.0.1:${port ?? "55445"}/clinic_issue7`,
 );
 const runtime = openDatabase(
-  `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${port}/clinic_issue7`,
+  `postgresql://clinic_runtime_test:fictional-runtime-only@127.0.0.1:${port ?? "55445"}/clinic_issue7`,
 );
 // Browser navigation can abort HTTP responses before their real transactions
 // settle. Track the persistence boundary solely to drain it during teardown.
@@ -52,6 +50,8 @@ const options = {
 };
 let server: ReturnType<ReturnType<typeof createApplication>["listen"]>;
 test.beforeAll(async () => {
+  if (port !== "55445")
+    throw new Error("Issue107 disposable database on55445 required.");
   await owner.connect();
   await runtime.connect();
 });

@@ -8,7 +8,7 @@ import { consultationKey } from "./consultation.access.js";
 // each QueryClient/session independent and never persist this store.
 const stores = new WeakMap<QueryClient, ReturnType<typeof createSuspensions>>();
 function createSuspensions() {
-  return createStore(() => ({ scopes: new Set<string>() }));
+  return createStore(() => ({ scopes: new Map<string, number>(), version: 0 }));
 }
 export function useConsultationAuthority(
   identity: Identity,
@@ -22,20 +22,27 @@ export function useConsultationAuthority(
     stores.set(cache, store);
   }
   const key = JSON.stringify(consultationKey(identity, patientId, accessScope));
-  const suspended = useStore(store, (state) => state.scopes.has(key));
+  const generation = useStore(store, (state) => state.scopes.get(key));
   const retire = useCallback(async () => {
-    store.setState((state) => ({ scopes: new Set(state.scopes).add(key) }));
+    store.setState((state) => ({
+      scopes: new Map(state.scopes).set(key, state.version + 1),
+      version: state.version + 1,
+    }));
     const queryKey = JSON.parse(key) as string[];
     await cache.cancelQueries({ queryKey });
     for (const query of cache.getQueryCache().findAll({ queryKey }))
       query.setState({ data: undefined });
   }, [cache, key, store]);
-  const resume = useCallback(() => {
-    store.setState((state) => {
-      const scopes = new Set(state.scopes);
-      scopes.delete(key);
-      return { scopes };
-    });
-  }, [key, store]);
-  return { suspended, retire, resume };
+  const resume = useCallback(
+    (expected: number) => {
+      store.setState((state) => {
+        if (state.scopes.get(key) !== expected) return state;
+        const scopes = new Map(state.scopes);
+        scopes.delete(key);
+        return { scopes };
+      });
+    },
+    [key, store],
+  );
+  return { suspended: generation !== undefined, generation, retire, resume };
 }

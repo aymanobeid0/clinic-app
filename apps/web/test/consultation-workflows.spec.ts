@@ -329,3 +329,64 @@ for (const deniedAction of ["payment", "read"]) {
     await expect(page.getByLabel("Prix convenu")).toHaveValue("");
   });
 }
+
+test("review regression: canceling a pre-denial read cannot reauthorize the scope", async ({
+  page,
+}) => {
+  let held = false,
+    heldReads = 0;
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/**", async (route) => {
+    const req = route.request(),
+      url = req.url();
+    if (url.endsWith("/events"))
+      return route.fulfill({
+        contentType: "text/event-stream",
+        body: ": verification\n\n",
+      });
+    if (req.method() === "POST")
+      return route.fulfill({ status: 403, json: { error: "Accès retiré" } });
+    if (held) {
+      heldReads++;
+      await gate;
+    }
+    await route
+      .fulfill({
+        json: url.endsWith("/remuneration")
+          ? { rate: "40" }
+          : url.endsWith("/visits")
+            ? { visits: [], starts: [], completions: [], appointments: [] }
+            : url.includes("/billing/")
+              ? { charges: [], totals: [] }
+              : url.includes("/notes")
+                ? []
+                : [consultation],
+      })
+      .catch(() => {});
+  });
+  try {
+    await page.goto("/test/consultation-workflows.harness.html?care");
+    await expect(page.getByTestId("share")).toContainText('"rate":"40"');
+    await page.getByLabel("Montant reçu").fill("500");
+    await page
+      .getByLabel("Méthode")
+      .fill("66666666-6666-4666-8666-666666666666");
+    held = true;
+    await page.getByRole("button", { name: "Relire", exact: true }).click();
+    await expect.poll(() => heldReads).toBeGreaterThan(0);
+    await page.getByRole("button", { name: "Payer", exact: true }).click();
+    await expect(page.getByTestId("rows")).toBeEmpty();
+    await expect(page.getByTestId("denied")).toHaveText("true");
+    release();
+    held = false;
+    await expect(page.getByTestId("denied")).toHaveText("true");
+    await expect(page.getByTestId("rows")).toBeEmpty();
+    await page.getByRole("button", { name: "Relire", exact: true }).click();
+    await expect(page.getByTestId("rows")).toContainText(consultation.id);
+  } finally {
+    release();
+  }
+});

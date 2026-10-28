@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type {
   Identity,
   Consultation,
@@ -9,6 +10,8 @@ import type {
 } from "@clinic/contracts";
 import { useCareQuery } from "../clinical/useCareQuery.js";
 import { useConsultationAuthority } from "./consultation.authority.js";
+import { treatmentGet } from "../treatment/treatment.api.js";
+import { treatmentRead } from "../treatment/treatment.workflow.js";
 import {
   activeAccount,
   activePatientScope,
@@ -32,6 +35,7 @@ function useProjection<T>(
   path: string,
   allowed: boolean,
 ) {
+  const cache = useQueryClient();
   const key = consultationKey(identity, patientId, accessScope);
   const authority = useConsultationAuthority(identity, patientId, accessScope);
   // Reuse authorized data-free clinic invalidations; each projection is always
@@ -60,10 +64,37 @@ function useProjection<T>(
     denied: !allowed || authority.suspended || query.denied,
     refetch: async () => {
       if (!allowed) return;
-      const result = await query.refetch();
-      // A fresh authorized read can release suspension; old snapshots cannot.
-      if (!result.error) authority.resume();
-      return result;
+      if (authority.generation === undefined) {
+        await query.refetch();
+        return;
+      }
+      const generation = authority.generation;
+      let fresh = false;
+      try {
+        // Query may resolve a canceled refetch with reverted cached success.
+        // Only this recovery's real transport success can resume its generation.
+        await cache.fetchQuery({
+          queryKey: [...key, view],
+          staleTime: 0,
+          gcTime: 0,
+          retry: false,
+          queryFn: ({ signal }) =>
+            treatmentRead(
+              cache,
+              key,
+              async () => {
+                const value = await treatmentGet<T>(path, signal);
+                if (!signal.aborted) fresh = true;
+                return value;
+              },
+              signal,
+              [...key, view],
+            ),
+        });
+        if (fresh) authority.resume(generation);
+      } catch {
+        return undefined;
+      }
     },
   };
 }
