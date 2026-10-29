@@ -1,6 +1,20 @@
 // French pilot strings; one interface for later locale delivery.
 export const patientText = {
   title: 'Patients',
+  listIntro: 'Recherchez par nom, numéro de dossier ou téléphone.',
+  registerIntro:
+    'Un numéro partagé par une même famille est autorisé ; les doublons possibles vous sont signalés.',
+  back: 'Retour aux patients',
+  denied: 'Accès refusé',
+  deniedText: 'Votre compte ne permet pas de consulter les patients.',
+  notFound: 'Ce dossier patient est introuvable ou ne vous est plus accessible.',
+  archivedBadge: 'Archivé',
+  activeBadge: 'Actif',
+  contact: 'Contact',
+  duplicates: 'Doublons possibles',
+  openRecord: (n: number) => `Ouvrir le dossier n°${n}`,
+  previous: 'Précédents',
+  next: 'Suivants',
   register: 'Nouveau patient',
   name: 'Nom du patient',
   phone: 'Téléphone de contact',

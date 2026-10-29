@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { usePatientEvents } from './usePatientEvents.js';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Identity, Patient } from '@clinic/contracts';
 import { createPatientWorkflow } from './patient.workflow.js';
@@ -23,24 +24,7 @@ export function usePatients({ identity }: { identity: Identity }) {
     enabled: read,
     gcTime: 0,
   });
-  useEffect(() => {
-    if (!read) return;
-    const stream = new EventSource('/api/patients/events');
-    const refresh = () => {
-      void cache.invalidateQueries({ queryKey: ['patients', accountKey] });
-    };
-    stream.addEventListener('invalidate', refresh);
-    stream.onopen = refresh;
-    stream.onerror = () => {
-      refresh();
-      void cache.invalidateQueries({ queryKey: ['identity'] });
-    };
-    return () => {
-      stream.close();
-      void cache.cancelQueries({ queryKey: ['patients', accountKey] });
-      cache.removeQueries({ queryKey: ['patients', accountKey] });
-    };
-  }, [read, accountKey, cache]);
+  usePatientEvents(read, accountKey);
   async function register(details: PatientDetails, commandId: string) {
     setError('');
     setNotice('');
@@ -54,6 +38,7 @@ export function usePatients({ identity }: { identity: Identity }) {
         : t.registered(result.patient.patientNumber),
     );
     setDuplicates(result.duplicates);
+    return result;
   }
   return {
     register,

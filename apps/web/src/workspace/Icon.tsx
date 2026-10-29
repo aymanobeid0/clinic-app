@@ -1,4 +1,4 @@
-export function Icon({ name }: { name: "dashboard" | "settings" }) {
+export function Icon({ name }: { name: "dashboard" | "settings" | "patients" }) {
   return (
     <svg
       aria-hidden="true"
@@ -17,6 +17,12 @@ export function Icon({ name }: { name: "dashboard" | "settings" }) {
           <rect x="14" y="3" width="7" height="7" rx="1.5" />
           <rect x="3" y="14" width="7" height="7" rx="1.5" />
           <rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </>
+      ) : name === "patients" ? (
+        <>
+          <circle cx="9" cy="8" r="3.5" />
+          <path d="M2.5 20c.8-3.6 3.3-5.5 6.5-5.5s5.7 1.9 6.5 5.5" />
+          <path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.8c1.6.9 2.6 2.6 3 5.2" />
         </>
       ) : (
         <>
