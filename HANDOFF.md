@@ -2,28 +2,24 @@
 
 Updated2026-10-29. Authority: AGENTS.md and docs/agents/skill-integration.md.
 
-## Scope and pins
+## Current authorized correction
 
-Owner directly authorized #60 implementation/publication in delegated request, one builder plus one independent combined Standards/Spec reviewer. Approved D:/clinic-visual-system replaces retired design; login prototype is discussion-only. No further UI ticket, production/live migration or real-data use authorized.
+Owner reported the large login-field spacing after Radix adoption. Root is sole builder; same independent reviewer covers Standards/Spec. Branch codex/login-spacing, base/fetched main69e6a01e88fb50770ae5de12c937615bba1a4ab5. This is a narrow owner-requested follow-up, no other UI ticket or production work.
 
-Branch codex/issue-60-workspace; fetched main/base90f1fc5b51dfaa43090ce13d92c1bf0ffcc07f26 (PR111 merged). Current #60 OPEN/no comments/sole native prerequisite59 CLOSED;52/107 and2–6 CLOSED. #107 is logic evidence only. Source reviewed/tested80d7d741cd3a7c4cc0e9efd0b3a57be987967774, followed only by removal of raw internal IDs from overview labels and delivery evidence. Final source/evidence9e2770a59cd8caf4e6e16ba76b7282b0dbbfceea; independent final checkpoint PASS. Published PR112: https://github.com/aymanobeid0/clinic-app/pull/112 (OPEN, non-draft; human review/merge). Human merge remains required.
+Cause: fixed176px/two-row identifier area left an empty row for email login. It predated Radix. New browser regression red at132px email-to-password gap; corrected to43.5px by putting clinic code/username side by side and email across the same row. Shared password/submit stay stable; Radix behavior and custom token CSS preserved. Source54e49d09fe2dd83561cc89d0f6639f444312943c passed same independent reviewer: Standards0/Spec0 residual,16/16 mocked browser cases13.1s. Published PR113 https://github.com/aymanobeid0/clinic-app/pull/113; OPEN for human review/merge.
 
-## Delivery and verification
+Builder16/16 browser cases PASS12.4s. Type/lint/build PASS; existing >500KB Vite advisory remains. Backend suite not repeated for this CSS-only change; earlier287/287 remains historical evidence. Screenshots and exact provenance/skills/limitations: docs/planning/issue-60-implementation.md (latest section). Sole reviewer: docs/planning/issue-60-review.md. Independent correction checkpoint PASS; reviewer inspected all three corrected screenshots.
 
-Designed French auth/setup/recovery, responsive role shell/header/sidebar, real scoped operational dashboard and personal blue/teal preferences. Existing feature hooks/APIs retain behavior/query/form/session ownership. Personal current-password-confirmed password/email changes and email-login distinctions preserved. Historical-only start excludes operational reads; #75 owns snapshots. Detailed follow-up/report/export actions73, other-user settings74 and other feature pages remain their tickets. Old scaffold retained as dedicated verification consumer;76 owns retirement.
+## Completed original delivery
 
-Builder: type/lint/build PASS; final browser15/15 PASS22.5s (14 mocked,1 real fictional API/PostgreSQL manager/appointment/password journey). Full Vitest287/287 PASS27files640.74s on isolated55446. Existing Vitest inputs unchanged; final UI behavior tested separately. Independent reviewer initial2 findings fixed; corrected-source recheck14/14 mocked PASS11.1s and final checkpoint at9e2770a PASS: Standards0/Spec0 residual. Exact skills, actual runs/failures, visual comparison and limitations: docs/planning/issue-60-implementation.md. Sole review: docs/planning/issue-60-review.md. No Safari/Firefox/screen-reader/axe certification.
+PR112 owner-merged2026-10-29T12:49:09Z at69e6a01; issue60 CLOSED and Project Done verified/synchronized. Previous shell/dashboard/auth/Radix delivery and findings remain in the same reports. Other UI pages remain with their tickets;76 owns scaffold retirement. No automatic next ticket.
 
-## Preview and resources
+## Preview and preservation
 
-Owner preview http://127.0.0.1:4190/connexion, fictional manager preview60-5-4eb0-917@example.invalid / Fictional-preview-60. Task Vite session5969; task API3188 session36595; task Docker project clinic-issue60-test with database127.0.0.1:55446 and no persistent mounts. These intentionally remain for owner visual review; only fictional data/fake mail. Restart seed .local-dev/issue60-preview.ts if needed (creates a new fictional clinic). Do not run destructive fault-injection tests against preview while in use. Cleanup later only after stopping exact sessions and rechecking task container labels/port; owner DB55437/services/ERP/Apidog untouched.
+Preview http://127.0.0.1:4190/connexion, fictional manager preview60-5-4eb0-917@example.invalid / Fictional-preview-60. Existing task Vite session5969, API3188 session36595, Docker project clinic-issue60-test/database127.0.0.1:55446 remain running unchanged for owner review. Only fictional data/fake mail; owner database55437/services/ERP/Apidog untouched. Do not run fault-injection tests against active preview. Cleanup later only exact task resources after ownership/port verification.
 
-Owner four local docs preserved/excluded with matching hashes in implementation report. No reset/stash changes or credential reads. Initial sandbox GitHub/Docker/localhost restrictions succeeded through supported elevated retries; no unresolved connection blocker. Required OS-temp handoff mirror refreshed from this file.
-
-## Radix follow-up
-
-Owner explicitly approved Radix Primitives for compound accessible controls. Policy recorded in architecture/dependency proposal; exact react-tabs1.2.1 installed and applied to login tabs, existing CSS identity retained. New browser red/green;15/15 mocked cases and6/6 identity tests PASS, real fictional manager/doctor sign-ins PASS. Type/lint/build PASS; new503.58KB chunk advisory and unchanged pre-existing npm audit findings recorded in implementation report. No full backend repeat for UI-only adoption (~11minutes, active preview remains intact). Sourcef81648a80f7a23c70d27f3dc38981dbc599b99a9 passed same independent reviewer: Standards0/Spec0,15/15 mocked browser cases and an extra two-method payload probe. Radix amendment published on PR112; no source edits after this pin.
+Four owner local docs remain dirty/untracked and excluded, unchanged hashes recorded in implementation report. No reset/stash or credential reads. No unresolved connection blocker. Native OS-temp mirror must be refreshed before publication.
 
 ## Next and suggested skills
 
-Independent evidence checkpoint complete. PR112 published;60 Project Review and issue OPEN verified. Owner review/merge is next; close/Done only after approved merge. Owner reviews preview/PR and merges manually. Suggested: repository code-review for same-reviewer recheck; implement/TDD for fixes; handoff/pr for delivery. Never start another page from readiness alone.
+Same-reviewer checkpoint complete; PR113 published under standing authorization; owner reviews/merges manually. Suggested skills: diagnosing-bugs/implement/TDD for necessary fixes, code-review for same reviewer, handoff/pr for delivery. No deployment/live migration/real-data use authorized.
