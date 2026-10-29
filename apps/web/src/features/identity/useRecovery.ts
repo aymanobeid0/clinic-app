@@ -6,6 +6,11 @@ import { createIdentityWorkflow } from "./identity.workflow.js";
 import { useIdentityCommand } from "./useIdentityCommand.js";
 
 export function useRecovery() {
+  const [route, setRoute] = useState(() =>
+    new URLSearchParams(location.hash.slice(1)).has("recovery")
+      ? "email"
+      : "code",
+  );
   const form = useForm<{
     method: "email" | "clinic_username";
     email: string;
@@ -25,6 +30,7 @@ export function useRecovery() {
       const value = new URLSearchParams(location.hash.slice(1)).get("recovery");
       if (value) {
         form.setValue("token", value);
+        setRoute("email");
         history.replaceState(null, "", location.pathname + location.search);
       }
     };
@@ -32,7 +38,6 @@ export function useRecovery() {
     window.addEventListener("hashchange", capture);
     return () => window.removeEventListener("hashchange", capture);
   }, [form]);
-  const [route, setRoute] = useState("code");
   const { error, notice, busy, setNotice, run } = useIdentityCommand();
   const cache = useQueryClient();
   const workflow = useMemo(() => createIdentityWorkflow(cache), [cache]);
