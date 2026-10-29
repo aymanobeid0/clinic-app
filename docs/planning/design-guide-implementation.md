@@ -15,3 +15,5 @@ Preservation: existing owner docs SHA256 match prior evidence (Apidog63AC4C98157
 Independent review and final pins: design-guide-review.md. Before publication update HANDOFF and native OS-temp mirror; standing authorization covers push/PR, manual human merge remains required. No next ticket, deployment or real-data authorization.
 
 A trailing blank line introduced while editing the token pointer failed an intermediate whitespace check; trimmed before the final check. No application test failure or runtime change.
+
+Independent first review identified an ambiguity: requiring an accepted application capture for every comparison could create a new approval gate for a new page. Builder made existing captures optional and explicitly uses component specimens plus guide rules when none exists. Same reviewer recheck follows.
