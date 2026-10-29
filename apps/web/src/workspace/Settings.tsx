@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { PasswordForm } from "../features/identity/components/PasswordForm.js";
+import { PersonalSecurity } from "./PersonalSecurity.js";
 import { RecoveryCodesForm } from "../features/identity/components/RecoveryCodesForm.js";
 import type { Session } from "./Auth.js";
 // Personal appearance only. No identity, clinical data or credentials are persisted.
@@ -34,13 +34,7 @@ export function Settings({ session }: { session: Session }) {
       {!session.identity?.historicalOnly && (
         <section className="surface">
           <h2>Sécurité du compte</h2>
-          <details>
-            <summary>Changer mon mot de passe</summary>
-            <PasswordForm
-              busy={session.busy}
-              onSubmit={session.replacePassword}
-            />
-          </details>
+          <PersonalSecurity session={session} />
           {session.identity?.isManager && (
             <details>
               <summary>Renouveler mes codes de récupération</summary>

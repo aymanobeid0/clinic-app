@@ -106,12 +106,15 @@ function money(value: string, currency: string) {
   return `${amount < 0n ? "−" : ""}${precision ? absolute.slice(0, -precision) + "," + absolute.slice(-precision) : absolute} ${currency}`;
 }
 const columns: [keyof FinancialReportTotal, string][] = [
+  ["invoiceMinor", "Factures émises"],
   ["newMoneyMinor", "Nouveaux encaissements"],
   ["appliedCreditMinor", "Crédit déjà reçu appliqué"],
   ["dueMinor", "Solde dû"],
   ["creditMinor", "Crédit disponible"],
   ["openingMinor", "Soldes initiaux"],
   ["adjustmentMinor", "Ajustements"],
+  ["refundMinor", "Remboursements"],
+  ["reversedMoneyMinor", "Encaissements annulés"],
   ["plannedMinor", "Soins futurs, hors dette"],
 ];
 function Finances({ identity, date }: { identity: Identity; date: string }) {

@@ -142,6 +142,9 @@ test("report failures do not display stale amounts and recover explicitly", asyn
               totals: [
                 {
                   currency: "MRU",
+                  invoiceMinor: "1000",
+                  refundMinor: "0",
+                  reversedMoneyMinor: "0",
                   newMoneyMinor: "700",
                   appliedCreditMinor: "300",
                   dueMinor: "9007199254740993",
@@ -179,6 +182,38 @@ test("restricted setup cannot render operational pages", async ({ page }) => {
     page.getByRole("heading", { name: "Votre mot de passe personnel" }),
   ).toBeVisible();
   await expect(page.getByRole("navigation")).toHaveCount(0);
+});
+test("ready account password settings require current password and use the personal endpoint", async ({
+  page,
+}) => {
+  await api(page);
+  let sent: unknown;
+  await page.route("**/api/password", async (r) => {
+    sent = r.request().postDataJSON();
+    await r.fulfill({
+      status: 400,
+      json: { error: "Mot de passe actuel incorrect." },
+    });
+  });
+  await page.goto("/preferences");
+  await page
+    .locator("summary")
+    .filter({ hasText: /^Changer mon mot de passe$/ })
+    .click();
+  await page
+    .getByRole("textbox", { name: "Mot de passe actuel", exact: true })
+    .fill("Fictional-wrong-password");
+  await page
+    .getByLabel("Nouveau mot de passe personnel")
+    .fill("Fictional-new-password");
+  await page.getByRole("button", { name: "Changer mon mot de passe" }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Mot de passe actuel incorrect.",
+  );
+  expect(sent).toEqual({
+    currentPassword: "Fictional-wrong-password",
+    password: "Fictional-new-password",
+  });
 });
 for (const width of [320, 768, 1024, 1440])
   test(`login responsive and keyboard at ${width}`, async ({ page }) => {
@@ -221,4 +256,51 @@ test("email recovery links select the received-link method automatically", async
     "fictional-recovery-token",
   );
   await expect(page).not.toHaveURL(/fictional-recovery-token/);
+});
+test("ready manager verification links open personal settings without the setup-only send control", async ({
+  page,
+}) => {
+  await api(page);
+  await page.goto("/#verification=fictional-verification-token");
+  await expect(
+    page.getByRole("heading", { name: "Mes préférences" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Code de vérification reçu")).toHaveValue(
+    "fictional-verification-token",
+  );
+  await expect(
+    page.getByRole("button", { name: "Envoyer le lien de vérification" }),
+  ).toHaveCount(0);
+  await expect(page).not.toHaveURL(/fictional-verification-token/);
+});
+test("normal laptop fit and enlarged text preserve accessible controls without overlap", async ({
+  page,
+}) => {
+  await api(page, null);
+  await page.setViewportSize({ width: 1440, height: 768 });
+  await page.goto("/connexion");
+  await expect(page.getByLabel("Adresse e-mail de connexion")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollHeight <= innerHeight,
+    ),
+  ).toBe(true);
+  await page.getByRole("button", { name: "Équipe", exact: true }).click();
+  await page.addStyleTag({
+    content:
+      ".auth-content, .auth-content input, .auth-content button, .auth-content label, .auth-content p {font-size:28px !important;}",
+  });
+  const username = await page
+    .getByLabel("Identifiant", { exact: true })
+    .boundingBox();
+  const password = await page
+    .getByLabel("Mot de passe", { exact: true })
+    .boundingBox();
+  expect(password!.y).toBeGreaterThanOrEqual(username!.y + username!.height);
+  await page
+    .getByRole("button", { name: "Se connecter" })
+    .scrollIntoViewIfNeeded();
+  await expect(
+    page.getByRole("button", { name: "Se connecter" }),
+  ).toBeInViewport();
 });

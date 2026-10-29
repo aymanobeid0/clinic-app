@@ -53,7 +53,7 @@ export function SignIn({
           form.reset({ ...form.getValues(), password: "" });
         })}
       >
-        <input type="hidden" {...form.register('method')} />
+        <input type="hidden" {...form.register("method")} />
         <div className="login-identifiers">
           {method === "email" ? (
             <Field label="Adresse e-mail de connexion">

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import request from "supertest";
 import { test, expect } from "@playwright/test";
 import { openDatabase } from "../../api/src/database.js";
 import { createApplication } from "../../api/src/application.js";
@@ -84,6 +85,76 @@ test("French manager activation, dashboard, preferences, password change and sig
     await expect(
       page.getByRole("heading", { name: "Bonjour, Camille" }),
     ).toBeVisible();
+    const csrf = (await (await page.request.get("/api/session")).json())
+      .csrfToken;
+    const post = async (path: string, data: object) => {
+      const result = await page.request.post("/api/" + path, {
+        headers: { Origin: "http://127.0.0.1:4188", "x-csrf-token": csrf },
+        data,
+      });
+      expect(result.ok(), await result.text()).toBe(true);
+      return result.json();
+    };
+    const identity = await (await page.request.get("/api/identity")).json();
+    await post(`accounts/${identity.accountId}/permissions`, {
+      revision: 0,
+      currentPassword: password,
+      permissions: [
+        "reports.operational",
+        "patients.create",
+        "appointments.manage",
+      ],
+    });
+    const doctor = await post("accounts", {
+      displayName: "Docteur fictif",
+      username: "doctor",
+      kind: "doctor",
+      temporaryPassword: "Fictional-doctor-initial",
+      currentPassword: password,
+    });
+    const employee = request.agent(app);
+    let employeeCsrf = (await employee.get("/api/session")).body.csrfToken;
+    const employeePost = (path: string, data: object) =>
+      employee
+        .post("/api/" + path)
+        .set("Origin", "http://127.0.0.1:4188")
+        .set("x-csrf-token", employeeCsrf)
+        .send(data);
+    const login = await employeePost("sign-in", {
+      method: "clinic_username",
+      clinicCode: code,
+      username: "doctor",
+      password: "Fictional-doctor-initial",
+    });
+    expect(login.status).toBe(200);
+    employeeCsrf = login.body.csrfToken;
+    expect(
+      (
+        await employeePost("onboarding/password", {
+          password: "Fictional-doctor-personal",
+        })
+      ).status,
+    ).toBe(204);
+    const patient = await post("patients", {
+      commandId: randomUUID(),
+      name: "Patient fictif R60",
+      phone: "70000000",
+      contactKind: "patient",
+      contactName: "",
+    });
+    await post("appointments", {
+      commandId: randomUUID(),
+      patientId: patient.patient.id,
+      dentistId: doctor.id,
+      chairId: null,
+      startsAt: new Date().toISOString().slice(0, 10) + "T10:00:00Z",
+      durationMinutes: 30,
+      walkIn: false,
+    });
+    await page.reload();
+    await expect(
+      page.getByText("Patient fictif R60", { exact: true }),
+    ).toBeVisible();
     await expect(
       page.getByText("Aucune activité financière autorisée pour cette date."),
     ).toBeVisible();
@@ -94,6 +165,30 @@ test("French manager activation, dashboard, preferences, password change and sig
       "teal",
     );
     await page.reload();
+    await expect(
+      page.getByRole("heading", { name: "Mes préférences" }),
+    ).toBeVisible();
+    await page
+      .locator("summary")
+      .filter({ hasText: /^Changer mon mot de passe$/ })
+      .click();
+    await page
+      .getByRole("textbox", { name: "Mot de passe actuel", exact: true })
+      .fill(password);
+    await page
+      .getByLabel("Nouveau mot de passe personnel")
+      .fill("Fictional-issue60-changed");
+    await page
+      .getByRole("button", { name: "Changer mon mot de passe" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Connexion à votre clinique" }),
+    ).toBeVisible();
+    await page.getByLabel("Adresse e-mail de connexion").fill(email);
+    await page
+      .getByLabel("Mot de passe", { exact: true })
+      .fill("Fictional-issue60-changed");
+    await page.getByRole("button", { name: "Se connecter" }).click();
     await expect(
       page.getByRole("heading", { name: "Mes préférences" }),
     ).toBeVisible();

@@ -12,6 +12,7 @@ import { useIdentitySession } from "../features/identity/useIdentitySession.js";
 import { Auth, AuthFrame, SessionFeedback, type Session } from "./Auth.js";
 import { Dashboard } from "./Dashboard.js";
 import { Settings, useAppearance } from "./Settings.js";
+import { Icon } from "./Icon.js";
 function NotFound() {
   return (
     <>
@@ -57,11 +58,12 @@ function Workspace({ session }: { session: Session }) {
         >
           <p className="eyebrow">MON ESPACE</p>
           <NavLink to={historical ? "/historique" : "/workspace"}>
-            <span aria-hidden="true">▦</span>
+            <Icon name="dashboard" />
             {historical ? "Accès historique" : "Tableau de bord"}
           </NavLink>
           <NavLink to="/preferences">
-            <span aria-hidden="true">⚙</span>Mes préférences
+            <Icon name="settings" />
+            Mes préférences
           </NavLink>
         </nav>
         <div className="sidebar-account">
@@ -173,6 +175,12 @@ function Application() {
         </AuthFrame>
       </div>
     );
+  if (
+    session.identity?.stage === "ready" &&
+    session.verificationToken &&
+    location.pathname !== "/preferences"
+  )
+    return <Navigate replace to="/preferences" />;
   if (
     !session.identity &&
     location.pathname !== "/recuperation" &&

@@ -164,13 +164,13 @@ small {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: var(--space-24) var(--space-48);
+  padding: var(--space-16) var(--space-48);
   min-width: 0;
 }
 .auth-content {
   width: 100%;
   max-width: 420px;
-  margin: var(--space-32) auto;
+  margin: var(--space-16) auto;
 }
 .auth-form footer {
   color: var(--color-text-muted);
@@ -238,7 +238,9 @@ small {
   color: var(--color-primary);
 }
 .login-identifiers {
-  height: 192px;
+  min-height: 176px;
+  display: grid;
+  grid-template-rows: repeat(2, minmax(min-content, 1fr));
   padding-top: var(--space-4);
 }
 .login-submit {
@@ -250,7 +252,7 @@ small {
 .recovery-link {
   display: block;
   text-align: center;
-  margin: var(--space-24) 0;
+  margin: var(--space-16) 0;
 }
 .auth-content form > button {
   margin-top: var(--space-16);
@@ -591,5 +593,31 @@ nav a.active {
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto;
+  }
+}
+.auth-form label {
+  margin: var(--space-8) 0;
+}
+.auth-form input,
+.auth-form select {
+  min-height: var(--control-height);
+  padding: var(--space-8) var(--space-12);
+}
+.auth-form .auth-content > p:last-child {
+  margin-bottom: 0;
+}
+@media (min-width: 1000px) and (max-height: 800px) {
+  .auth-content {
+    margin: var(--space-12) auto;
+  }
+  .auth-content .eyebrow {
+    margin-bottom: var(--space-12);
+  }
+  .login-submit {
+    margin-top: var(--space-16);
+  }
+  .auth-form .auth-content > h1 {
+    font-size: var(--font-size-28);
+    margin-bottom: var(--space-12);
   }
 }
