@@ -1,0 +1,79 @@
+{
+  "intent": {
+    "objective": "document a grouping rule",
+    "primary_message": "Related fields form one task; empty reserved rows fragment it",
+    "audience": "clinic application implementers"
+  },
+  "concept": {
+    "creative_territory": "instructional comparison",
+    "visual_proposition": "Compare identical labeled fields with compact spacing on the left and an unused row on the right",
+    "visual_proof": "Both sides retain token identity, only group spacing communicates the lesson"
+  },
+  "hierarchy": {
+    "primary": "shared lesson title",
+    "secondary": "compact versus unused-row field groups",
+    "tertiary": "annotations and schematic-only caveat",
+    "one_second_read": "compact grouping versus a fragmented task"
+  },
+  "composition": {
+    "reading_direction": "ltr",
+    "hero": "shared grouping lesson and compact field group",
+    "aspect_ratio": "1000:510",
+    "grid_type": "modular",
+    "alignment_anchors": [
+      "shared title edge",
+      "panel column edges",
+      "field and label edges"
+    ],
+    "negative_space": "separate lesson from examples; right gap deliberately demonstrates the defect",
+    "crop_logic": "full SVG canvas, no cropped labels or field outlines",
+    "eye_path": "lesson title, left compact group, right gap, explanatory note",
+    "focal_points": 1
+  },
+  "typography": {
+    "class": "typography-heavy",
+    "roles": [
+      "lesson title",
+      "panel heading",
+      "field label",
+      "annotation"
+    ],
+    "alignment": "left aligned to shared column edges",
+    "line_break_logic": "preserve exact short labels; reflow application copy by French phrases",
+    "language_direction": "ltr",
+    "exact_copy_locked": true
+  },
+  "color": {
+    "roles": [
+      "canvas",
+      "surface",
+      "text",
+      "primary action",
+      "status annotation"
+    ],
+    "value_structure": "dark labels on white surfaces, one solid primary example action",
+    "accent_strategy": "one primary blue; status wording also expresses use/avoid",
+    "contrast_target": "normal text >=4.5:1, essential diagram outlines >=3:1; measure final pairs"
+  },
+  "lighting": {
+    "key_direction": "not applicable: flat vector",
+    "softness": "not applicable",
+    "shadow_behavior": "none"
+  },
+  "effects": [],
+  "style_families": [
+    "approved clinic visual language"
+  ],
+  "restraints": [
+    "no page layout inferred from this diagram",
+    "no runtime colors or typography changed"
+  ],
+  "heuristic_exceptions": [
+    {
+      "heuristic": "comparison panels and canvas margins",
+      "reason": "educational two-panel schematic, not an advertisement",
+      "benefit": "make spacing difference visible",
+      "verification": "compare intact content and measured field gaps"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "scope": "guide illustration only",
+  "textLocked": true,
+  "outlineBefore": 1.99,
+  "outlineAfter": 5.59,
+  "textPairs": {
+    "darkOnCanvas": 14.23,
+    "secondaryOnWhite": 5.59,
+    "secondaryOnCanvas": 5.15,
+    "successOnWhite": 7.26,
+    "dangerOnWhite": 6.57,
+    "whiteOnPrimary": 6.97
+  },
+  "captures": [
+    "C:/Users/ayman/.codex/visualizations/2026/10/29/01a18774-29b2-7151-a639-684b8b52956d/design-audit-normal.png",
+    "C:/Users/ayman/.codex/visualizations/2026/10/29/01a18774-29b2-7151-a639-684b8b52956d/design-audit-grayscale.png",
+    "C:/Users/ayman/.codex/visualizations/2026/10/29/01a18774-29b2-7151-a639-684b8b52956d/design-audit-blur.png",
+    "C:/Users/ayman/.codex/visualizations/2026/10/29/01a18774-29b2-7151-a639-684b8b52956d/design-audit-thumbnail.png"
+  ]
+}
