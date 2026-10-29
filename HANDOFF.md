@@ -20,6 +20,10 @@ Owner preview http://127.0.0.1:4190/connexion, fictional manager preview60-5-4eb
 
 Owner four local docs preserved/excluded with matching hashes in implementation report. No reset/stash changes or credential reads. Initial sandbox GitHub/Docker/localhost restrictions succeeded through supported elevated retries; no unresolved connection blocker. Required OS-temp handoff mirror refreshed from this file.
 
+## Radix follow-up
+
+Owner explicitly approved Radix Primitives for compound accessible controls. Policy recorded in architecture/dependency proposal; exact react-tabs1.2.1 installed and applied to login tabs, existing CSS identity retained. New browser red/green;15/15 mocked cases and6/6 identity tests PASS, real fictional manager/doctor sign-ins PASS. Type/lint/build PASS; new503.58KB chunk advisory and unchanged pre-existing npm audit findings recorded in implementation report. No full backend repeat for UI-only adoption (~11minutes, active preview remains intact). Sourcef81648a80f7a23c70d27f3dc38981dbc599b99a9 passed same independent reviewer: Standards0/Spec0,15/15 mocked browser cases and an extra two-method payload probe. Publication amendment follows on PR112; no source edits after this pin.
+
 ## Next and suggested skills
 
 Independent evidence checkpoint complete. PR112 published;60 Project Review and issue OPEN verified. Owner review/merge is next; close/Done only after approved merge. Owner reviews preview/PR and merges manually. Suggested: repository code-review for same-reviewer recheck; implement/TDD for fixes; handoff/pr for delivery. Never start another page from readiness alone.
