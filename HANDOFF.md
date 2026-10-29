@@ -22,7 +22,7 @@ Owner four local docs preserved/excluded with matching hashes in implementation 
 
 ## Radix follow-up
 
-Owner explicitly approved Radix Primitives for compound accessible controls. Policy recorded in architecture/dependency proposal; exact react-tabs1.2.1 installed and applied to login tabs, existing CSS identity retained. New browser red/green;15/15 mocked cases and6/6 identity tests PASS, real fictional manager/doctor sign-ins PASS. Type/lint/build PASS; new503.58KB chunk advisory and unchanged pre-existing npm audit findings recorded in implementation report. No full backend repeat for UI-only adoption (~11minutes, active preview remains intact). Sourcef81648a80f7a23c70d27f3dc38981dbc599b99a9 passed same independent reviewer: Standards0/Spec0,15/15 mocked browser cases and an extra two-method payload probe. Publication amendment follows on PR112; no source edits after this pin.
+Owner explicitly approved Radix Primitives for compound accessible controls. Policy recorded in architecture/dependency proposal; exact react-tabs1.2.1 installed and applied to login tabs, existing CSS identity retained. New browser red/green;15/15 mocked cases and6/6 identity tests PASS, real fictional manager/doctor sign-ins PASS. Type/lint/build PASS; new503.58KB chunk advisory and unchanged pre-existing npm audit findings recorded in implementation report. No full backend repeat for UI-only adoption (~11minutes, active preview remains intact). Sourcef81648a80f7a23c70d27f3dc38981dbc599b99a9 passed same independent reviewer: Standards0/Spec0,15/15 mocked browser cases and an extra two-method payload probe. Radix amendment published on PR112; no source edits after this pin.
 
 ## Next and suggested skills
 
