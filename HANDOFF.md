@@ -22,4 +22,4 @@ PR112/113 owner-merged; issue60 CLOSED/Project Done. Previous issue-brand cleanu
 
 ## Next and suggested skills
 
-Specialist review complete. Publish reviewed metadata/update existing PR114 under standing publication authorization; then owner reviews and merges. Human merge remains separate. Suggested skills: same Designly composition-director/typography-director/visual-qa for scoped design revisions, code-review for combined review, pr for publication. No deployment/live migration/real-data authorization.
+Specialist review complete; source a6bb179 and review/handoff metadata published in PR114 (verified OPEN at5720120). Owner review/merge is next. Human merge remains separate. Suggested skills: same Designly composition-director/typography-director/visual-qa for scoped design revisions, code-review for combined review, pr for publication. No deployment/live migration/real-data authorization.
