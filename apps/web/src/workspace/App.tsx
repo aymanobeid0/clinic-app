@@ -13,6 +13,12 @@ import { Auth, AuthFrame, SessionFeedback, type Session } from "./Auth.js";
 import { Dashboard } from "./Dashboard.js";
 import { Settings, useAppearance } from "./Settings.js";
 import { Icon } from "./Icon.js";
+import {
+  PatientList,
+  PatientProfile,
+  PatientRegistration,
+  PatientsDenied,
+} from "./Patients.js";
 function NotFound() {
   return (
     <>
@@ -31,6 +37,10 @@ function Workspace({ session }: { session: Session }) {
     content.current?.focus();
   }, [location.pathname]);
   const historical = session.identity?.historicalOnly;
+  const identity = session.identity;
+  const patients =
+    !historical && identity?.permissions.includes("patients.read");
+  const creates = patients && identity?.permissions.includes("patients.create");
   return (
     <div className="workspace">
       <a className="skip-link" href="#content">
@@ -61,6 +71,12 @@ function Workspace({ session }: { session: Session }) {
             <Icon name="dashboard" />
             {historical ? "Accès historique" : "Tableau de bord"}
           </NavLink>
+          {patients && (
+            <NavLink to="/patients">
+              <Icon name="patients" />
+              Patients
+            </NavLink>
+          )}
           <NavLink to="/preferences">
             <Icon name="settings" />
             Mes préférences
@@ -132,6 +148,32 @@ function Workspace({ session }: { session: Session }) {
               }
             />
             <Route
+              path="/patients"
+              element={
+                patients ? <PatientList identity={identity!} /> : <PatientsDenied />
+              }
+            />
+            <Route
+              path="/patients/nouveau"
+              element={
+                creates ? (
+                  <PatientRegistration identity={identity!} />
+                ) : (
+                  <PatientsDenied />
+                )
+              }
+            />
+            <Route
+              path="/patients/:id"
+              element={
+                patients ? (
+                  <PatientProfile key={location.pathname} identity={identity!} />
+                ) : (
+                  <PatientsDenied />
+                )
+              }
+            />
+            <Route
               path="/preferences"
               element={<Settings session={session} />}
             />
@@ -194,7 +236,7 @@ function Application() {
     "/workspace",
     "/preferences",
     "/historique",
-  ].includes(location.pathname);
+  ].includes(location.pathname) || /^\/patients(\/[^/]+)?$/.test(location.pathname);
   return (
     <div data-theme={theme} className="clinic-app">
       {session.identity?.stage === "ready" ? (
