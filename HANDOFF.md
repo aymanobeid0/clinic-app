@@ -6,7 +6,7 @@ Updated2026-10-29. Authority: AGENTS.md and docs/agents/skill-integration.md.
 
 Owner directly authorized #60 implementation/publication in delegated request, one builder plus one independent combined Standards/Spec reviewer. Approved D:/clinic-visual-system replaces retired design; login prototype is discussion-only. No further UI ticket, production/live migration or real-data use authorized.
 
-Branch codex/issue-60-workspace; fetched main/base90f1fc5b51dfaa43090ce13d92c1bf0ffcc07f26 (PR111 merged). Current #60 OPEN/no comments/sole native prerequisite59 CLOSED;52/107 and2–6 CLOSED. #107 is logic evidence only. Source reviewed/tested80d7d741cd3a7c4cc0e9efd0b3a57be987967774, followed only by removal of raw internal IDs from overview labels and delivery evidence. Final source/evidence9e2770a59cd8caf4e6e16ba76b7282b0dbbfceea; independent final checkpoint PASS. Publication follows below. Human merge remains required.
+Branch codex/issue-60-workspace; fetched main/base90f1fc5b51dfaa43090ce13d92c1bf0ffcc07f26 (PR111 merged). Current #60 OPEN/no comments/sole native prerequisite59 CLOSED;52/107 and2–6 CLOSED. #107 is logic evidence only. Source reviewed/tested80d7d741cd3a7c4cc0e9efd0b3a57be987967774, followed only by removal of raw internal IDs from overview labels and delivery evidence. Final source/evidence9e2770a59cd8caf4e6e16ba76b7282b0dbbfceea; independent final checkpoint PASS. Published PR112: https://github.com/aymanobeid0/clinic-app/pull/112 (OPEN, non-draft; human review/merge). Human merge remains required.
 
 ## Delivery and verification
 
@@ -22,5 +22,4 @@ Owner four local docs preserved/excluded with matching hashes in implementation 
 
 ## Next and suggested skills
 
-Independent evidence checkpoint complete. Publish authorized branch/PR and set60 Project Review; leave issue open until owner-approved merge. Owner reviews preview/PR and merges manually. Suggested: repository code-review for same-reviewer recheck; implement/TDD for fixes; handoff/pr for delivery. Never start another page from readiness alone.
-
+Independent evidence checkpoint complete. PR112 published;60 Project Review and issue OPEN verified. Owner review/merge is next; close/Done only after approved merge. Owner reviews preview/PR and merges manually. Suggested: repository code-review for same-reviewer recheck; implement/TDD for fixes; handoff/pr for delivery. Never start another page from readiness alone.
