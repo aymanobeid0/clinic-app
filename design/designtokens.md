@@ -27,4 +27,3 @@ Resolve `color.*` recipes from the selected theme, other paths from foundation, 
 | Type | --font-body (Inter), --font-editorial (Instrument Serif), --font-size-*, --line-height-* |
 
 Blue is default; `data-theme="teal"` selects the alternative. Values come from the linked export, not this summary. No additional dark palette, per-page brand colors or specimen documentation CSS is selected. Former prototype token values are retired and recoverable in Git history.
-
