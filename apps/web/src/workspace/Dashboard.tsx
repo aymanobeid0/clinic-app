@@ -169,14 +169,14 @@ function Tasks({ identity }: { identity: Identity }) {
               .filter((t) => t.status === "open")
               .map((t) => (
                 <li key={t.id}>
-                  <strong>Patient {t.patientId}</strong>
+                  <strong>Rappel patient</strong>
                   <span>À contacter · échéance {t.dueOn}</span>
                 </li>
               ))}
             {read.data.pendingNotes.map((t) => (
               <li key={t.id}>
                 <strong>Note en attente</strong>
-                <span>Patient {t.patientId}</span>
+                <span>Note clinique à finaliser dans l’espace patient</span>
               </li>
             ))}
           </ul>
