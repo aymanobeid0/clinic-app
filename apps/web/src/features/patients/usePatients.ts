@@ -6,7 +6,13 @@ import { createPatientWorkflow } from './patient.workflow.js';
 import { patientText as t } from './patient.messages.js';
 import type { PatientDetails } from '@clinic/contracts';
 import { patientApi } from './patient.api.js';
-export function usePatients({ identity }: { identity: Identity }) {
+export function usePatients({
+  identity,
+  browse = true,
+}: {
+  identity: Identity;
+  browse?: boolean;
+}) {
   const cache = useQueryClient();
   const [q, setQ] = useState('');
   const [archived, setArchived] = useState(false);
@@ -21,10 +27,10 @@ export function usePatients({ identity }: { identity: Identity }) {
   const list = useQuery({
     queryKey: [...prefix, 'list', q, archived, offset],
     queryFn: ({ signal }) => patientApi.search(q, archived, offset, signal),
-    enabled: read,
+    enabled: read && browse,
     gcTime: 0,
   });
-  usePatientEvents(read, accountKey);
+  usePatientEvents(read && browse, accountKey);
   async function register(details: PatientDetails, commandId: string) {
     setError('');
     setNotice('');

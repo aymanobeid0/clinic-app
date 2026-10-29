@@ -129,3 +129,17 @@ test("accounts without patient access are denied without patient requests", asyn
   await expect(page.getByRole("link", { name: "Patients", exact: true })).toHaveCount(0);
   expect(calls.filter((c) => c.includes("/api/patients"))).toEqual([]);
 });
+test("a failed profile refresh keeps the editor draft and offers a retry", async ({
+  page,
+}) => {
+  await api(page, all);
+  await page.goto(`/patients/${lina.id}`);
+  await page.getByLabel("Nom du patient").fill("Lina Brouillon");
+  await page.route(`**/api/patients/${lina.id}`, (r) =>
+    r.fulfill({ status: 500, json: { error: "Patients indisponibles. Réessayez." } }),
+  );
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await expect(page.getByRole("button", { name: "Réessayer le chargement" })).toBeVisible();
+  await expect(page.getByLabel("Nom du patient")).toHaveValue("Lina Brouillon");
+  await expect(page.getByText(/introuvable/)).toHaveCount(0);
+});

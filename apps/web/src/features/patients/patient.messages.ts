@@ -5,6 +5,10 @@ export const patientText = {
   registerIntro:
     'Un numéro partagé par une même famille est autorisé ; les doublons possibles vous sont signalés.',
   back: 'Retour aux patients',
+  home: 'Revenir à mon espace',
+  record: (n: number) => `Dossier n°${n}`,
+  status: 'Statut du dossier',
+  retryLoad: 'Réessayer le chargement',
   denied: 'Accès refusé',
   deniedText: 'Votre compte ne permet pas de consulter les patients.',
   notFound: 'Ce dossier patient est introuvable ou ne vous est plus accessible.',

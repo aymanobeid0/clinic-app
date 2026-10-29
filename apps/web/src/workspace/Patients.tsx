@@ -5,6 +5,7 @@ import { usePatients } from "../features/patients/usePatients.js";
 import { usePatientEvents } from "../features/patients/usePatientEvents.js";
 import { usePatientRecord } from "../features/patients/usePatientRecord.js";
 import { usePatientEditor } from "../features/patients/usePatientEditor.js";
+import { HttpError } from "../features/identity/identity.api.js";
 import { PatientForm } from "../features/patients/PatientForm.js";
 import { patientText as t } from "../features/patients/patient.messages.js";
 
@@ -18,7 +19,7 @@ export function PatientsDenied() {
     <>
       <h1>{t.denied}</h1>
       <p>{t.deniedText}</p>
-      <Link to="/">Revenir à mon espace</Link>
+      <Link to="/">{t.home}</Link>
     </>
   );
 }
@@ -131,6 +132,7 @@ export function PatientList({ identity }: { identity: Identity }) {
 export function PatientRegistration({ identity }: { identity: Identity }) {
   const { register, notice, error, setError, duplicates } = usePatients({
     identity,
+    browse: false,
   });
   const [created, setCreated] = useState<Patient | null>(null);
   return (
@@ -186,21 +188,36 @@ export function PatientProfile({ identity }: { identity: Identity }) {
       onNotice: setNotice,
       onClose: () => {},
     });
-  if (current.error)
-    return (
+  // Keep the profile (and any unsaved draft) mounted when a refresh fails.
+  const refreshFailed = current.error && (
+    <div role="alert">
+      <p>{current.error.message}</p>
+      <button className="quiet" onClick={() => void current.refetch()}>
+        {t.retryLoad}
+      </button>
+    </div>
+  );
+  if (!patient)
+    return current.error ? (
       <>
         <Link to="/patients">← {t.back}</Link>
         <h1>{t.title}</h1>
-        <p role="alert">{t.notFound}</p>
+        {current.error instanceof HttpError &&
+        [403, 404].includes(current.error.status) ? (
+          <p role="alert">{t.notFound}</p>
+        ) : (
+          refreshFailed
+        )}
       </>
+    ) : (
+      <p role="status">{t.loading}</p>
     );
-  if (!patient) return <p role="status">{t.loading}</p>;
   return (
     <>
       <Link to="/patients">← {t.back}</Link>
       <div className="page-heading">
         <div>
-          <p className="description">Dossier n°{patient.patientNumber}</p>
+          <p className="description">{t.record(patient.patientNumber)}</p>
           <h1>{patient.name}</h1>
           <p className="description">
             <Contact patient={patient} />
@@ -210,6 +227,7 @@ export function PatientProfile({ identity }: { identity: Identity }) {
           {patient.archived ? t.archivedBadge : t.activeBadge}
         </span>
       </div>
+      {refreshFailed}
       {error && <p role="alert">{error}</p>}
       {notice && (
         <p className="notice" role="status">
@@ -230,7 +248,7 @@ export function PatientProfile({ identity }: { identity: Identity }) {
         <div>
           {can(identity, "patients.archive") && (
             <section className="surface">
-              <h2>Statut du dossier</h2>
+              <h2>{t.status}</h2>
               <p className="description">
                 {patient.archived ? t.reactivateConfirm : t.archiveConfirm}
               </p>
