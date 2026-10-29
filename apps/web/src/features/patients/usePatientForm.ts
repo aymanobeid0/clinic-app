@@ -9,7 +9,7 @@ import { serverFieldErrors } from '../../forms/fieldErrors.js';
 export type PatientFormProps = {
   initial?: PatientDetails;
   blocked?: boolean;
-  onSave: (details: PatientDetails, commandId: string) => Promise<unknown>;
+  onSave: (details: PatientDetails, commandId: string) => Promise<void>;
   onError: (message: string) => void;
 };
 export function usePatientForm({ initial, onSave, onError }: PatientFormProps) {
