@@ -8,7 +8,7 @@ Online dental clinic MVP. Scope overview: docs/planning/mvp-scope.md. Behavior c
 
 - Read the assigned GitHub issue, its acceptance criteria and open blockers. For tracker/readiness rules, read docs/agents/issue-tracker.md.
 - For dependencies or architecture, read docs/planning/dependency-proposal.md and docs/architecture/application-architecture.md. Preserve the approved stack and Zustand/TanStack Query state boundaries.
-- For interface work, read design/design.md and design/designtokens.md (or the root design.md and designtokens.md before their relocation is published); prototypes are visual references, with the approved spec governing behavior.
+- At the start of every authorized implementation, read design/design.md, the owner-approved application design guide, and identify the applicable rules. For interface changes, also read design/designtokens.md and inspect the relevant component specimens; apply the guide during implementation and independent visual review. For work with no interface impact, record that applicability once; no visual checks are required. Reuse the read within an unchanged ticket; reread for a new ticket or changed design requirements.
 - For each authorized ticket, read docs/agents/skill-integration.md and complete its applicable skill, review and handoff checkpoints. Reuse unchanged instructions already read within that ticket; reopen relevant sections when requirements or scope change. A previous ticket's skill check does not satisfy the current ticket.
 
 ## Execution economy — owner instruction, 2026-10-25
