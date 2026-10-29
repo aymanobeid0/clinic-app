@@ -52,7 +52,7 @@ export function SignIn({
       >
         <input type="hidden" {...form.register("method")} />
         <div className="login-identifiers">
-          <Tabs.Content value="email" tabIndex={-1}>
+          <Tabs.Content className="login-email" value="email" tabIndex={-1}>
             <Field label="Adresse e-mail de connexion">
               <input
                 type="email"

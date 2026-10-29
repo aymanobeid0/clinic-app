@@ -1,4 +1,27 @@
 import { test, expect } from "@playwright/test";
+test("login identifiers keep a compact gap before the shared password field", async ({
+  page,
+}) => {
+  await api(page, null);
+  await page.setViewportSize({ width: 1440, height: 768 });
+  await page.goto("/connexion");
+  const email = await page
+    .getByLabel("Adresse e-mail de connexion")
+    .boundingBox();
+  const password = await page
+    .getByLabel("Mot de passe", { exact: true })
+    .boundingBox();
+  expect(password!.y - email!.y - email!.height).toBeLessThanOrEqual(56);
+  await page.getByRole("tab", { name: "Équipe", exact: true }).click();
+  const code = await page.getByLabel("Code de la clinique").boundingBox();
+  const username = await page
+    .getByLabel("Identifiant", { exact: true })
+    .boundingBox();
+  expect(code!.y).toBe(username!.y);
+  expect(
+    (await page.getByLabel("Mot de passe", { exact: true }).boundingBox())!.y,
+  ).toBe(password!.y);
+});
 test("Radix login tabs support arrow keys, panel labels and stable shared fields", async ({
   page,
 }) => {
