@@ -2,24 +2,24 @@
 
 Updated2026-10-29. Authority: AGENTS.md and docs/agents/skill-integration.md.
 
-## Current authorized correction
+## Current authorized scope
 
-Owner reported the large login-field spacing after Radix adoption. Root is sole builder; same independent reviewer covers Standards/Spec. Branch codex/login-spacing, base/fetched main69e6a01e88fb50770ae5de12c937615bba1a4ab5. This is a narrow owner-requested follow-up, no other UI ticket or production work.
+Owner approved converting the discussed graphic-design principles into an application design guide reviewed at the start of every implementation. Documentation/workflow only, not implementation of61 or a global UI migration. Root builder plus one independent combined Standards/Spec reviewer; no fanout.
 
-Cause: fixed176px/two-row identifier area left an empty row for email login. It predated Radix. New browser regression red at132px email-to-password gap; corrected to43.5px by putting clinic code/username side by side and email across the same row. Shared password/submit stay stable; Radix behavior and custom token CSS preserved. Source54e49d09fe2dd83561cc89d0f6639f444312943c passed same independent reviewer: Standards0/Spec0 residual,16/16 mocked browser cases13.1s. Published PR113 https://github.com/aymanobeid0/clinic-app/pull/113; OPEN for human review/merge.
+Branch codex/approved-design-guide; fetched main/basea0047619eb74d1396391998b53b7f6230bba6c39 (owner-merged PR113). Guide/evidence pina1d6e0ef9f398c49e217cf2ba70cdabead260f24. Independent review PASS: Standards0/Spec0 residual in docs/planning/design-guide-review.md; execution/skills/checks/limitations in design-guide-implementation.md.
 
-Builder16/16 browser cases PASS12.4s. Type/lint/build PASS; existing >500KB Vite advisory remains. Backend suite not repeated for this CSS-only change; earlier287/287 remains historical evidence. Screenshots and exact provenance/skills/limitations: docs/planning/issue-60-implementation.md (latest section). Sole reviewer: docs/planning/issue-60-review.md. Independent correction checkpoint PASS; reviewer inspected all three corrected screenshots.
+## Delivery and validation
 
-## Completed original delivery
+Approved guide design/design.md defines semantic visual roles, spacing/proximity, hierarchy/alignment/composition, page patterns, shared components/Radix/native controls, responsive/accessibility rules, visual evidence and proportional exceptions. AGENTS.md requires reading it before every implementation; non-UI work records applicability once and skips visual checks. skill-integration adds before-edit/independent visual-review checkpoints. Token/system docs now point to current package/runtime exports/architecture; obsolete prototype instructions retired, prior Markdown recoverable in Git history.
 
-PR112 owner-merged2026-10-29T12:49:09Z at69e6a01; issue60 CLOSED and Project Done verified/synchronized. Previous shell/dashboard/auth/Radix delivery and findings remain in the same reports. Other UI pages remain with their tickets;76 owns scaffold retirement. No automatic next ticket.
+Static check:14relative Markdown links valid; all space.N roles exist in approved token JSON; SVG XML parses; Chromium standalone diagram render inspected; full base-to-HEAD whitespace check PASS after trimming a blank line and normalizing a reviewer-found SVG EOF CR. No application tests/build or runtime conformance claimed; no executable source changed. Tokens/appearance and existing runtime components remain intact. Runtime adoption applies within separately authorized UI work.
 
-## Preview and preservation
+## Previous verified delivery and resources
 
-Preview http://127.0.0.1:4190/connexion, fictional manager preview60-5-4eb0-917@example.invalid / Fictional-preview-60. Existing task Vite session5969, API3188 session36595, Docker project clinic-issue60-test/database127.0.0.1:55446 remain running unchanged for owner review. Only fictional data/fake mail; owner database55437/services/ERP/Apidog untouched. Do not run fault-injection tests against active preview. Cleanup later only exact task resources after ownership/port verification.
+PR112/113 owner-merged;60 CLOSED/Project Done. Subsequent all-state issue cleanup:63issues scanned,29body-only edits,zero remaining old-brand mentions/errors; existing states/metadata/dependency text preserved. Evidence .local-dev/issue-brand-verification.json; independent pre-publication review passed. No next ticket started.
 
-Four owner local docs remain dirty/untracked and excluded, unchanged hashes recorded in implementation report. No reset/stash or credential reads. No unresolved connection blocker. Native OS-temp mirror must be refreshed before publication.
+Existing fictional preview4190, API3188 and task DB55446 remain untouched; owner DB55437/services/ERP/Apidog untouched. Four owner local docs remain dirty/untracked and excluded with unchanged hashes in implementation reports. No credential reads/reset/stash changes. No unresolved connection blocker.
 
 ## Next and suggested skills
 
-Same-reviewer checkpoint complete; PR113 published under standing authorization; owner reviews/merges manually. Suggested skills: diagnosing-bugs/implement/TDD for necessary fixes, code-review for same reviewer, handoff/pr for delivery. No deployment/live migration/real-data use authorized.
+Same-reviewer guide checkpoint complete; publish human-review PR under standing authorization and retain native OS-temp mirror. Owner merges manually. Suggested: writing-for-agents/code-review for guide fixes; handoff/pr for delivery. No deployment/live migration/real data or further ticket authorization.
