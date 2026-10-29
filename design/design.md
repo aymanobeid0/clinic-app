@@ -5,7 +5,7 @@ Status: owner-approved, 2026-10-29, following explicit approval to turn the disc
 ## Start here — every implementation
 
 1. Read this guide at the start of each authorized ticket or explicit scope. Reuse the read within unchanged scope. For non-UI work, record `Design applicability: no interface impact` once; stop the visual workflow here.
-2. For UI work, read [token roles](designtokens.md), the actual affected components and the current behavior contract. Identify the page pattern below, primary task, shared components, token roles and content/permission states. A few lines in the existing implementation report suffice.
+2. For UI work, read [token roles](designtokens.md), the actual affected components and the current behavior contract. Identify the page pattern, primary task, shared components, token roles and content/permission states. Record the intended first notice → understanding/action → supporting read, the main alignment edges and how this order adapts on narrow screens. A few lines in the existing implementation report suffice.
 3. Build using shared components and the rules below. Compare against the approved component specimens and, when available, a relevant accepted application capture. For a new page/pattern without a capture, use the specimens plus this guide's composition rules; no prior capture approval is required. A previously accepted capture is evidence of a particular composition, not authority to reproduce defects or obsolete behavior.
 4. Inspect rendered desktop/mobile and relevant state captures. Run the focused checks below. Have the existing independent reviewer assess visual composition alongside standards/specification. Record actual results, limitations and exceptions in the existing report.
 
@@ -61,6 +61,9 @@ The diagram illustrates grouping, not a required page layout or a pixel-exact fo
 - **Hierarchy:** one h1 per page, ordered section headings and one dominant action per task region. Secondary/cancel actions remain visually quieter; destructive actions have explicit meaning and confirmation where required by the behavior contract. Do not turn every element into a card or primary button.
 - **Width:** dense operational pages use the shared workspace content width (current shell maximum1500px); the outer gutter applies inside it. Reading/forms use a narrower measure, normally 40–65 characters for prose and roughly420–640px for a focused form, capped by available width. These are layout defaults, not dimensions from the external specimens. Full-page data tables may use more width.
 - **Balance:** give the primary task more space than secondary context. Place helpful information near the decision it supports. Avoid decorative panels/charts/metrics with no authorized purpose. Empty states occupy a content region honestly; they do not become fabricated dashboard data.
+- **Focal sequence:** distinguish primary work, secondary context and tertiary metadata through position, grouping, weight and value contrast together. Heading semantics alone do not create a focal hierarchy. Avoid three or more equally emphatic accents/actions in the same task region. A dashboard may have several necessary work regions; state their reading order rather than inventing one oversized advertising hero. Urgent clinical/error information can take priority when required by the task.
+- **Figure–ground:** keep task content distinguishable from the canvas and decoration through value, spacing and clear grouping. Inspect without hue: selected/invalid/urgent meaning must retain text/icon/shape cues. Add a container only when spacing and alignment cannot communicate the group clearly.
+- **Edges and optical alignment:** scan every viewport edge, sticky region, overlay and column intersection. Elements deliberately share an edge or have clear separation; remove almost-touching borders, clipped labels and ambiguous overlaps. Optical corrections for icons/punctuation may follow a stable grid, not replace it. Every large gap must serve separation, reading or an actual responsive constraint.
 
 | Pattern | Repeated composition |
 | --- | --- |
@@ -72,6 +75,28 @@ The diagram illustrates grouping, not a required page layout or a pixel-exact fo
 | Details/report | Scope/date/identity context → key result → supporting rows/details → authorized output actions. Keep units, currency, cutoff and unavailable states visible. |
 
 Patterns define relationships, not new features. Omit unfinished destinations and unapproved actions. Reuse a shared composition when a real second use appears; do not scaffold an entire component library in advance.
+
+## Typographic hierarchy and copy protection
+
+- Use semantic h1/h2/h3 levels for document structure, independently of visual emphasis. A balance or urgent state may be prominent without becoming a heading. Reuse the defined title/section/body/label/metadata roles; avoid adding a different font treatment to every line or decorative uppercase microcopy.
+- Break headings and explanations at natural French phrases. Avoid forced line breaks that strand short words or split a concept; at narrow widths allow natural wrapping rather than shrinking the type or forcing a poster-style word count. The prose measure default above is a desktop reading target; mobile content may have fewer characters per line.
+- Preserve exact approved labels, patient identity, clinical terms, dates, amounts/currency and units. Keep short value/unit groups together when they fit; allow long identifiers to wrap safely instead of overflowing. Truncation must have an accessible way to reveal the complete value and must not hide a consequential distinction. Do not rewrite clinical/financial copy to fit a box.
+- Keep text on quiet surfaces, with token leading for its role; section/page headings retain1.25 leading rather than importing tightly set advertising headlines. Validate actual rendered contrast, wrapping and enlarged text. A token's existence is not proof that every foreground/background pairing meets contrast requirements.
+
+## Perceptual preflight — diagnostic checks
+
+Use the affected rendered region and record intended versus observed reading order. Keep evidence in the existing report; these are qualitative diagnostics, not a user study or an objective beauty score.
+
+| Check | What to inspect / repair |
+| --- | --- |
+| Brief first look | Before reading all details, identify the task, dominant content and next action. If decoration or several equally strong accents win attention, reduce competing weight. |
+| Thumbnail | Reduce a capture proportionally to about100px on its longer edge, or fit it inside100×100 without distortion. Inspect grouping and major masses, not tiny-text readability. A dense table may be inspected as a relevant region as well as the full page. |
+| Squint/blur | At a coarse blur, distinguish primary work, supporting context and background. Remove redundant containers/effects when they compete with the task; empty space is not automatically a defect. |
+| Grayscale | Remove hue and inspect value hierarchy and persistent state cues. Then check actual colors at normal size; grayscale/blur cannot prove numerical text contrast or accessibility. |
+| Edge/crop | Inspect all four edges and intersections for clipping, trapped gaps, near tangencies and overlay collisions. Repeat with relevant errors, long copy and text enlargement. |
+| Normal-size copy pass | Read every changed label/value, inspect natural line breaks, measure and focus, and calculate relevant color-pair contrast. Simplified preflight captures never replace this pass. |
+
+Apply these checks to the actual changed composition. Documentation diagrams demonstrate a rule only; their deliberately equal comparison panels are not evidence that an operational page has good hierarchy. Preserve content-driven UI gutters and token scale: the skills' advertising heuristics (6–8% canvas margins, tightly led1–4-word headlines or fixed headline/subhead ratios) do not override these application defaults. The golden ratio remains optional. Arabic screen design stays deferred; a future authorized Arabic layout requires its own glyph/RTL skill review.
 
 ## Components, interaction and responsive rules
 
@@ -90,7 +115,7 @@ For changed UI, the existing report must cover:
 - [ ] Rendered affected states: normal, loading, empty/no matches, denied and relevant validation/error/conflict/uncertain states. Record inapplicable states rather than inventing them.
 - [ ] Desktop and narrow captures; check320/768/1024/1440px widths and relevant short desktop height. Verify text enlargement to200%, wrapping and reachable controls. Capture representative states; do not create a redundant screenshot matrix for every combination.
 - [ ] Both blue/teal when a shared visual rule changes; keyboard/focus and actual text/background contrast checks. Record browser, viewport, checked revision, evidence paths and omissions.
-- [ ] Visual inspection: related elements grouped, shared edges aligned, primary task obvious, no accidental gaps/overlap/clipping or unexplained layout jumps. Compare component appearance with specimens; no page-level match to nonexistent reference screens.
+- [ ] Visual inspection: record intended/observed focal sequence; inspect proximity, figure–ground, shared edges, value masses and optical alignment through the relevant preflight checks above. No accidental gaps/overlap/clipping or unexplained layout jumps. Compare component appearance with specimens; no page-level match to nonexistent reference screens.
 - [ ] Meaningful regression at the existing approved browser seam when behavior or a recurring visual defect warrants it. Retain the current test suite; do not test every spacing constant or claim that passing tests establishes good composition.
 
 The same independent Standards/Spec reviewer checks these items with proportional evidence. Existing owner preview requirements remain; no automatic merge, next ticket or new approval gate follows from this guide.

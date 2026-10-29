@@ -10,19 +10,19 @@
 <text x="48" y="127" font-size="16" font-weight="600" fill="#126344">USE: compact field group</text>
 <text x="536" y="127" font-size="16" font-weight="600" fill="#b42318">AVOID: unused reserved row</text>
 <text x="48" y="160" font-size="13">Adresse e-mail</text>
-<rect x="48" y="170" width="416" height="40" rx="12" fill="#fff" stroke="#a9bac7"/>
+<rect x="48" y="170" width="416" height="40" rx="12" fill="#fff" stroke="#526b7d"/>
 <text x="48" y="244" font-size="13">Mot de passe</text>
-<rect x="48" y="254" width="416" height="40" rx="12" fill="#fff" stroke="#a9bac7"/>
+<rect x="48" y="254" width="416" height="40" rx="12" fill="#fff" stroke="#526b7d"/>
 <rect x="48" y="318" width="416" height="48" rx="12" fill="#135d93"/>
 <text x="64" y="348" font-size="14" fill="#fff">Se connecter</text>
 <text x="48" y="402" font-size="13" fill="#526b7d">Label + input + feedback form one group.</text>
 <text x="48" y="426" font-size="13" fill="#526b7d">The next related group follows without a blank row.</text>
 <text x="536" y="160" font-size="13">Adresse e-mail</text>
-<rect x="536" y="170" width="416" height="40" rx="12" fill="#fff" stroke="#a9bac7"/>
+<rect x="536" y="170" width="416" height="40" rx="12" fill="#fff" stroke="#526b7d"/>
 <path d="M940 222v100m-5-100h10m-10 100h10" stroke="#b42318" fill="none"/>
 <text x="536" y="276" font-size="13" fill="#b42318">An empty row fragments the task.</text>
 <text x="536" y="332" font-size="13">Mot de passe</text>
-<rect x="536" y="342" width="416" height="40" rx="12" fill="#fff" stroke="#a9bac7"/>
+<rect x="536" y="342" width="416" height="40" rx="12" fill="#fff" stroke="#526b7d"/>
 <text x="536" y="426" font-size="13" fill="#526b7d">Do not use blank space to force stable positions.</text>
 <text x="32" y="493" font-size="12" fill="#526b7d">Schematic examples only. Adapt grids to content, viewport and text enlargement; use approved spacing roles.</text>
 </g>

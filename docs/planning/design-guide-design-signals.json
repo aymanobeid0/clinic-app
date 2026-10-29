@@ -1,0 +1,149 @@
+[
+  {
+    "to": "visual-qa",
+    "job": "Audit guide rules and actual instructional SVG only; not runtime application certification",
+    "evidence": [
+      "design/design.md",
+      "design/composition-examples.svg",
+      "docs/planning/design-guide-art-direction.json"
+    ],
+    "confidence": 0.9,
+    "hard_vetoes": [],
+    "soft_warnings": [
+      "Advertising numeric heuristics adapted to content-driven clinical UI"
+    ],
+    "unresolved": [],
+    "recommended_next": [
+      "Independent visual QA on rendered normal/thumbnail/blur/grayscale evidence"
+    ],
+    "packet_id": "PKT-guide-composition",
+    "from": "composition-director",
+    "decisions": [
+      {
+        "key": "composition_state",
+        "value": {
+          "canvas": [
+            1000,
+            510
+          ],
+          "grid": "two-column modular comparison",
+          "anchors": {
+            "primary": [
+              32,
+              16,
+              936,
+              56
+            ],
+            "secondary": [
+              24,
+              94,
+              952,
+              370
+            ],
+            "tertiary": [
+              32,
+              480,
+              936,
+              18
+            ]
+          },
+          "eye_path": "lesson title, left compact group, right gap, explanatory note",
+          "negative_space_ratios": {
+            "good_gap_to_control_height": 1.1,
+            "bad_gap_to_control_height": 3.3,
+            "global_whitespace_quota": null,
+            "scope": "gap includes next label; ratios describe schematic, not pure empty area or an application requirement"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "to": "visual-qa",
+    "job": "Audit guide rules and actual instructional SVG only; not runtime application certification",
+    "evidence": [
+      "design/design.md",
+      "design/composition-examples.svg",
+      "docs/planning/design-guide-art-direction.json"
+    ],
+    "confidence": 0.9,
+    "hard_vetoes": [],
+    "soft_warnings": [
+      "Advertising numeric heuristics adapted to content-driven clinical UI"
+    ],
+    "unresolved": [],
+    "recommended_next": [
+      "Independent visual QA on rendered normal/thumbnail/blur/grayscale evidence"
+    ],
+    "packet_id": "PKT-guide-typography",
+    "from": "typography-director",
+    "decisions": [
+      {
+        "key": "typography_state",
+        "value": {
+          "families": [
+            "Inter",
+            "Arial fallback in standalone illustration"
+          ],
+          "guide_roles_px": {
+            "page": 30,
+            "section": 20,
+            "body": 14,
+            "metadata": [
+              12,
+              13
+            ]
+          },
+          "diagram_roles_px": {
+            "title": 24,
+            "panel_heading": 16,
+            "label": 13,
+            "annotation": [
+              12,
+              13
+            ]
+          },
+          "scale_ratios": {
+            "guide_page_to_section": 1.5,
+            "guide_section_to_body": 1.4285714285714286
+          },
+          "text_zones": {
+            "title": [
+              32,
+              16,
+              936,
+              56
+            ],
+            "left": [
+              48,
+              110,
+              416,
+              320
+            ],
+            "right": [
+              536,
+              110,
+              416,
+              320
+            ],
+            "footnote": [
+              32,
+              480,
+              936,
+              18
+            ]
+          },
+          "exact_copy_locks": [
+            "SVG text nodes unchanged from approved source checkpoint21255b5",
+            "application patient/financial labels preserved; no runtime copy edited"
+          ],
+          "adaptations": [
+            "retain approved1.25 heading leading and40–65 character desktop prose target",
+            "no forced1–4word headline or0.4–0.6 size ratio",
+            "narrow/enlarged text reflows naturally"
+          ]
+        }
+      }
+    ]
+  }
+]
