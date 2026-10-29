@@ -232,7 +232,7 @@ small {
   padding: var(--space-8);
   font-size: var(--font-size-12);
 }
-.login-methods button[aria-pressed="true"] {
+.login-methods button[data-state="active"] {
   background: var(--color-surface);
   box-shadow: var(--shadow-subtle);
   color: var(--color-primary);
@@ -242,6 +242,11 @@ small {
   display: grid;
   grid-template-rows: repeat(2, minmax(min-content, 1fr));
   padding-top: var(--space-4);
+}
+.login-identifiers > [role="tabpanel"]:not([hidden]) {
+  grid-row: 1 / -1;
+  display: grid;
+  grid-template-rows: repeat(2, minmax(min-content, 1fr));
 }
 .login-submit {
   width: 100%;

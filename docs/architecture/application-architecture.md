@@ -86,6 +86,12 @@ Keep essential audit events independent of the future paid searchable-history pr
 
 ## Browser state and synchronization
 
+### Accessible compound components — owner approved 2026-10-29
+
+Use Radix Primitives for compound UI interactions requiring keyboard navigation, focus management or ARIA relationships. Style those primitives with the approved Clinic Visual Language tokens and application CSS. Native HTML remains the first choice for simple controls with sufficient built-in behavior; do not replace working native controls solely to use the library. Install only primitives needed by delivered features, with exact versions and the lockfile. Create shared styled compositions when there is a real reuse need, rather than a speculative component framework.
+
+Radix owns interaction mechanics; components still need meaningful French labels, visible focus, contrast and responsive layout verification. Test the actual composed control through the existing browser seam, including focus/keyboard behavior and form integration. Domain rules, authorization and Query/RHF/Zustand ownership below remain unchanged. This decision adopts Primitives, not Radix Themes or a new styling system.
+
 TanStack Query owns server records; Zustand owns shared UI state; React Hook Form owns form input; component-local hooks own private UI details. Clear patient-related cached state on logout/account or clinic change. Keep sensitive drafts/cache out of persistent browser storage. During connection loss, current-tab draft memory and explicit saving/error states follow the approved MVP behavior.
 
 Owner selected immediate push updates at launch. Approved transport: SSE notifications plus REST writes. Send minimal authorized invalidation signals after transaction commit; fetch records through the normal authorized interface. Recheck sessions and access grants for long-lived streams, terminate revoked access, and refetch authorized state on reconnect. Nginx must stream events without response buffering, with heartbeat/timeouts and HTTP/2 verified. Refresh speed does not replace server-side concurrency checks. Build French strings behind a translation interface and use layout properties compatible with future RTL; additional languages remain deferred.

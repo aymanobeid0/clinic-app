@@ -1,4 +1,32 @@
 import { test, expect } from "@playwright/test";
+test("Radix login tabs support arrow keys, panel labels and stable shared fields", async ({
+  page,
+}) => {
+  await api(page, null);
+  await page.goto("/connexion");
+  const principal = page.getByRole("tab", { name: "Responsable principal" });
+  const team = page.getByRole("tab", { name: "Équipe", exact: true });
+  await expect(principal).toHaveAttribute("aria-selected", "true");
+  const before = await page
+    .getByLabel("Mot de passe", { exact: true })
+    .boundingBox();
+  await principal.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(team).toBeFocused();
+  await expect(team).toHaveAttribute("aria-selected", "true");
+  await expect(
+    page.getByRole("tabpanel", { name: "Équipe", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Adresse e-mail de connexion")).toHaveCount(0);
+  expect(
+    (await page.getByLabel("Mot de passe", { exact: true }).boundingBox())?.y,
+  ).toBe(before?.y);
+  await page.keyboard.press("Home");
+  await expect(principal).toBeFocused();
+  await expect(
+    page.getByRole("tabpanel", { name: "Responsable principal" }),
+  ).toBeVisible();
+});
 const account = {
   clinicId: "11111111-1111-4111-8111-111111111111",
   accountId: "22222222-2222-4222-8222-222222222222",
@@ -57,7 +85,7 @@ test("login keeps password and submit stable across login methods", async ({
   await page.goto("/connexion");
   const password = page.getByLabel("Mot de passe", { exact: true });
   const before = await password.boundingBox();
-  await page.getByRole("button", { name: "Équipe", exact: true }).click();
+  await page.getByRole("tab", { name: "Équipe", exact: true }).click();
   await expect(page.getByLabel("Code de la clinique")).toBeVisible();
   expect((await password.boundingBox())?.y).toBe(before?.y);
   await expect(
@@ -234,7 +262,7 @@ for (const width of [320, 768, 1024, 1440])
           () => document.documentElement.scrollHeight <= innerHeight,
         ),
       ).toBe(true);
-    await page.getByRole("button", { name: "Équipe", exact: true }).focus();
+    await page.getByRole("tab", { name: "Équipe", exact: true }).focus();
     await page.keyboard.press("Enter");
     await page.keyboard.press("Tab");
     await expect(page.getByLabel("Code de la clinique")).toBeFocused();
@@ -285,7 +313,7 @@ test("normal laptop fit and enlarged text preserve accessible controls without o
       () => document.documentElement.scrollHeight <= innerHeight,
     ),
   ).toBe(true);
-  await page.getByRole("button", { name: "Équipe", exact: true }).click();
+  await page.getByRole("tab", { name: "Équipe", exact: true }).click();
   await page.addStyleTag({
     content:
       ".auth-content, .auth-content input, .auth-content button, .auth-content label, .auth-content p {font-size:28px !important;}",

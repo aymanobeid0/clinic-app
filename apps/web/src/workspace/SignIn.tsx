@@ -6,6 +6,7 @@ import { Link } from "react-router";
 import { ValidatedForm } from "../forms/ValidatedForm.js";
 import { FormErrors } from "../forms/FormErrors.js";
 import { Field } from "../features/identity/components/Field.js";
+import * as Tabs from "@radix-ui/react-tabs";
 
 export function SignIn({
   busy,
@@ -23,30 +24,26 @@ export function SignIn({
   });
   const method = form.watch("method");
   return (
-    <>
+    <Tabs.Root
+      value={method}
+      onValueChange={(value) => {
+        if (value === "email" || value === "clinic_username")
+          form.setValue("method", value);
+      }}
+    >
       <p className="eyebrow">VOTRE ESPACE CLINIQUE</p>
       <h1>Connexion à votre clinique</h1>
       <p className="description">
         Retrouvez votre équipe et le fil de votre journée.
       </p>
-      <div className="login-methods" aria-label="Mode de connexion">
-        <button
-          type="button"
-          aria-pressed={method === "email"}
-          disabled={busy}
-          onClick={() => form.setValue("method", "email")}
-        >
+      <Tabs.List className="login-methods" aria-label="Mode de connexion">
+        <Tabs.Trigger value="email" disabled={busy}>
           Responsable principal
-        </button>
-        <button
-          type="button"
-          aria-pressed={method === "clinic_username"}
-          disabled={busy}
-          onClick={() => form.setValue("method", "clinic_username")}
-        >
+        </Tabs.Trigger>
+        <Tabs.Trigger value="clinic_username" disabled={busy}>
           Équipe
-        </button>
-      </div>
+        </Tabs.Trigger>
+      </Tabs.List>
       <ValidatedForm
         onSubmit={form.handleSubmit(async (input) => {
           await onSubmit(input);
@@ -55,7 +52,7 @@ export function SignIn({
       >
         <input type="hidden" {...form.register("method")} />
         <div className="login-identifiers">
-          {method === "email" ? (
+          <Tabs.Content value="email" tabIndex={-1}>
             <Field label="Adresse e-mail de connexion">
               <input
                 type="email"
@@ -64,24 +61,23 @@ export function SignIn({
                 {...form.register("email")}
               />
             </Field>
-          ) : (
-            <>
-              <Field label="Code de la clinique">
-                <input
-                  autoComplete="organization"
-                  required
-                  {...form.register("clinicCode")}
-                />
-              </Field>
-              <Field label="Identifiant">
-                <input
-                  autoComplete="username"
-                  required
-                  {...form.register("username")}
-                />
-              </Field>
-            </>
-          )}
+          </Tabs.Content>
+          <Tabs.Content value="clinic_username" tabIndex={-1}>
+            <Field label="Code de la clinique">
+              <input
+                autoComplete="organization"
+                required
+                {...form.register("clinicCode")}
+              />
+            </Field>
+            <Field label="Identifiant">
+              <input
+                autoComplete="username"
+                required
+                {...form.register("username")}
+              />
+            </Field>
+          </Tabs.Content>
         </div>
         <Field label="Mot de passe">
           <input
@@ -104,6 +100,6 @@ export function SignIn({
         Équipe et médecins responsables : utilisez les identifiants remis par
         votre responsable. Aucun compte ne peut être créé ici.
       </p>
-    </>
+    </Tabs.Root>
   );
 }
