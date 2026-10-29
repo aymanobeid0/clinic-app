@@ -21,3 +21,5 @@ Independent first review identified an ambiguity: requiring an accepted applicat
 Independent pinned-comparison check found a lone CR at SVG EOF that the builder's working-tree-only diff check missed. Builder normalized SVG line endings to LF and now checks the full base-to-HEAD comparison; final result recorded after commit. Diagram content/render is unchanged.
 
 Final source/evidence a1d6e0ef9f398c49e217cf2ba70cdabead260f24: same independent reviewer PASS, Standards0/Spec0 residual. Independently verified14links, token snapshot semantic equality/current spacing/type/radius/control roles, XML, full committed diff whitespace and diagram readability. Builder final full pinned comparison PASS; no application-source changes. Handoff/native temp mirror updated before publication; manual merge next.
+
+Published/attached PR114 https://github.com/aymanobeid0/clinic-app/pull/114, OPEN/non-draft, initial head1cc4706. Same reviewed guide remains unchanged; follow-up publication metadata only. Human review/merge pending, no runtime migration implied.

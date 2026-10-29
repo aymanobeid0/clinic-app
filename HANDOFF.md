@@ -22,4 +22,4 @@ Existing fictional preview4190, API3188 and task DB55446 remain untouched; owner
 
 ## Next and suggested skills
 
-Same-reviewer guide checkpoint complete; publish human-review PR under standing authorization and retain native OS-temp mirror. Owner merges manually. Suggested: writing-for-agents/code-review for guide fixes; handoff/pr for delivery. No deployment/live migration/real data or further ticket authorization.
+Same-reviewer guide checkpoint complete. Published PR114 https://github.com/aymanobeid0/clinic-app/pull/114 (OPEN for human review/merge); native OS-temp mirror refreshed. Owner merges manually. Suggested: writing-for-agents/code-review for guide fixes; handoff/pr for delivery. No deployment/live migration/real data or further ticket authorization.
