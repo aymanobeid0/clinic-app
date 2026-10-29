@@ -17,3 +17,5 @@ Independent review and final pins: design-guide-review.md. Before publication up
 A trailing blank line introduced while editing the token pointer failed an intermediate whitespace check; trimmed before the final check. No application test failure or runtime change.
 
 Independent first review identified an ambiguity: requiring an accepted application capture for every comparison could create a new approval gate for a new page. Builder made existing captures optional and explicitly uses component specimens plus guide rules when none exists. Same reviewer recheck follows.
+
+Independent pinned-comparison check found a lone CR at SVG EOF that the builder's working-tree-only diff check missed. Builder normalized SVG line endings to LF and now checks the full base-to-HEAD comparison; final result recorded after commit. Diagram content/render is unchanged.
